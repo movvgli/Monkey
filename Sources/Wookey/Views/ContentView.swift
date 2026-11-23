@@ -132,6 +132,7 @@ struct ContentView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(WookeyRuntime.self) private var runtime
+    @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
     @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
@@ -194,9 +195,12 @@ struct ContentView: View {
                     Button("새 템플릿", systemImage: wookeyTemplateSymbol, action: addTemplate)
                     Button("새 레이아웃", systemImage: "rectangle.3.group", action: addLayout)
                 } label: {
-                    // A native toolbar menu can use a raster image's intrinsic size.
-                    Label("새로 만들기", systemImage: "plus")
-                        .labelStyle(.iconOnly)
+                    Label {
+                        Text("새로 만들기")
+                    } icon: {
+                        createMenuIcon
+                    }
+                    .labelStyle(.iconOnly)
                 }
                 .help("새로 만들기")
             }
@@ -263,6 +267,19 @@ struct ContentView: View {
             }
             .presentationBackground(theme.canvas)
         }
+    }
+
+    private var createMenuIcon: Image {
+        let asset = NSImage.Name(iconTheme.asset("WookeyCommandAdd"))
+        guard let artwork = wookeyAssetBundle.image(forResource: asset) else {
+            return Image(systemName: "plus")
+        }
+        // The native toolbar reads the NSImage size independently of SwiftUI layout.
+        let icon = NSImage(size: NSSize(width: 18, height: 18), flipped: false) { bounds in
+            artwork.draw(in: bounds)
+            return true
+        }
+        return Image(nsImage: icon).renderingMode(.original)
     }
 
     @ViewBuilder
