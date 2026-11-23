@@ -105,6 +105,7 @@ struct WikeySearchField: View {
 
 struct WikeySaveStatus: View {
     @Environment(WikeyRuntime.self) private var runtime
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         Label(
@@ -112,7 +113,7 @@ struct WikeySaveStatus: View {
             systemImage: runtime.store.lastPersistenceError == nil ? "checkmark.circle" : "exclamationmark.triangle"
         )
         .font(.caption)
-        .foregroundStyle(runtime.store.lastPersistenceError == nil ? Color.secondary : Color.red)
+        .foregroundStyle(runtime.store.lastPersistenceError == nil ? Color.secondary : WikeyActionTint.rose.ink(in: colorScheme))
         .help(runtime.store.lastPersistenceError ?? "변경 사항을 자동으로 저장합니다.")
     }
 }
@@ -125,12 +126,8 @@ struct WikeyDeleteButton: View {
         Button(role: .destructive, action: action) {
             Image(systemName: "trash")
                 .font(.system(size: 14, weight: .medium))
-                .frame(width: 30, height: 30)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(.red)
-        .background(Color.red.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+        .buttonStyle(WikeyPastelButtonStyle(tint: .rose, iconOnly: true))
         .help(title)
         .accessibilityLabel(title)
     }
@@ -226,7 +223,7 @@ struct ShortcutBadge: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
-                isMuted ? Color.secondary.opacity(0.08) : Color.accentColor.opacity(0.1),
+                isMuted ? Color.secondary.opacity(0.08) : Color.wikeyInk(in: colorScheme).opacity(0.1),
                 in: RoundedRectangle(cornerRadius: 6, style: .continuous)
             )
             .accessibilityLabel("단축키 \(text)")
@@ -287,6 +284,7 @@ enum WikeyActionTint {
     case periwinkle
     case mint
     case peach
+    case rose
     case neutral
 
     func ink(in colorScheme: ColorScheme) -> Color {
@@ -300,8 +298,27 @@ enum WikeyActionTint {
             return isDark ? Color(red: 0.64, green: 0.88, blue: 0.80) : Color(red: 0.23, green: 0.42, blue: 0.37)
         case .peach:
             return isDark ? Color(red: 1, green: 0.76, blue: 0.66) : Color(red: 0.65, green: 0.32, blue: 0.25)
+        case .rose:
+            return isDark ? Color(red: 1, green: 0.57, blue: 0.59) : Color(red: 0.68, green: 0.14, blue: 0.24)
         case .neutral:
             return .secondary
+        }
+    }
+}
+
+extension WorkflowAction {
+    var wikeyIcon: (symbol: String, tint: WikeyActionTint) {
+        switch self {
+        case .copyTemplate: ("doc.on.clipboard", .lavender)
+        case .openURL: ("link", .periwinkle)
+        case .launchApplication: ("app", .mint)
+        case .openFile: ("doc", .peach)
+        case .applyLayout: ("rectangle.3.group", .lavender)
+        case .pressKey: ("keyboard", .neutral)
+        case .runWorkflow: ("bolt", .lavender)
+        case .pasteImages: ("photo", .peach)
+        case .pasteFiles: ("paperclip", .peach)
+        case .wait: ("clock", .neutral)
         }
     }
 }
@@ -310,13 +327,14 @@ struct WikeyActionIcon: View {
     @Environment(\.colorScheme) private var colorScheme
     var symbol: String
     var tint: WikeyActionTint
+    var size: CGFloat = 28
 
     var body: some View {
         let ink = tint.ink(in: colorScheme)
         Image(systemName: symbol)
-            .font(.system(size: 13, weight: .medium))
+            .font(.system(size: size > 30 ? 16 : 13, weight: .medium))
             .foregroundStyle(ink)
-            .frame(width: 28, height: 28)
+            .frame(width: size, height: size)
             .background(ink.opacity(colorScheme == .dark ? 0.16 : 0.10), in: RoundedRectangle(cornerRadius: 9))
             .accessibilityHidden(true)
     }
@@ -330,7 +348,7 @@ struct WikeyHoverButtonStyle: ButtonStyle {
     var cornerRadius: CGFloat = 9
 
     func makeBody(configuration: Configuration) -> some View {
-        HoverSurface(
+        WikeyHoverSurface(
             label: configuration.label,
             ink: .wikeyInk(in: colorScheme),
             selected: selected,
@@ -340,31 +358,55 @@ struct WikeyHoverButtonStyle: ButtonStyle {
             isEnabled: isEnabled
         )
     }
+}
 
-    private struct HoverSurface<Label: View>: View {
-        @State private var isHovering = false
-        var label: Label
-        var ink: Color
-        var selected: Bool
-        var filled: Bool
-        var cornerRadius: CGFloat
-        var isPressed: Bool
-        var isEnabled: Bool
+struct WikeyPastelButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isEnabled) private var isEnabled
+    var tint: WikeyActionTint = .lavender
+    var iconOnly = false
 
-        private var fillOpacity: Double {
-            if isPressed { return 0.24 }
-            if isHovering && isEnabled { return 0.17 }
-            if selected { return 0.14 }
-            return filled ? 0.075 : 0
-        }
+    func makeBody(configuration: Configuration) -> some View {
+        let ink = tint.ink(in: colorScheme)
+        return WikeyHoverSurface(
+            label: configuration.label
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(ink)
+                .padding(.horizontal, iconOnly ? 0 : 12)
+                .frame(minWidth: 36, minHeight: 36),
+            ink: ink,
+            selected: false,
+            filled: true,
+            cornerRadius: 10,
+            isPressed: configuration.isPressed,
+            isEnabled: isEnabled
+        )
+    }
+}
 
-        var body: some View {
-            let shape = RoundedRectangle(cornerRadius: cornerRadius)
-            label
-                .background(ink.opacity(fillOpacity), in: shape)
-                .contentShape(shape)
-                .opacity(isEnabled ? 1 : 0.5)
-                .onHover { isHovering = $0 }
-        }
+private struct WikeyHoverSurface<Label: View>: View {
+    @State private var isHovering = false
+    var label: Label
+    var ink: Color
+    var selected: Bool
+    var filled: Bool
+    var cornerRadius: CGFloat
+    var isPressed: Bool
+    var isEnabled: Bool
+
+    private var fillOpacity: Double {
+        if isPressed { return 0.24 }
+        if isHovering && isEnabled { return 0.17 }
+        if selected { return 0.14 }
+        return filled ? 0.075 : 0
+    }
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius)
+        label
+            .background(ink.opacity(fillOpacity), in: shape)
+            .contentShape(shape)
+            .opacity(isEnabled ? 1 : 0.5)
+            .onHover { isHovering = $0 }
     }
 }

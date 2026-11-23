@@ -131,7 +131,7 @@ struct WikeySettingsView: View {
             Button("권한 상태 새로고침", systemImage: "arrow.clockwise") {
                 runtime.permissions.refresh()
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
         }
     }
 
@@ -196,7 +196,7 @@ struct WikeySettingsView: View {
                         if let error = runtime.loginItem.lastError {
                             Label(error, systemImage: "exclamationmark.triangle")
                                 .font(.caption)
-                                .foregroundStyle(.red)
+                                .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                         }
                     }
                     .padding(.vertical, 12)
@@ -295,11 +295,11 @@ struct WikeySettingsView: View {
                                 "\(name): \(runtime.applicationLaunchErrors[id] ?? "실행 오류")",
                                 systemImage: "exclamationmark.triangle.fill"
                             )
-                            .foregroundStyle(.red)
+                            .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                         }
                         if let error = runtime.store.lastPersistenceError {
                             Label(error, systemImage: "externaldrive.badge.exclamationmark")
-                                .foregroundStyle(.red)
+                                .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                         }
                     }
                     .font(.subheadline)

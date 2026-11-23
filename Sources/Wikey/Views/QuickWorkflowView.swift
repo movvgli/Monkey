@@ -113,7 +113,7 @@ struct QuickWorkflowView: View {
                     .font(.headline)
                 CompactShortcutRecorderView(shortcut: $shortcut)
                 if let error = shortcut.validationMessage, !shortcut.steps.isEmpty {
-                    Text(error).font(.caption).foregroundStyle(.red)
+                    Text(error).font(.caption).foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                 }
                 Text("macOS 단축어 앱에서 ‘Wikey 워크플로 실행’을 추가해 이 자동화를 선택할 수도 있습니다.")
                     .font(.caption)

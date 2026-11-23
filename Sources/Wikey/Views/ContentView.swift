@@ -121,6 +121,7 @@ private struct WikeySidebar: View {
 }
 
 struct ContentView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(WikeyRuntime.self) private var runtime
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
     @State private var selection: SidebarSelection = .workflowCollection
@@ -139,12 +140,12 @@ struct ContentView: View {
                     HStack(spacing: 12) {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
                             .font(.subheadline)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                         Spacer()
                         Button("다시 저장") { runtime.saveAndReloadHotkeys() }
                     }
                     .padding(16)
-                    .background(Color.red.opacity(0.08))
+                    .background(WikeyActionTint.rose.ink(in: colorScheme).opacity(0.08))
                 }
                 detail
                 if runtime.runner.runningWorkflowID != nil {
@@ -535,10 +536,11 @@ private struct LibraryItemButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.tint)
-                    .frame(width: 30, height: 30)
+                WikeyActionIcon(
+                    symbol: systemImage,
+                    tint: systemImage == "rectangle.3.group" ? .periwinkle : .lavender,
+                    size: 30
+                )
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
@@ -555,7 +557,7 @@ private struct LibraryItemButton: View {
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)

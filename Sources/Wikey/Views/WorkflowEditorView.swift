@@ -88,7 +88,7 @@ struct WorkflowEditorView: View {
 
                             if !workflow.actions.isEmpty {
                                 Button("다음 동작 추가", systemImage: "plus") { showsActionPicker = true }
-                                    .buttonStyle(.bordered)
+                                    .buttonStyle(WikeyPastelButtonStyle())
                                     .padding(.leading, 48)
                                     .padding(.top, 5)
                             }
@@ -131,8 +131,7 @@ struct WorkflowEditorView: View {
                         Label("워크플로 실행", systemImage: "play.fill")
                     }
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(WikeyPastelButtonStyle(tint: .mint))
                 .disabled(workflow.actions.isEmpty || isRunning || runtime.runner.queuedWorkflowIDs.contains(workflow.id))
                 .keyboardShortcut(.return, modifiers: [.command])
             }
@@ -218,20 +217,12 @@ struct WorkflowEditorView: View {
             onBack: onBack
         ) {
             Button("동작 추가", systemImage: "plus") { showsActionPicker = true }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .buttonStyle(WikeyPastelButtonStyle())
                 .keyboardShortcut("d", modifiers: [.command, .shift])
                 .help("동작 추가 (⇧⌘D)")
-            Menu {
-                Button("워크플로 삭제…", systemImage: "trash", role: .destructive) {
-                    showsDeleteConfirmation = true
-                }
-            } label: {
-                Label("워크플로 메뉴", systemImage: "ellipsis.circle")
-                    .labelStyle(.iconOnly)
+            WikeyDeleteButton(title: "워크플로 삭제…") {
+                showsDeleteConfirmation = true
             }
-            .menuIndicator(.hidden)
-            .fixedSize()
         }
     }
 
@@ -249,11 +240,10 @@ struct WorkflowEditorView: View {
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .help("끄면 이 워크플로의 전역 단축키를 해제합니다.")
-                Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경") {
+                Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", systemImage: "keyboard") {
                     showsShortcutEditor.toggle()
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.large)
+                .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
                 .popover(isPresented: $showsShortcutEditor, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("단축키 변경")
@@ -365,6 +355,7 @@ struct WorkflowEditorView: View {
 }
 
 private struct TemplateActionSetupView: View {
+    @Environment(\.colorScheme) private var colorScheme
     var templates: [RichTemplate]
     @Binding var selectedTemplateID: UUID?
     @Binding var selectedMode: TemplateDeliveryMode
@@ -446,9 +437,9 @@ private struct TemplateActionSetupView: View {
             HStack(spacing: 14) {
                 Image(systemName: "doc.on.clipboard")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.wikeyAccent)
+                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
                     .frame(width: 38, height: 38)
-                    .background(Color.wikeyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color.wikeyInk(in: colorScheme).opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(template.name)
@@ -464,19 +455,19 @@ private struct TemplateActionSetupView: View {
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
-                    .foregroundStyle(isSelected ? Color.wikeyAccent : Color.secondary.opacity(0.5))
+                    .foregroundStyle(isSelected ? Color.wikeyInk(in: colorScheme) : Color.secondary)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 11)
             .contentShape(Rectangle())
             .background(
-                isSelected ? Color.wikeyAccent.opacity(0.08) : Color(nsColor: .controlBackgroundColor),
+                isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.08) : Color(nsColor: .controlBackgroundColor),
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(
-                        isSelected ? Color.wikeyAccent.opacity(0.7) : Color(nsColor: .separatorColor).opacity(0.35),
+                        isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.7) : Color(nsColor: .separatorColor).opacity(0.35),
                         lineWidth: isSelected ? 1.5 : 1
                     )
             }
@@ -527,6 +518,7 @@ private struct EmptyActionsView: View {
 }
 
 private struct FlowActionRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     var number: Int
     var isLast: Bool
     @Binding var action: WorkflowAction
@@ -560,8 +552,7 @@ private struct FlowActionRow: View {
                                 .lineLimit(1)
                         }
                         Spacer(minLength: 16)
-                        Image(systemName: "slider.horizontal.3")
-                            .foregroundStyle(.secondary)
+                        WikeyActionIcon(symbol: "slider.horizontal.3", tint: .lavender, size: 36)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(minHeight: 42)
@@ -569,7 +560,7 @@ private struct FlowActionRow: View {
                 }
                 .buttonStyle(.plain)
                 .help("동작 세부 설정")
-                Menu {
+                Menu("동작 메뉴", systemImage: "ellipsis") {
                     Button("세부 설정…", systemImage: "slider.horizontal.3") {
                         showsEditor = true
                     }
@@ -579,14 +570,14 @@ private struct FlowActionRow: View {
                         .disabled(!canMoveDown)
                     Divider()
                     Button("삭제", systemImage: "trash", role: .destructive, action: delete)
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .semibold))
-                        .frame(width: 28, height: 28)
                 }
+                .labelStyle(.iconOnly)
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
-                .fixedSize()
+                .tint(Color.wikeyInk(in: colorScheme))
+                .frame(width: 36, height: 36)
+                .background(Color.wikeyInk(in: colorScheme).opacity(0.075), in: RoundedRectangle(cornerRadius: 10))
+                .accessibilityLabel("동작 메뉴")
                 .popover(isPresented: $showsEditor, arrowEdge: .trailing) {
                     VStack(alignment: .leading, spacing: 18) {
                         Text(actionTitle)
@@ -598,17 +589,20 @@ private struct FlowActionRow: View {
                                 showsEditor = false
                                 moveUp()
                             }
-                                .disabled(!canMoveUp)
+                            .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
+                            .disabled(!canMoveUp)
                             Button("아래로 이동", systemImage: "arrow.down") {
                                 showsEditor = false
                                 moveDown()
                             }
-                                .disabled(!canMoveDown)
+                            .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
+                            .disabled(!canMoveDown)
                             Spacer()
                             Button("삭제", systemImage: "trash", role: .destructive) {
                                 showsEditor = false
                                 delete()
                             }
+                            .buttonStyle(WikeyPastelButtonStyle(tint: .rose))
                         }
                     }
                     .padding(20)
@@ -868,7 +862,7 @@ private struct FlowMarker: View {
     var body: some View {
         ZStack(alignment: .top) {
             Rectangle()
-                .fill(Color.wikeyAccent.opacity(0.24))
+                .fill(Color.wikeyInk(in: colorScheme).opacity(0.34))
                 .frame(width: 2)
                 .padding(.top, 44)
 
@@ -885,7 +879,7 @@ private struct FlowMarker: View {
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(Color.wikeyInk(in: colorScheme))
                 .frame(width: 38, height: 38)
-                .background(Color.wikeyAccent.opacity(0.11), in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.wikeyInk(in: colorScheme).opacity(0.11), in: RoundedRectangle(cornerRadius: 12))
         }
         .frame(width: 46)
         .frame(maxHeight: .infinity)
@@ -898,35 +892,18 @@ private struct ActionIcon: View {
     var action: WorkflowAction
 
     var body: some View {
-        Group {
-            if case .launchApplication(let bundleIdentifier, _) = action,
-               let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                    .resizable()
-                    .scaledToFit()
-            } else {
-                Image(systemName: symbol)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
-            }
-        }
-        .frame(width: 24, height: 24)
-        .padding(6)
-        .background(Color.wikeyAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private var symbol: String {
-        switch action {
-        case .launchApplication: "app"
-        case .copyTemplate: "doc.on.clipboard"
-        case .openURL: "globe"
-        case .openFile: "doc"
-        case .applyLayout: "rectangle.3.group"
-        case .pressKey: "return"
-        case .wait: "clock"
-        case .runWorkflow: "arrow.triangle.branch"
-        case .pasteImages: "photo.on.rectangle"
-        case .pasteFiles: "paperclip"
+        let icon = action.wikeyIcon
+        if case .launchApplication(let bundleIdentifier, _) = action,
+           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+                .padding(6)
+                .background(icon.tint.ink(in: colorScheme).opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
+                .accessibilityHidden(true)
+        } else {
+            WikeyActionIcon(symbol: icon.symbol, tint: icon.tint, size: 36)
         }
     }
 }
