@@ -28,19 +28,19 @@ struct WorkflowActionPicker: View {
         case shiftEnter = "Shift + Enter 입력"
         case wait = "잠시 기다리기"
 
-        var symbol: String {
+        var icon: (symbol: String, tint: WikeyActionTint) {
             switch self {
-            case .app: "app"
-            case .website: "globe"
-            case .file: "doc"
-            case .layout: "rectangle.3.group"
-            case .workflow: "arrow.triangle.branch"
-            case .template: "doc.on.clipboard"
-            case .images: "photo.on.rectangle"
-            case .files: "paperclip"
-            case .enter: "return"
-            case .shiftEnter: "arrow.turn.down.left"
-            case .wait: "clock"
+            case .app: ("app", .mint)
+            case .website: ("link", .periwinkle)
+            case .file: ("doc", .peach)
+            case .layout: ("rectangle.3.group", .lavender)
+            case .workflow: ("bolt", .lavender)
+            case .template: ("doc.on.clipboard", .lavender)
+            case .images: ("photo", .peach)
+            case .files: ("paperclip", .peach)
+            case .enter: ("return", .neutral)
+            case .shiftEnter: ("arrow.turn.down.left", .neutral)
+            case .wait: ("clock", .neutral)
             }
         }
     }
@@ -92,12 +92,15 @@ struct WorkflowActionPicker: View {
                         if !filteredOptions(group).isEmpty {
                             Section(group.rawValue) {
                                 ForEach(filteredOptions(group), id: \.self) { option in
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Label(option.rawValue, systemImage: option.symbol)
-                                        if let reason = unavailableReason(option) {
-                                            Text(reason)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
+                                    HStack(spacing: 9) {
+                                        WikeyActionIcon(symbol: option.icon.symbol, tint: option.icon.tint)
+                                        VStack(alignment: .leading, spacing: 3) {
+                                            Text(option.rawValue)
+                                            if let reason = unavailableReason(option) {
+                                                Text(reason)
+                                                    .font(.caption)
+                                                    .foregroundStyle(.secondary)
+                                            }
                                         }
                                     }
                                     .padding(.vertical, 3)
@@ -113,9 +116,11 @@ struct WorkflowActionPicker: View {
             Divider()
             HStack {
                 Spacer()
-                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("취소") { dismiss() }
+                    .buttonStyle(WikeyPastelButtonStyle(tint: .neutral))
+                    .keyboardShortcut(.cancelAction)
                 Button("선택", action: addSelection)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(WikeyPastelButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selected == nil || selected.flatMap(unavailableReason) != nil)
             }
@@ -153,10 +158,12 @@ struct WorkflowActionSetupSheet<Content: View>: View {
             content
             HStack {
                 Spacer()
-                Button("취소", action: cancel).keyboardShortcut(.cancelAction)
+                Button("취소", action: cancel)
+                    .buttonStyle(WikeyPastelButtonStyle(tint: .neutral))
+                    .keyboardShortcut(.cancelAction)
                 Button("동작 추가", action: add)
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(WikeyPastelButtonStyle())
                     .disabled(!canAdd)
             }
         }
