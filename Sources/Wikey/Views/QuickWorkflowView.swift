@@ -24,6 +24,7 @@ struct QuickWorkflowView: View {
 
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var kind: Kind?
     @State private var name = ""
     @State private var shortcut = ShortcutGesture()
@@ -65,8 +66,13 @@ struct QuickWorkflowView: View {
                 if kind != nil {
                     Button("뒤로") { kind = nil }
                 } else {
-                    Button("여러 동작 연결…", action: onAdvanced)
-                        .buttonStyle(.link)
+                    Button(action: onAdvanced) {
+                        Text("여러 동작 연결…")
+                            .foregroundStyle(Color.wikeyInk(in: colorScheme))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                    }
+                    .buttonStyle(WikeyHoverButtonStyle())
                 }
                 Spacer()
                 Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
