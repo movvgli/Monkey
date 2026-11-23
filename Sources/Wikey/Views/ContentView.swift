@@ -79,8 +79,6 @@ private struct WikeySidebar: View {
     private func row(_ section: SidebarSelection) -> some View {
         let isSelected = selected == section
         let ink = Color.wikeyInk(in: colorScheme)
-        let shape = RoundedRectangle(cornerRadius: 9)
-
         return Button {
             navigate(section)
         } label: {
@@ -97,14 +95,8 @@ private struct WikeySidebar: View {
             }
             .padding(.horizontal, 10)
             .frame(minHeight: 32)
-            .overlay {
-                if focusedSection == section {
-                    shape.strokeBorder(ink, lineWidth: 1.5)
-                }
-            }
-            .contentShape(shape)
         }
-        .buttonStyle(WikeyHoverButtonStyle(selected: isSelected))
+        .buttonStyle(WikeyHoverButtonStyle(selected: isSelected, focused: focusedSection == section))
         .focusable()
         .focused($focusedSection, equals: section)
         .focusEffectDisabled()

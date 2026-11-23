@@ -16,8 +16,8 @@ struct WikeyMascot: View {
             .resizable()
             .scaledToFit()
             .saturation(0)
-            .contrast(1.25)
-            .colorMultiply(Color(white: 0.54))
+            .contrast(1.1)
+            .colorMultiply(Color(red: 1, green: 0.80, blue: 0.39))
             .frame(width: size, height: size)
             .shadow(color: colorScheme == .dark ? .white.opacity(0.26) : .black.opacity(0.16),
                     radius: colorScheme == .dark ? 1 : 3,
@@ -384,11 +384,41 @@ struct WikeyActionIcon: View {
 
     var body: some View {
         let ink = tint.ink(in: colorScheme)
+        let isDark = colorScheme == .dark
+        let tile = RoundedRectangle(cornerRadius: size * 0.30)
+
         Image(systemName: symbol)
-            .font(.system(size: size > 30 ? 16 : 13, weight: .medium))
-            .foregroundStyle(ink)
+            .symbolVariant(symbol == "app" ? .none : .fill)
+            .font(.system(size: size > 30 ? 16 : 13, weight: .semibold))
+            .foregroundStyle(LinearGradient(
+                colors: [ink.opacity(0.83), ink],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ))
+            .shadow(color: .black.opacity(isDark ? 0.38 : 0.20), radius: 0.65, y: 1)
             .frame(width: size, height: size)
-            .background(ink.opacity(colorScheme == .dark ? 0.16 : 0.10), in: RoundedRectangle(cornerRadius: 9))
+            .background {
+                tile.fill(ink.opacity(isDark ? 0.18 : 0.13))
+                    .overlay {
+                        tile.fill(LinearGradient(
+                            colors: [
+                                .white.opacity(isDark ? 0.23 : 0.86),
+                                .clear,
+                                ink.opacity(isDark ? 0.08 : 0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    }
+                    .overlay {
+                        tile.strokeBorder(LinearGradient(
+                            colors: [.white.opacity(isDark ? 0.30 : 0.94), .black.opacity(0.19)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    }
+                    .shadow(color: .black.opacity(isDark ? 0.27 : 0.13), radius: 1.5, y: 1)
+            }
             .accessibilityHidden(true)
     }
 }
@@ -397,6 +427,7 @@ struct WikeyHoverButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isEnabled) private var isEnabled
     var selected = false
+    var focused = false
     var filled = false
     var cornerRadius: CGFloat = 9
 
@@ -408,7 +439,8 @@ struct WikeyHoverButtonStyle: ButtonStyle {
             filled: filled,
             cornerRadius: cornerRadius,
             isPressed: configuration.isPressed,
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
+            focused: focused
         )
     }
 }
@@ -448,6 +480,7 @@ private struct WikeyHoverSurface<Label: View>: View {
     var cornerRadius: CGFloat
     var isPressed: Bool
     var isEnabled: Bool
+    var focused = false
     var glossy = false
 
     private var fill: Color {
@@ -466,6 +499,9 @@ private struct WikeyHoverSurface<Label: View>: View {
             .background {
                 shape.fill(fill)
                     .overlay {
+                        if focused {
+                            shape.inset(by: 1).strokeBorder(ink.opacity(0.75), lineWidth: 1)
+                        }
                         if glossy {
                             shape.fill(LinearGradient(
                                 colors: [Color.white.opacity(colorScheme == .dark ? 0.13 : 0.65), .clear],
