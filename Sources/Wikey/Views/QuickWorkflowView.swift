@@ -20,6 +20,15 @@ struct QuickWorkflowView: View {
             case .file: "doc"
             }
         }
+
+        var tint: WikeyActionTint {
+            switch self {
+            case .template: .lavender
+            case .link: .periwinkle
+            case .app: .mint
+            case .file: .peach
+            }
+        }
     }
 
     @Environment(WikeyRuntime.self) private var runtime
@@ -50,11 +59,14 @@ struct QuickWorkflowView: View {
                         Button {
                             kind = option
                         } label: {
-                            Label(option.rawValue, systemImage: option.symbol)
-                                .font(.headline)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 12)
-                                .frame(minHeight: 44)
+                            HStack(spacing: 9) {
+                                WikeyActionIcon(symbol: option.symbol, tint: option.tint)
+                                Text(option.rawValue)
+                                    .font(.system(.body, design: .rounded, weight: .semibold))
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 10)
+                            .frame(minHeight: 46)
                         }
                         .buttonStyle(WikeyHoverButtonStyle(filled: true))
                     }

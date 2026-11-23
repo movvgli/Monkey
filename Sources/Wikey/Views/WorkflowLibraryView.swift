@@ -123,7 +123,7 @@ struct WorkflowLibraryView: View {
         .padding(.horizontal, 22)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(WikeyLavenderPanel())
+        .background(WikeyLavenderPanel(radius: 24))
     }
 
     private func latestRun(_ summary: RunSummary) -> some View {
@@ -185,19 +185,19 @@ private struct WorkflowLibraryRow: View {
         }
     }
 
-    private var symbol: String {
-        guard workflow.actions.count == 1, let action = workflow.actions.first else { return "bolt" }
+    private var icon: (symbol: String, tint: WikeyActionTint) {
+        guard workflow.actions.count == 1, let action = workflow.actions.first else { return ("bolt", .lavender) }
         switch action {
-        case .copyTemplate: return "doc.on.clipboard"
-        case .openURL: return "link"
-        case .launchApplication: return "app"
-        case .openFile: return "doc"
-        case .applyLayout: return "rectangle.3.group"
-        case .pressKey: return "keyboard"
-        case .runWorkflow: return "bolt"
-        case .pasteImages: return "photo"
-        case .pasteFiles: return "paperclip"
-        case .wait: return "clock"
+        case .copyTemplate: return ("doc.on.clipboard", .lavender)
+        case .openURL: return ("link", .periwinkle)
+        case .launchApplication: return ("app", .mint)
+        case .openFile: return ("doc", .peach)
+        case .applyLayout: return ("rectangle.3.group", .lavender)
+        case .pressKey: return ("keyboard", .neutral)
+        case .runWorkflow: return ("bolt", .lavender)
+        case .pasteImages: return ("photo", .peach)
+        case .pasteFiles: return ("paperclip", .peach)
+        case .wait: return ("clock", .neutral)
         }
     }
 
@@ -218,14 +218,10 @@ private struct WorkflowLibraryRow: View {
         Button(action: open) {
             HStack(spacing: WorkflowListMetrics.spacing) {
                 HStack(spacing: 10) {
-                    Image(systemName: symbol)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color.secondary)
-                        .frame(width: 22)
-                        .accessibilityHidden(true)
+                    WikeyActionIcon(symbol: icon.symbol, tint: icon.tint)
 
                     Text(workflow.name)
-                        .font(.body.weight(.medium))
+                        .font(.system(.body, design: .rounded, weight: .medium))
                         .lineLimit(1)
                         .layoutPriority(1)
 
@@ -277,10 +273,11 @@ private struct WorkflowLibraryRow: View {
         } label: {
             Image(systemName: "play.fill")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(isHovering ? Color.wikeyInk(in: colorScheme) : .secondary)
-                .frame(width: WorkflowListMetrics.playWidth, height: 30)
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
+                .frame(width: 28, height: 28)
         }
-        .buttonStyle(WikeyHoverButtonStyle())
+        .buttonStyle(WikeyHoverButtonStyle(filled: true, cornerRadius: 14))
+        .frame(width: WorkflowListMetrics.playWidth)
         .disabled(workflow.actions.isEmpty || executionStatus != nil)
         .help("워크플로 실행")
         .accessibilityLabel("\(workflow.name) 실행")
