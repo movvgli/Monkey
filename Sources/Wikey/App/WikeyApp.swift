@@ -17,7 +17,7 @@ struct WikeyApp: App {
     @State private var updates = UpdateController()
 
     var body: some Scene {
-        Window("Wikey", id: "main") {
+        Window("Monkey", id: "main") {
             ContentView()
                 .environment(runtime)
                 .environment(updates)
@@ -47,7 +47,7 @@ struct WikeyApp: App {
             }
         }
 
-        MenuBarExtra("Wikey", systemImage: menuBarSymbol, isInserted: .constant(true)) {
+        MenuBarExtra("Monkey", systemImage: menuBarSymbol, isInserted: .constant(true)) {
             MenuBarContentView(showSearch: appDelegate.toggleSearch)
                 .environment(runtime)
                 .environment(updates)
@@ -115,7 +115,7 @@ private struct WorkspaceCommands: Commands {
                 .disabled(actions == nil)
         }
         CommandGroup(after: .textEditing) {
-            Button("Wikey 검색…") { actions?.search() }
+            Button("Monkey 검색…") { actions?.search() }
                 .keyboardShortcut("k", modifiers: .command)
                 .disabled(actions == nil)
         }
@@ -127,7 +127,7 @@ final class WikeyAppDelegate: NSObject, NSApplicationDelegate {
     private lazy var searchPanel = WorkspaceSearchPanel(runtime: WikeyAppRuntime.shared)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        ProcessInfo.processInfo.disableAutomaticTermination("Wikey menu bar runtime")
+        ProcessInfo.processInfo.disableAutomaticTermination("Monkey menu bar runtime")
         let activationPolicy = DockIconService.activationPolicy(for: DockIconService.savedVisibility())
         if NSApp.activationPolicy() != activationPolicy {
             NSApp.setActivationPolicy(activationPolicy)

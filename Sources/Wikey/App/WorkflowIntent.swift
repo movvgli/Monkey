@@ -3,7 +3,7 @@ import Foundation
 import WikeyCore
 
 struct WikeyWorkflowEntity: AppEntity {
-    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Wikey 워크플로"
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Monkey 워크플로"
     static let defaultQuery = WikeyWorkflowQuery()
 
     var id: UUID
@@ -37,8 +37,8 @@ struct WikeyWorkflowQuery: EntityStringQuery {
 }
 
 struct RunWikeyWorkflowIntent: AppIntent {
-    static let title: LocalizedStringResource = "Wikey 워크플로 실행"
-    static let description = IntentDescription("Wikey에서 저장한 자동화를 실행합니다.")
+    static let title: LocalizedStringResource = "Monkey 워크플로 실행"
+    static let description = IntentDescription("Monkey에서 저장한 자동화를 실행합니다.")
 
     @Parameter(title: "워크플로")
     var workflow: WikeyWorkflowEntity

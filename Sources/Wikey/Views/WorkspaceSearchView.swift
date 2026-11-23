@@ -388,7 +388,7 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.title = "Wikey 검색창"
+        panel.title = "Monkey 검색창"
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.isOpaque = false
@@ -460,7 +460,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
     func makeNSView(context: Context) -> NSSearchField {
         let field = AutofocusingSearchField()
         field.placeholderString = prompt
-        field.setAccessibilityLabel("Wikey 검색어")
+        field.setAccessibilityLabel("Monkey 검색어")
         field.controlSize = .large
         field.delegate = context.coordinator
         return field

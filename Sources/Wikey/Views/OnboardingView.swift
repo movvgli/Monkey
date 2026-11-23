@@ -43,7 +43,7 @@ struct OnboardingView: View {
             WikeyMascot(size: 46)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Wikey 시작하기")
+                Text("Monkey 시작하기")
                     .font(.system(size: 25, weight: .semibold))
                 Text(page == 0 ? "무엇을 할 수 있는지 먼저 알아볼게요." : "필요한 기능만 선택해서 켜세요.")
                     .font(.subheadline)
@@ -74,7 +74,7 @@ struct OnboardingView: View {
                 Text("반복하는 일을\n단축키 하나로 끝내세요")
                     .font(.system(size: 32, weight: .bold))
                     .fixedSize(horizontal: false, vertical: true)
-                Text("자주 하는 작업을 원하는 순서로 연결하면 Wikey가 어디서든 빠르게 실행합니다.")
+                Text("자주 하는 작업을 원하는 순서로 연결하면 Monkey가 어디서든 빠르게 실행합니다.")
                     .font(.system(size: 16))
                     .foregroundStyle(.secondary)
             }
@@ -155,7 +155,7 @@ struct OnboardingView: View {
                 HStack(spacing: 10) {
                     Image(systemName: "arrow.clockwise.circle.fill")
                         .foregroundStyle(Color.wikeyInk(in: colorScheme))
-                    Text("입력 모니터링을 켠 뒤에는 Wikey를 다시 열어야 적용됩니다.")
+                    Text("입력 모니터링을 켠 뒤에는 Monkey를 다시 열어야 적용됩니다.")
                         .font(.subheadline)
                     Spacer()
                     Button("다시 열기") {
@@ -167,7 +167,7 @@ struct OnboardingView: View {
             }
 
             VStack(alignment: .leading, spacing: 5) {
-                Toggle("Mac 로그인 시 Wikey 실행", isOn: $launchAtLogin)
+                Toggle("Mac 로그인 시 Monkey 실행", isOn: $launchAtLogin)
                     .toggleStyle(.switch)
                 Text("메인 창은 띄우지 않고 메뉴 막대와 단축키만 준비합니다.")
                     .font(.caption)
@@ -206,7 +206,7 @@ struct OnboardingView: View {
                 Button("나중에 설정") { complete(enableLoginItem: false) }
                     .buttonStyle(.borderless)
                     .tint(Color.wikeyInk(in: colorScheme))
-                Button("Wikey 시작") { complete(enableLoginItem: launchAtLogin) }
+                Button("Monkey 시작") { complete(enableLoginItem: launchAtLogin) }
                     .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
                     .keyboardShortcut(.defaultAction)

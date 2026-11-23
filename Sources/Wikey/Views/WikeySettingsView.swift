@@ -71,7 +71,7 @@ struct WikeySettingsView: View {
                     Image(systemName: "info.circle.fill")
                         .foregroundStyle(.orange)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("Wikey를 응용 프로그램 폴더에서 실행해 주세요")
+                        Text("Monkey를 응용 프로그램 폴더에서 실행해 주세요")
                             .font(.headline)
                         Text("macOS 권한은 앱의 설치 위치와 서명을 구분합니다. 위치가 바뀌면 기존 권한이 적용되지 않을 수 있습니다.")
                             .font(.subheadline)
@@ -113,14 +113,14 @@ struct WikeySettingsView: View {
                         .font(.title3)
                         .frame(width: 30)
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("입력 모니터링을 켰다면 Wikey를 다시 열어 주세요")
+                        Text("입력 모니터링을 켰다면 Monkey를 다시 열어 주세요")
                             .font(.headline)
                         Text("macOS는 이 권한을 새로 시작한 앱에 적용합니다.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("Wikey 다시 열기") {
+                    Button("Monkey 다시 열기") {
                         runtime.permissions.relaunchApplication()
                     }
                 }
@@ -145,7 +145,7 @@ struct WikeySettingsView: View {
                             .font(.title3)
                             .frame(width: 30)
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("Dock에 Wikey 표시")
+                            Text("Dock에 Monkey 표시")
                                 .font(.headline)
                             Text("끄면 메뉴 막대에만 아이콘을 표시합니다.")
                                 .font(.subheadline)
@@ -153,7 +153,7 @@ struct WikeySettingsView: View {
                         }
                         Spacer()
                         Toggle(
-                            "Dock에 Wikey 표시",
+                            "Dock에 Monkey 표시",
                             isOn: Binding(
                                 get: { runtime.dockIcon.isVisible },
                                 set: { runtime.setDockIconVisible($0) }
@@ -169,7 +169,7 @@ struct WikeySettingsView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("로그인 시 Wikey 실행")
+                                Text("로그인 시 Monkey 실행")
                                     .font(.headline)
                                 Text("메인 창은 열지 않고 메뉴 막대와 단축키만 준비합니다.")
                                     .font(.subheadline)
@@ -205,7 +205,7 @@ struct WikeySettingsView: View {
 
                     VStack(alignment: .leading, spacing: 8) {
                         Text("검색창 단축키").font(.headline)
-                        Text("다른 앱을 사용 중에도 Wikey 검색창을 엽니다.")
+                        Text("다른 앱을 사용 중에도 Monkey 검색창을 엽니다.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         HStack {
@@ -237,7 +237,7 @@ struct WikeySettingsView: View {
     private var updateSettings: some View {
         WikeySection(
             title: "업데이트",
-            detail: "새 버전을 자동으로 확인하고 Wikey 안에서 설치할 수 있습니다."
+            detail: "새 버전을 자동으로 확인하고 Monkey 안에서 설치할 수 있습니다."
         ) {
             PlainPanel {
                 VStack(spacing: 0) {

@@ -22,10 +22,8 @@ struct WikeyMascot: View {
     var body: some View {
         Image("LightningMascot", bundle: wikeyAssetBundle)
             .resizable()
+            .interpolation(.high)
             .scaledToFit()
-            .saturation(0)
-            .contrast(1.1)
-            .colorMultiply(Color(red: 1, green: 0.80, blue: 0.39))
             .frame(width: size, height: size)
             .shadow(color: colorScheme == .dark ? .white.opacity(0.26) : .black.opacity(0.16),
                     radius: colorScheme == .dark ? 1 : 3,

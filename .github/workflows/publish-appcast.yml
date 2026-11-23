@@ -44,14 +44,21 @@ jobs:
           VERSION: ${{ inputs.version }}
         run: |
           mkdir -p feed
+          release_assets="$(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+          if grep -Fxq "Monkey-$VERSION.dmg" <<< "$release_assets"; then
+            release_stem="Monkey-$VERSION"
+          else
+            release_stem="Wikey-$VERSION"
+          fi
+          printf '%s\n' "RELEASE_STEM=$release_stem" >> "$GITHUB_ENV"
           gh release download "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
-            --pattern "Wikey-$VERSION.dmg" \
+            --pattern "$release_stem.dmg" \
             --dir feed
           gh release view "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --json body \
-            --jq .body > "feed/Wikey-$VERSION.md"
+            --jq .body > "feed/$release_stem.md"
           git fetch origin update-feed:refs/remotes/origin/update-feed || true
           if git show-ref --verify --quiet refs/remotes/origin/update-feed; then
             git show origin/update-feed:appcast.xml > feed/appcast.xml
@@ -104,8 +111,8 @@ jobs:
             git -C "$feed_worktree" rm -rf --ignore-unmatch .
           fi
           cp feed/appcast.xml "$feed_worktree/appcast.xml"
-          cp "feed/Wikey-$VERSION.md" "$feed_worktree/Wikey-$VERSION.md"
-          git -C "$feed_worktree" add appcast.xml "Wikey-$VERSION.md"
+          cp "feed/$RELEASE_STEM.md" "$feed_worktree/$RELEASE_STEM.md"
+          git -C "$feed_worktree" add appcast.xml "$RELEASE_STEM.md"
           if git -C "$feed_worktree" diff --cached --quiet; then
             echo "Update feed is already current."
             exit 0
