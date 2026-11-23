@@ -278,9 +278,14 @@ struct WorkspaceSearchView: View {
                     ForEach(entries) { entry in
                         Button { perform(entry.id) } label: {
                             HStack(spacing: 10) {
-                                Label(entry.name, systemImage: entry.symbol)
-                                    .font(entry.isValue ? .system(.title3, design: .rounded, weight: .semibold) : .body)
-                                    .lineLimit(1)
+                                Label {
+                                    Text(entry.name)
+                                        .lineLimit(1)
+                                } icon: {
+                                    Image(systemName: entry.symbol)
+                                        .foregroundStyle(WikeyActionTint(symbol: entry.symbol).ink(in: colorScheme))
+                                }
+                                .font(entry.isValue ? .system(.title3, design: .rounded, weight: .semibold) : .body)
                                 if let keyword = entry.keyword {
                                     Text(keyword)
                                         .font(.system(.caption, design: .monospaced, weight: .medium))

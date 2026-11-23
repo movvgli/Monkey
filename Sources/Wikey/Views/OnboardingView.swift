@@ -40,11 +40,7 @@ struct OnboardingView: View {
 
     private var onboardingHeader: some View {
         HStack(spacing: 14) {
-            Image(nsImage: NSApplication.shared.applicationIconImage)
-                .resizable()
-                .scaledToFit()
-                .saturation(0)
-                .frame(width: 46, height: 46)
+            WikeyMascot(size: 46)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Wikey 시작하기")
