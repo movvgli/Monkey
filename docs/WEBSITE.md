@@ -1,6 +1,6 @@
 # Wikey 소개 사이트
 
-공식 주소: https://movvgli.github.io/Wikey/
+공식 주소: https://movvgli.github.io/Monkey/
 
 GitHub Pages는 `main`의 `website/` 변경을 자동 배포합니다.
 `.github/workflows/pages.yml`에서 빌드와 개인정보 검사를 통과한

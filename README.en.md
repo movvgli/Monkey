@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Sources/Wikey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Monkey app icon">
+  <img src="Sources/Monkey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Monkey app icon">
 </p>
 
 <h1 align="center">Monkey</h1>
@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/movvgli/Wikey/releases/latest"><strong>Download the latest release</strong></a>
-  · <a href="https://movvgli.github.io/Wikey/">Website</a>
+  <a href="https://github.com/movvgli/Monkey/releases/latest"><strong>Download the latest release</strong></a>
+  · <a href="https://movvgli.github.io/Monkey/">Website</a>
   · <a href="README.md">한국어</a>
   · <a href="docs/INSTALL.md">Installation</a>
   · <a href="docs/PRIVACY.md">Privacy</a>
@@ -22,13 +22,13 @@ Workflows and templates stay on your Mac by default. Version 1.2.7 includes expe
 
 ## Quick start
 
-1. Download `Monkey-version.dmg` from the [latest release](https://github.com/movvgli/Wikey/releases/latest).
+1. Download `Monkey-version.dmg` from the [latest release](https://github.com/movvgli/Monkey/releases/latest).
 2. Move Monkey to **Applications** and launch it.
 3. Use the first-run introduction to review the core features and enable only the permissions you need.
 4. Assign a shortcut in **Apps**, or create a workflow to connect several actions.
 5. Try new workflows in a disposable document first to check their order and input destination.
 
-Starting with 1.2.6, Monkey targets macOS 14 or later. Apple Silicon and Intel builds and minimum-OS validation pass; execution on actual macOS 14 and Intel hardware remains unverified. Production distribution uses DMGs verified for Developer ID signing and Apple notarization; see the [release notes](https://github.com/movvgli/Wikey/releases) for each version's distribution status.
+Starting with 1.2.6, Monkey targets macOS 14 or later. Apple Silicon and Intel builds and minimum-OS validation pass; execution on actual macOS 14 and Intel hardware remains unverified. Production distribution uses DMGs verified for Developer ID signing and Apple notarization; see the [release notes](https://github.com/movvgli/Monkey/releases) for each version's distribution status.
 
 ## Features
 

@@ -35,7 +35,7 @@ test("site renders installation, privacy and download information without storag
     const html = renderToStaticMarkup(React.createElement(App));
     for (const text of ["macOS 14 이상", "가상 예시", "손쉬운 사용", "입력 모니터링", "releases/latest"]) assert.ok(html.includes(text));
     assert.ok(!html.includes("<form"));
-    assert.ok(html.includes('src="./assets/wikey-icon.png"'));
+    assert.ok(html.includes('src="./assets/monkey-icon.png"'));
     assert.ok(html.includes("최신 버전 1.2.8"));
     const privacy = html.match(/<section class="privacy-section"[\s\S]*?<\/section>/)?.[0];
     assert.ok(privacy);
@@ -62,7 +62,7 @@ test("built entry uses relative assets for GitHub Pages project paths", async ()
 
 test("only the approved brand icon is copied from public assets", async () => {
   const files = await readdir(new URL("../public/assets/", import.meta.url));
-  assert.deepEqual(files, ["wikey-icon.png"]);
+  assert.deepEqual(files, ["monkey-icon.png"]);
   const publicFiles = await readdir(new URL("../public/", import.meta.url));
   assert.deepEqual(publicFiles, ["assets"]);
 });

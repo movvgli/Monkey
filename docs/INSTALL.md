@@ -36,8 +36,8 @@ Wikey 1.0.0에는 업데이트 기능이 없기 때문에 1.1.0 DMG를 한 번 �
 ## 소스에서 실행
 
 ```sh
-git clone https://github.com/movvgli/Wikey.git
-cd Wikey
+git clone https://github.com/movvgli/Monkey.git
+cd Monkey
 ./script/build_and_run.sh
 ```
 

@@ -4,7 +4,7 @@
 
 정식 배포는 **로컬에서 서명·공증한 DMG → GitHub Release → 서명된 업데이트 피드** 순서로 진행합니다. `v1.2.6` 같은 정식 태그를 푸시하는 것만으로 DMG가 만들어지거나 배포되지는 않습니다.
 
-앱을 로컬에서 실행하거나 Developer ID로 서명한 것과 Apple 공증·공개 배포 완료는 서로 다른 상태입니다. 아래 명령의 `1.2.24 (1002024)`은 배포 절차 예시이며, 해당 버전이 이미 공증되거나 게시되었다는 뜻은 아닙니다. 실제 게시 상태는 [GitHub Releases](https://github.com/movvgli/Wikey/releases)에서 확인합니다.
+앱을 로컬에서 실행하거나 Developer ID로 서명한 것과 Apple 공증·공개 배포 완료는 서로 다른 상태입니다. 아래 명령의 `1.2.24 (1002024)`은 배포 절차 예시이며, 해당 버전이 이미 공증되거나 게시되었다는 뜻은 아닙니다. 실제 게시 상태는 [GitHub Releases](https://github.com/movvgli/Monkey/releases)에서 확인합니다.
 
 ## 1. 소스와 버전 확인
 
@@ -60,14 +60,14 @@ spctl --assess --type open --context context:primary-signature --verbose=2 dist/
 
 ```sh
 gh workflow run publish-appcast.yml \
-  --repo movvgli/Wikey \
+  --repo movvgli/Monkey \
   --ref main \
   -f version=1.2.24
 ```
 
 [Publish signed update feed](../.github/workflows/publish-appcast.yml)는 공개 릴리스의 DMG를 내려받아 기존 Sparkle 키로 서명한 appcast를 만듭니다. 피드 생성 도구를 준비하기 위한 CI 빌드는 로컬에서 공증한 공개 DMG를 대체하지 않습니다. 또한 이 워크플로가 공증을 수행하는 것은 아닙니다.
 
-워크플로는 `appcast.xml`을 릴리스에 첨부하고, `update-feed` 브랜치에 피드와 릴리스 노트를 게시합니다. 앱은 [공개 피드](https://raw.githubusercontent.com/movvgli/Wikey/update-feed/appcast.xml)를 읽고 EdDSA 서명을 검증한 뒤 DMG를 업데이트로 받아들입니다.
+워크플로는 `appcast.xml`을 릴리스에 첨부하고, `update-feed` 브랜치에 피드와 릴리스 노트를 게시합니다. 앱은 [공개 피드](https://raw.githubusercontent.com/movvgli/Monkey/update-feed/appcast.xml)를 읽고 EdDSA 서명을 검증한 뒤 DMG를 업데이트로 받아들입니다.
 
 워크플로 성공 후에도 다음을 확인합니다.
 

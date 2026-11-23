@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Sources/Wikey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Monkey 앱 아이콘">
+  <img src="Sources/Monkey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Monkey 앱 아이콘">
 </p>
 
 <h1 align="center">Monkey</h1>
@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/movvgli/Wikey/releases/latest"><strong>최신 버전 다운로드</strong></a>
-  · <a href="https://movvgli.github.io/Wikey/">공식 사이트</a>
+  <a href="https://github.com/movvgli/Monkey/releases/latest"><strong>최신 버전 다운로드</strong></a>
+  · <a href="https://movvgli.github.io/Monkey/">공식 사이트</a>
   · <a href="README.en.md">English</a>
   · <a href="docs/INSTALL.md">설치 안내</a>
   · <a href="docs/PRIVACY.md">개인정보 보호</a>
@@ -22,13 +22,13 @@ Monkey(이전 이름 Wikey)는 앱 실행, 웹사이트 열기, 문구·이미�
 
 ## 빠르게 시작하기
 
-1. [최신 릴리스](https://github.com/movvgli/Wikey/releases/latest)에서 `Monkey-버전.dmg`를 다운로드합니다.
+1. [최신 릴리스](https://github.com/movvgli/Monkey/releases/latest)에서 `Monkey-버전.dmg`를 다운로드합니다.
 2. Monkey를 **응용 프로그램** 폴더로 옮기고 실행합니다.
 3. 첫 실행 안내에서 핵심 기능을 살펴보고, 사용할 기능에 필요한 권한만 켭니다.
 4. **새 워크플로**에서 **템플릿 사용**, **링크 열기**, **앱 열기**, **파일 열기** 중 하나를 고릅니다. 필요하면 단축키를 지정하거나 **여러 동작 연결**을 선택합니다.
 5. macOS **단축어**에서 **Monkey 워크플로 실행** 동작을 추가하고, 저장한 워크플로를 선택해 실행할 수 있습니다. 자동 붙여넣기를 설정했다면 테스트용 문서에서 입력 대상을 먼저 확인하세요.
 
-1.2.6부터 macOS 14 이상에서 사용할 수 있습니다. Apple Silicon·Intel용 빌드와 최소 OS 검증을 통과했으며, 실제 macOS 14·Intel 기기의 실행 검증은 아직 남아 있습니다. 정식 배포에는 Developer ID 서명과 Apple 공증을 확인한 DMG를 사용하며, 버전별 배포 상태는 [릴리스 노트](https://github.com/movvgli/Wikey/releases)에서 확인할 수 있습니다.
+1.2.6부터 macOS 14 이상에서 사용할 수 있습니다. Apple Silicon·Intel용 빌드와 최소 OS 검증을 통과했으며, 실제 macOS 14·Intel 기기의 실행 검증은 아직 남아 있습니다. 정식 배포에는 Developer ID 서명과 Apple 공증을 확인한 DMG를 사용하며, 버전별 배포 상태는 [릴리스 노트](https://github.com/movvgli/Monkey/releases)에서 확인할 수 있습니다.
 
 ## 주요 기능
 

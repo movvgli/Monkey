@@ -8,7 +8,7 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 
 - Copy update (2026-09-07): keep the privacy section concise and focused on local storage and optional iCloud storage. Do not repeat fictional-demo explanations, two-Mac verification caveats, or Apple-account requirements in this section. Keep detailed limitations in linked privacy documentation and release notes; do not imply that unverified sync is verified. Existing fictional demo content and its caption remain unchanged.
 
-- Hosting update (2026-09-07): the user requested GitHub Pages instead of Sites. The primary URL is https://movvgli.github.io/Wikey/. Publish only `dist/client` through `.github/workflows/pages.yml`; retain existing Sites metadata as a recovery option, not the primary publishing destination. Keep asset paths relative so the `/Wikey/` prefix works. Do not restore personal screenshots.
+- Hosting update (2026-09-07): the user requested GitHub Pages instead of Sites. The primary URL is https://movvgli.github.io/Monkey/. Publish only `dist/client` through `.github/workflows/pages.yml`; retain existing Sites metadata as a recovery option, not the primary publishing destination. Keep asset paths relative so the `/Monkey/` prefix works. Do not restore personal screenshots.
 
 - The user selected the first generated landing-page direction on 2026-09-04.
 - Preserve its quiet editorial layout: generous white space, concise Korean copy, a narrow left-aligned story column, and one blue-violet download action.

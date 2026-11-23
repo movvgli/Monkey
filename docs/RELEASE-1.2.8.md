@@ -10,4 +10,4 @@ iCloud 동기화 시작 안내창의 설명을 간결하게 정리했습니다.
 
 - iCloud 동기화는 선택적 시험 기능이며 기본값은 꺼짐입니다. 실제 두 Mac 간 전송은 아직 미검증입니다.
 - macOS 14 이상, Apple Silicon 및 Intel을 지원하는 빌드입니다. 실제 macOS 14·Intel 기기 실행 검증은 별도로 남아 있습니다.
-- 자세한 동기화 사용 방법과 제한은 [1.2.7 안내](https://github.com/movvgli/Wikey/blob/main/docs/RELEASE-1.2.7.md), 데이터 처리는 [개인정보 안내](https://github.com/movvgli/Wikey/blob/main/docs/PRIVACY.md)를 확인하세요.
+- 자세한 동기화 사용 방법과 제한은 [1.2.7 안내](https://github.com/movvgli/Monkey/blob/main/docs/RELEASE-1.2.7.md), 데이터 처리는 [개인정보 안내](https://github.com/movvgli/Monkey/blob/main/docs/PRIVACY.md)를 확인하세요.

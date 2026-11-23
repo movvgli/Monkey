@@ -1,4 +1,4 @@
-name: Wikey
+name: Monkey
 options:
   bundleIdPrefix: com.wikey
   developmentLanguage: ko
@@ -21,23 +21,23 @@ packages:
     exactVersion: 2.9.6
 
 targets:
-  WikeyCore:
+  MonkeyCore:
     type: framework
     platform: macOS
     sources:
-      - Sources/WikeyCore
+      - Sources/MonkeyCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wikey.core
         GENERATE_INFOPLIST_FILE: YES
 
-  WikeyLoginHelper:
+  MonkeyLoginHelper:
     type: application
     platform: macOS
     sources:
-      - Sources/WikeyLoginHelper
+      - Sources/MonkeyLoginHelper
     info:
-      path: Resources/WikeyLoginHelper-Info.plist
+      path: Resources/MonkeyLoginHelper-Info.plist
       properties:
         CFBundleDisplayName: Monkey 로그인 도우미
         CFBundleShortVersionString: $(MARKETING_VERSION)
@@ -47,17 +47,17 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wikey.login-helper
-        PRODUCT_NAME: WikeyLoginHelper
+        PRODUCT_NAME: MonkeyLoginHelper
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
 
-  Wikey:
+  Monkey:
     type: application
     platform: macOS
     sources:
-      - Sources/Wikey
+      - Sources/Monkey
     info:
-      path: Resources/Wikey-Info.plist
+      path: Resources/Monkey-Info.plist
       properties:
         CFBundleDevelopmentRegion: ko
         CFBundleDisplayName: Monkey
@@ -70,7 +70,7 @@ targets:
         LSUIElement: true
         SUEnableAutomaticChecks: true
         SUAutomaticallyUpdate: false
-        SUFeedURL: https://raw.githubusercontent.com/movvgli/Wikey/update-feed/appcast.xml
+        SUFeedURL: https://raw.githubusercontent.com/movvgli/Monkey/update-feed/appcast.xml
         SUPublicEDKey: KYMCwU1bB70rz+f0DguhjotRDSs/5nrJqSRul09YeZE=
         SUScheduledCheckInterval: 86400
     settings:
@@ -78,12 +78,12 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.wikey.app
         PRODUCT_NAME: Monkey
         PRODUCT_MODULE_NAME: Wikey
-        EXECUTABLE_NAME: Wikey
+        EXECUTABLE_NAME: Monkey
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
     dependencies:
-      - target: WikeyCore
-      - target: WikeyLoginHelper
+      - target: MonkeyCore
+      - target: MonkeyLoginHelper
         embed: false
       - package: Sparkle
         product: Sparkle
@@ -94,16 +94,16 @@ targets:
           set -e
           destination="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Library/LoginItems"
           mkdir -p "${destination}"
-          rm -rf "${destination}/WikeyLoginHelper.app"
-          cp -R "${BUILT_PRODUCTS_DIR}/WikeyLoginHelper.app" "${destination}/"
+          rm -rf "${destination}/MonkeyLoginHelper.app"
+          cp -R "${BUILT_PRODUCTS_DIR}/MonkeyLoginHelper.app" "${destination}/"
     scheme:
       testTargets:
-        - WikeyCoreTests
+        - MonkeyCoreTests
 
-  WikeyCoreTests:
+  MonkeyCoreTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - Tests/WikeyCoreTests
+      - Tests/MonkeyCoreTests
     dependencies:
-      - target: WikeyCore
+      - target: MonkeyCore

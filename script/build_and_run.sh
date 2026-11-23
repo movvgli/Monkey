@@ -3,7 +3,7 @@ set -euo pipefail
 
 MODE="${1:-run}"
 APP_NAME="Monkey"
-APP_EXECUTABLE="Wikey"
+APP_EXECUTABLE="Monkey"
 BUNDLE_ID="com.wikey.app"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -43,7 +43,9 @@ fi
 "$ROOT_DIR/script/build_bundle.sh" "$VERSION" "$BUILD_NUMBER"
 
 pkill -x "$APP_EXECUTABLE" >/dev/null 2>&1 || true
+pkill -x "Wikey" >/dev/null 2>&1 || true
 pkill -x "WikeyLoginHelper" >/dev/null 2>&1 || true
+pkill -x "MonkeyLoginHelper" >/dev/null 2>&1 || true
 
 if [[ -d "$INSTALLED_APP" && "${WIKEY_CODESIGN_IDENTITY:--}" != "-" ]]; then
   BACKUP_DIR="$(mktemp -d /tmp/wikey-app-backup.XXXXXX)"

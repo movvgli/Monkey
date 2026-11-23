@@ -12,7 +12,7 @@
 ## 시작하기
 
 ```sh
-git clone https://github.com/movvgli/Wikey.git
+git clone https://github.com/movvgli/Monkey.git
 cd Wikey
 swift test
 ./script/build_and_run.sh

@@ -17,8 +17,8 @@ rm -rf "$BUILD_DIR" "$APP_BUNDLE"
 mkdir -p "$DIST_DIR"
 
 XCODEBUILD_ARGS=(
-  -project "$ROOT_DIR/Wikey.xcodeproj"
-  -scheme Wikey
+  -project "$ROOT_DIR/Monkey.xcodeproj"
+  -scheme Monkey
   -configuration Release
   -quiet
   -derivedDataPath "$DERIVED_DATA"
@@ -55,9 +55,9 @@ if [[ "$SIGNING_IDENTITY" != "-" ]]; then
   # Remove only debug symbols containing local build paths from public builds.
   # Keep executable code and exported symbols intact; re-sign these binaries below.
   for NATIVE_BINARY in \
-    "$APP_BUNDLE/Contents/MacOS/Wikey" \
-    "$APP_BUNDLE/Contents/Frameworks/WikeyCore.framework/WikeyCore" \
-    "$APP_BUNDLE/Contents/Library/LoginItems/WikeyLoginHelper.app/Contents/MacOS/WikeyLoginHelper"; do
+    "$APP_BUNDLE/Contents/MacOS/Monkey" \
+    "$APP_BUNDLE/Contents/Frameworks/MonkeyCore.framework/MonkeyCore" \
+    "$APP_BUNDLE/Contents/Library/LoginItems/MonkeyLoginHelper.app/Contents/MacOS/MonkeyLoginHelper"; do
     xcrun strip -S "$NATIVE_BINARY"
     if LC_ALL=C /usr/bin/grep -aFq "$ROOT_DIR/" "$NATIVE_BINARY"; then
       echo "Local build paths remain in ${NATIVE_BINARY##*/}; refusing public distribution." >&2
@@ -79,9 +79,9 @@ if [[ "$SIGNING_IDENTITY" != "-" ]]; then
   codesign --force --sign "$SIGNING_IDENTITY" --options runtime --timestamp \
     "$SPARKLE_FRAMEWORK"
   codesign --force --sign "$SIGNING_IDENTITY" --options runtime --timestamp \
-    "$APP_BUNDLE/Contents/Frameworks/WikeyCore.framework"
+    "$APP_BUNDLE/Contents/Frameworks/MonkeyCore.framework"
   codesign --force --sign "$SIGNING_IDENTITY" --options runtime --timestamp \
-    "$APP_BUNDLE/Contents/Library/LoginItems/WikeyLoginHelper.app"
+    "$APP_BUNDLE/Contents/Library/LoginItems/MonkeyLoginHelper.app"
   codesign --force --sign "$SIGNING_IDENTITY" --options runtime --timestamp \
     --preserve-metadata=identifier,entitlements,requirements \
     "$APP_BUNDLE"
@@ -94,8 +94,8 @@ if [[ "$SIGNING_IDENTITY" != "-" ]]; then
 
   for SIGNED_ITEM in \
     "$APP_BUNDLE" \
-    "$APP_BUNDLE/Contents/Library/LoginItems/WikeyLoginHelper.app" \
-    "$APP_BUNDLE/Contents/Frameworks/WikeyCore.framework" \
+    "$APP_BUNDLE/Contents/Library/LoginItems/MonkeyLoginHelper.app" \
+    "$APP_BUNDLE/Contents/Frameworks/MonkeyCore.framework" \
     "$SPARKLE_FRAMEWORK" \
     "$SPARKLE_VERSION/Autoupdate" \
     "$SPARKLE_VERSION/Updater.app" \
@@ -128,7 +128,7 @@ fi
 MINIMUM_MACOS="14.0"
 for INFO_PLIST in \
   "$APP_BUNDLE/Contents/Info.plist" \
-  "$APP_BUNDLE/Contents/Library/LoginItems/WikeyLoginHelper.app/Contents/Info.plist"; do
+  "$APP_BUNDLE/Contents/Library/LoginItems/MonkeyLoginHelper.app/Contents/Info.plist"; do
   ACTUAL_MINIMUM_MACOS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$INFO_PLIST")"
   if [[ "$ACTUAL_MINIMUM_MACOS" != "$MINIMUM_MACOS" ]]; then
     echo "Minimum macOS mismatch: expected $MINIMUM_MACOS, found $ACTUAL_MINIMUM_MACOS in $INFO_PLIST" >&2
@@ -137,9 +137,9 @@ for INFO_PLIST in \
 done
 
 for NATIVE_BINARY in \
-  "$APP_BUNDLE/Contents/MacOS/Wikey" \
-  "$APP_BUNDLE/Contents/Frameworks/WikeyCore.framework/WikeyCore" \
-  "$APP_BUNDLE/Contents/Library/LoginItems/WikeyLoginHelper.app/Contents/MacOS/WikeyLoginHelper"; do
+  "$APP_BUNDLE/Contents/MacOS/Monkey" \
+  "$APP_BUNDLE/Contents/Frameworks/MonkeyCore.framework/MonkeyCore" \
+  "$APP_BUNDLE/Contents/Library/LoginItems/MonkeyLoginHelper.app/Contents/MacOS/MonkeyLoginHelper"; do
   for ARCHITECTURE in arm64 x86_64; do
     xcrun lipo "$NATIVE_BINARY" -verify_arch "$ARCHITECTURE"
     BINARY_MINIMUM_MACOS="$(xcrun vtool -arch "$ARCHITECTURE" -show-build "$NATIVE_BINARY" | awk '$1 == "minos" {print $2}')"
@@ -157,7 +157,7 @@ fi
 
 FEED_URL="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$APP_BUNDLE/Contents/Info.plist")"
 PUBLIC_KEY="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$APP_BUNDLE/Contents/Info.plist")"
-if [[ "$FEED_URL" != "https://raw.githubusercontent.com/movvgli/Wikey/update-feed/appcast.xml" ]]; then
+if [[ "$FEED_URL" != "https://raw.githubusercontent.com/movvgli/Monkey/update-feed/appcast.xml" ]]; then
   echo "Unexpected Sparkle feed URL: $FEED_URL" >&2
   exit 1
 fi

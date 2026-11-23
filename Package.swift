@@ -2,18 +2,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "Wikey",
+    name: "Monkey",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "Wikey", targets: ["Wikey"]),
-        .executable(name: "WikeyLoginHelper", targets: ["WikeyLoginHelper"]),
+        .executable(name: "Monkey", targets: ["Monkey"]),
+        .executable(name: "MonkeyLoginHelper", targets: ["MonkeyLoginHelper"]),
     ],
     dependencies: [
         .package(url: "https://github.com/sparkle-project/Sparkle", exact: "2.9.6"),
     ],
     targets: [
         .target(
-            name: "WikeyCore",
+            name: "MonkeyCore",
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("ApplicationServices"),
@@ -22,19 +22,19 @@ let package = Package(
             ]
         ),
         .executableTarget(
-            name: "Wikey",
+            name: "Monkey",
             dependencies: [
-                "WikeyCore",
+                "MonkeyCore",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
             resources: [.process("Resources/Assets.xcassets")]
         ),
         .executableTarget(
-            name: "WikeyLoginHelper"
+            name: "MonkeyLoginHelper"
         ),
         .testTarget(
-            name: "WikeyCoreTests",
-            dependencies: ["WikeyCore"]
+            name: "MonkeyCoreTests",
+            dependencies: ["MonkeyCore"]
         ),
     ],
     swiftLanguageModes: [.v5]
