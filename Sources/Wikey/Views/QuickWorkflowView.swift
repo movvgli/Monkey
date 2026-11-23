@@ -4,7 +4,7 @@ import UniformTypeIdentifiers
 import WikeyCore
 
 struct QuickWorkflowView: View {
-    private enum Kind: String, CaseIterable, Identifiable {
+    enum Kind: String, CaseIterable, Identifiable {
         case template = "템플릿 사용"
         case link = "링크 열기"
         case app = "앱 열기"
@@ -43,8 +43,16 @@ struct QuickWorkflowView: View {
     @State private var address = ""
     @State private var application: (id: String, name: String)?
     @State private var file: URL?
+    private let initialKind: Kind?
     var onSave: (Workflow) -> Void
     var onAdvanced: () -> Void
+
+    init(initialKind: Kind? = nil, onSave: @escaping (Workflow) -> Void, onAdvanced: @escaping () -> Void) {
+        self.initialKind = initialKind
+        _kind = State(initialValue: initialKind)
+        self.onSave = onSave
+        self.onAdvanced = onAdvanced
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -76,9 +84,9 @@ struct QuickWorkflowView: View {
 
             Divider()
             HStack {
-                if kind != nil {
+                if kind != nil && initialKind == nil {
                     Button("뒤로") { kind = nil }
-                } else {
+                } else if kind == nil {
                     Button(action: onAdvanced) {
                         Text("여러 동작 연결…")
                             .foregroundStyle(Color.wikeyInk(in: colorScheme))

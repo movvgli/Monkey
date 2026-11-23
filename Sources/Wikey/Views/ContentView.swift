@@ -5,6 +5,8 @@ import WikeyCore
 enum SidebarSelection: Hashable {
     case workflowCollection
     case workflow(UUID)
+    case linkCollection
+    case link(UUID)
     case applications
     case application(String)
     case templateCollection
@@ -15,6 +17,7 @@ enum SidebarSelection: Hashable {
     var section: Self {
         switch self {
         case .workflow: .workflowCollection
+        case .link: .linkCollection
         case .application: .applications
         case .template: .templateCollection
         case .layout: .layoutCollection
@@ -22,11 +25,12 @@ enum SidebarSelection: Hashable {
         }
     }
 
-    static let sections: [Self] = [.workflowCollection, .applications, .templateCollection, .layoutCollection]
+    static let sections: [Self] = [.workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection]
 
     var title: String {
         switch section {
         case .workflowCollection: "워크플로"
+        case .linkCollection: "링크"
         case .applications: "앱"
         case .templateCollection: "템플릿"
         case .layoutCollection: "레이아웃"
@@ -37,6 +41,7 @@ enum SidebarSelection: Hashable {
     var symbol: String {
         switch section {
         case .workflowCollection: "bolt"
+        case .linkCollection: "link"
         case .applications: "app"
         case .templateCollection: "doc.on.clipboard"
         case .layoutCollection: "rectangle.3.group"
@@ -121,12 +126,18 @@ private struct WikeySidebar: View {
 }
 
 struct ContentView: View {
+    private enum QuickCreate: Identifiable {
+        case workflow, link
+
+        var id: Self { self }
+    }
+
     @Environment(\.colorScheme) private var colorScheme
     @Environment(WikeyRuntime.self) private var runtime
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
     @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
-    @State private var showsQuickCreate = false
+    @State private var quickCreate: QuickCreate?
     @State private var showsSearch = false
     @State private var editingSession = UUID()
 
@@ -177,6 +188,7 @@ struct ContentView: View {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button("새 워크플로", systemImage: "bolt", action: addWorkflow)
+                    Button("새 링크", systemImage: "link", action: addLink)
                     Button("새 템플릿", systemImage: "doc.on.clipboard", action: addTemplate)
                     Button("새 레이아웃", systemImage: "rectangle.3.group", action: addLayout)
                 } label: {
@@ -193,11 +205,11 @@ struct ContentView: View {
         }
         .focusedSceneValue(\.workspaceActions, WorkspaceActions(
             createWorkflow: {
-                guard !showOnboarding, !showsSearch, !showsQuickCreate else { return }
+                guard !showOnboarding, !showsSearch, quickCreate == nil else { return }
                 addWorkflow()
             },
             search: {
-                guard !showOnboarding, !showsQuickCreate else { return }
+                guard !showOnboarding, quickCreate == nil else { return }
                 showsSearch = true
             }
         ))
@@ -206,7 +218,7 @@ struct ContentView: View {
         }
         .onChange(of: selection, initial: true) { _, current in
             switch current {
-            case .workflow, .template, .layout: runtime.iCloudSync.setEditing(true, session: editingSession)
+            case .workflow, .link, .template, .layout: runtime.iCloudSync.setEditing(true, session: editingSession)
             default: runtime.iCloudSync.setEditing(false, session: editingSession)
             }
         }
@@ -215,17 +227,18 @@ struct ContentView: View {
             OnboardingView(isPresented: $showOnboarding)
                 .environment(runtime)
         }
-        .sheet(isPresented: $showsQuickCreate) {
+        .sheet(item: $quickCreate) { destination in
             QuickWorkflowView(
+                initialKind: destination == .link ? .link : nil,
                 onSave: { workflow in
                     _ = runtime.store.addWorkflow(workflow)
                     runtime.reloadHotkeys()
-                    selection = .workflowCollection
-                    showsQuickCreate = false
+                    selection = destination == .link ? .linkCollection : .workflowCollection
+                    quickCreate = nil
                 },
                 onAdvanced: {
                     selection = .workflow(runtime.store.addWorkflow())
-                    showsQuickCreate = false
+                    quickCreate = nil
                 }
             )
         }
@@ -245,12 +258,15 @@ struct ContentView: View {
                 createWorkflow: addWorkflow,
                 openWorkflow: { selection = .workflow($0) }
             )
-        case .workflow(let id):
+        case .linkCollection:
+            LinkLibraryView(open: { selection = .link($0) }, add: addLink)
+        case .workflow(let id), .link(let id):
+            let collection = selection.section
             if let binding = workflowBinding(id) {
                 WorkflowEditorView(
                     workflow: binding,
-                    onBack: { selection = .workflowCollection },
-                    onDelete: { deleteWorkflow(id) }
+                    onBack: { selection = collection },
+                    onDelete: { deleteWorkflow(id, returnTo: collection) }
                 )
                 .id(id)
             } else {
@@ -339,7 +355,11 @@ struct ContentView: View {
     }
 
     private func addWorkflow() {
-        showsQuickCreate = true
+        quickCreate = .workflow
+    }
+
+    private func addLink() {
+        quickCreate = .link
     }
 
     private func addTemplate() {
@@ -350,10 +370,10 @@ struct ContentView: View {
         selection = .layout(runtime.store.addLayout())
     }
 
-    private func deleteWorkflow(_ id: UUID) {
+    private func deleteWorkflow(_ id: UUID, returnTo collection: SidebarSelection) {
         runtime.store.deleteWorkflow(id: id)
         runtime.reloadHotkeys()
-        selection = .workflowCollection
+        selection = collection
     }
 
     private func deleteTemplate(_ id: UUID) {
@@ -391,6 +411,69 @@ struct RunSummaryView: View {
                 Text("\(failure.actionTitle) — \(failure.message)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+private struct LinkLibraryView: View {
+    private struct Link: Identifiable {
+        let workflow: Workflow
+        let address: String
+        var id: UUID { workflow.id }
+
+        init?(_ workflow: Workflow) {
+            guard workflow.actions.count == 1, case .openURL(let address)? = workflow.actions.first else { return nil }
+            self.workflow = workflow
+            self.address = address
+        }
+    }
+
+    @Environment(WikeyRuntime.self) private var runtime
+    @State private var searchText = ""
+    var open: (UUID) -> Void
+    var add: () -> Void
+
+    var body: some View {
+        let links = runtime.store.workflows.compactMap(Link.init)
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = links.filter { link in
+            query.isEmpty || link.workflow.name.localizedCaseInsensitiveContains(query)
+                || link.address.localizedCaseInsensitiveContains(query)
+                || link.workflow.keyword?.localizedCaseInsensitiveContains(query) == true
+        }
+
+        LibraryLandingView(
+            title: "링크",
+            subtitle: "자주 여는 주소를 저장하고 검색 키워드나 단축키로 실행하세요.",
+            addTitle: "링크 추가",
+            searchText: $searchText,
+            isEmpty: links.isEmpty,
+            hasSearchResults: !filtered.isEmpty,
+            emptySymbol: "link",
+            emptyDescription: "자주 방문하는 웹사이트의 주소를 추가해 보세요.",
+            add: add
+        ) {
+            ForEach(filtered) { link in
+                HStack(spacing: 4) {
+                    LibraryItemButton(
+                        title: link.workflow.name,
+                        subtitle: [link.address, link.workflow.keyword].compactMap { $0 }.joined(separator: " · "),
+                        systemImage: "link",
+                        warning: runtime.hotkeys.registrationErrors[link.id],
+                        action: { open(link.id) }
+                    )
+                    Button {
+                        runtime.run(workflowID: link.id)
+                    } label: {
+                        Image(systemName: "arrow.up.right")
+                    }
+                    .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle, iconOnly: true))
+                    .accessibilityLabel("\(link.workflow.name) 링크 열기")
+                    .help("링크 열기")
+                    .disabled(runtime.runner.runningWorkflowID == link.id || runtime.runner.queuedWorkflowIDs.contains(link.id))
+                    .padding(.trailing, 12)
+                }
             }
         }
     }
@@ -497,7 +580,7 @@ private struct LibraryLandingView<Content: View>: View {
                 WikeySearchField(prompt: "\(title) 검색", text: $searchText)
                 if isEmpty {
                     ContentUnavailableView {
-                        Label("아직 \(title)이 없습니다", systemImage: emptySymbol)
+                        Label("저장한 항목이 없습니다", systemImage: emptySymbol)
                     } description: {
                         Text(emptyDescription)
                     } actions: {
@@ -538,7 +621,7 @@ private struct LibraryItemButton: View {
             HStack(spacing: 16) {
                 WikeyActionIcon(
                     symbol: systemImage,
-                    tint: systemImage == "rectangle.3.group" ? .periwinkle : .lavender,
+                    tint: ["link", "rectangle.3.group"].contains(systemImage) ? .periwinkle : .lavender,
                     size: 30
                 )
                 VStack(alignment: .leading, spacing: 4) {
