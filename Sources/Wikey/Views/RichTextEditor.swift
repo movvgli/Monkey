@@ -188,6 +188,7 @@ final class TemplateTextView: NSTextView {
 }
 
 struct RichTextEditor: NSViewRepresentable {
+    @Environment(\.wikeyTheme) private var theme
     var controller: RichTextEditorController
 
     func makeCoordinator() -> Coordinator { Coordinator(controller: controller) }
@@ -198,7 +199,7 @@ struct RichTextEditor: NSViewRepresentable {
         scroll.autohidesScrollers = true
         scroll.borderType = .noBorder
         scroll.drawsBackground = true
-        scroll.backgroundColor = .textBackgroundColor
+        scroll.backgroundColor = NSColor(theme.panel)
 
         let textView = TemplateTextView(usingTextLayoutManager: false)
         textView.isRichText = true
@@ -210,7 +211,7 @@ struct RichTextEditor: NSViewRepresentable {
         textView.autoresizingMask = [.width]
         textView.textContainer?.widthTracksTextView = true
         textView.drawsBackground = true
-        textView.backgroundColor = .textBackgroundColor
+        textView.backgroundColor = NSColor(theme.panel)
         textView.insertionPointColor = .textColor
         textView.setAccessibilityLabel("템플릿 본문")
         textView.textContainerInset = NSSize(width: 22, height: 20)
@@ -223,8 +224,14 @@ struct RichTextEditor: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         context.coordinator.controller = controller
-        if let textView = nsView.documentView as? NSTextView, controller.textView !== textView {
-            controller.attach(textView)
+        if let textView = nsView.documentView as? TemplateTextView {
+            let background = NSColor(theme.panel)
+            if textView.backgroundColor != background {
+                nsView.backgroundColor = background
+                textView.backgroundColor = background
+                textView.refreshPreviewContrast()
+            }
+            if controller.textView !== textView { controller.attach(textView) }
         }
     }
 

@@ -3,10 +3,12 @@ import WikeyCore
 
 struct WikeySettingsView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(UpdateController.self) private var updates
     @AppStorage(MonkeyMenuBarIcon.visibilityKey) private var showsMenuBarIcon = true
     @AppStorage(MonkeyMenuBarIcon.styleKey) private var menuBarIcon = MonkeyMenuBarIcon.monkey
+    @AppStorage(WikeyTheme.storageKey) private var selectedTheme = WikeyTheme.defaultTheme
 
     private enum Page: String, CaseIterable {
         case general = "일반"
@@ -14,33 +16,15 @@ struct WikeySettingsView: View {
         case sync = "동기화"
         case updates = "업데이트"
         case diagnostics = "문제 확인"
-
-        var symbol: String {
-            switch self {
-            case .general: "gearshape"
-            case .permissions: "lock.shield"
-            case .sync: "icloud"
-            case .updates: "arrow.down.circle"
-            case .diagnostics: "exclamationmark.triangle"
-            }
-        }
     }
 
     @State private var page: Page = .general
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("설정 항목", selection: $page) {
-                ForEach(Page.allCases, id: \.self) { page in
-                    Label(
-                        page == .diagnostics && hasErrors ? "문제 확인 •" : page.rawValue,
-                        systemImage: page.symbol
-                    )
-                        .tag(page)
-                }
+            WikeyFilterPicker(title: "설정 항목", selection: $page, options: Page.allCases) { page in
+                page == .diagnostics && hasErrors ? "문제 확인 •" : page.rawValue
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
             Divider()
@@ -60,6 +44,7 @@ struct WikeySettingsView: View {
             }
         }
         .frame(width: 620, height: 490)
+        .background(theme.canvas)
         .task { updates.refresh() }
     }
 
@@ -127,7 +112,7 @@ struct WikeySettingsView: View {
                     }
                 }
                 .padding(14)
-                .background(Color.wikeyAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(theme.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
             Button("권한 상태 새로고침", wikeyIcon: "arrow.clockwise") {
@@ -140,6 +125,14 @@ struct WikeySettingsView: View {
     private var general: some View {
         WikeySection(title: "일반") {
             VStack(spacing: 12) {
+                PlainPanel {
+                    GeneralSettingRow(symbol: "paintpalette", title: "테마") {
+                        WikeyFilterPicker(title: "테마", selection: $selectedTheme, options: WikeyTheme.allCases) {
+                            $0.title
+                        }
+                    }
+                }
+
                 PlainPanel {
                     VStack(alignment: .leading, spacing: 0) {
                         GeneralSettingRow(symbol: "dock.rectangle", title: "Dock에 Monkey 표시") {
@@ -193,6 +186,7 @@ struct WikeySettingsView: View {
             Label { Text(menuBarIcon.title) } icon: { menuBarIcon.image() }
         }
         .menuStyle(.borderlessButton)
+        .foregroundStyle(theme.accent)
         .accessibilityLabel("메뉴 막대 아이콘")
         .accessibilityValue(menuBarIcon.title)
         .help("메뉴 막대 아이콘")
@@ -271,6 +265,7 @@ struct WikeySettingsView: View {
         Toggle(title, isOn: isOn)
             .labelsHidden()
             .toggleStyle(.switch)
+            .tint(WikeyTheme.banana)
     }
 
     private var generalDivider: some View {
@@ -477,6 +472,7 @@ private struct UpdateSettingRow: View {
             Toggle(title, isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
+                .tint(WikeyTheme.banana)
                 .disabled(!isEnabled)
         }
         .padding(.vertical, 12)

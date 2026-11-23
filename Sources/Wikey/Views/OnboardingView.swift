@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct OnboardingView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
     @Environment(WikeyRuntime.self) private var runtime
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
@@ -143,7 +144,7 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 16)
             .background(
-                Color(nsColor: .controlBackgroundColor),
+                theme.panel,
                 in: RoundedRectangle(cornerRadius: 14, style: .continuous)
             )
             .overlay {
@@ -169,6 +170,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Toggle("Mac 로그인 시 Monkey 실행", isOn: $launchAtLogin)
                     .toggleStyle(.switch)
+                    .tint(WikeyTheme.banana)
                 Text("메인 창은 띄우지 않고 메뉴 막대와 단축키만 준비합니다.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -188,7 +190,7 @@ struct OnboardingView: View {
             if page == 0 {
                 Button("건너뛰기") { complete(enableLoginItem: false) }
                     .buttonStyle(.borderless)
-                    .tint(Color.wikeyInk(in: colorScheme))
+                    .tint(theme.accent)
                 Spacer()
                 Button("다음") {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 1 }
@@ -201,11 +203,11 @@ struct OnboardingView: View {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 0 }
                 }
                 .buttonStyle(.borderless)
-                .tint(Color.wikeyInk(in: colorScheme))
+                .tint(theme.accent)
                 Spacer()
                 Button("나중에 설정") { complete(enableLoginItem: false) }
                     .buttonStyle(.borderless)
-                    .tint(Color.wikeyInk(in: colorScheme))
+                    .tint(theme.accent)
                 Button("Monkey 시작") { complete(enableLoginItem: launchAtLogin) }
                     .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
@@ -214,7 +216,7 @@ struct OnboardingView: View {
         }
         .padding(.horizontal, 32)
         .padding(.vertical, 18)
-        .background(.bar)
+        .background(theme.panel)
     }
 
     private func complete(enableLoginItem: Bool) {
@@ -225,6 +227,7 @@ struct OnboardingView: View {
 }
 
 private struct OnboardingFeatureCard: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
     var systemImage: String
     var title: String
@@ -250,7 +253,7 @@ private struct OnboardingFeatureCard: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            Color(nsColor: .controlBackgroundColor),
+            theme.panel,
             in: RoundedRectangle(cornerRadius: 13, style: .continuous)
         )
         .overlay {

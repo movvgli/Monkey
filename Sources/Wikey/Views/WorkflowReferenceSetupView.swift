@@ -2,6 +2,7 @@ import SwiftUI
 import WikeyCore
 
 struct WorkflowReferenceSetupView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
     var workflows: [Workflow]
     @Binding var selectedWorkflowID: UUID?
@@ -49,7 +50,7 @@ struct WorkflowReferenceSetupView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(.bar)
+            .background(theme.panel)
         }
         .frame(width: 520, height: 420)
     }
@@ -84,7 +85,7 @@ struct WorkflowReferenceSetupView: View {
             .padding(.vertical, 11)
             .contentShape(Rectangle())
             .background(
-                isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.08) : Color(nsColor: .controlBackgroundColor),
+                isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.08) : theme.panel,
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .overlay {

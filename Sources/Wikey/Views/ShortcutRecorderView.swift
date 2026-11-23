@@ -14,12 +14,9 @@ struct ShortcutRecorderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Picker("입력 방식", selection: $stepCount) {
-                Text("한 번에 누르기").tag(1)
-                Text("두 번 이어서 누르기").tag(2)
+            WikeyFilterPicker(title: "입력 방식", selection: $stepCount, options: [1, 2]) {
+                $0 == 1 ? "한 번에 누르기" : "두 번 이어서 누르기"
             }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 390)
 
             HStack(spacing: 10) {
                 KeyRecorderRepresentable(shortcut: $shortcut, stepCount: stepCount)
@@ -28,7 +25,7 @@ struct ShortcutRecorderView: View {
                 if !shortcut.steps.isEmpty {
                     Button("지우기") { shortcut = ShortcutGesture() }
                         .buttonStyle(.borderless)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                 }
             }
 
@@ -81,7 +78,7 @@ struct CompactShortcutRecorderView: View {
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(WikeyHoverButtonStyle(filled: true))
             .help(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
             .accessibilityLabel(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
         }
@@ -89,6 +86,7 @@ struct CompactShortcutRecorderView: View {
 }
 
 private struct KeyRecorderRepresentable: NSViewRepresentable {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @Binding var shortcut: ShortcutGesture
     var stepCount: Int
@@ -98,6 +96,7 @@ private struct KeyRecorderRepresentable: NSViewRepresentable {
 
     func makeNSView(context: Context) -> KeyRecorderControl {
         let control = KeyRecorderControl()
+        control.theme = theme
         control.maximumSteps = stepCount
         control.shortcut = shortcut
         control.onChange = { context.coordinator.shortcut.wrappedValue = $0 }
@@ -112,6 +111,7 @@ private struct KeyRecorderRepresentable: NSViewRepresentable {
 
     func updateNSView(_ control: KeyRecorderControl, context: Context) {
         context.coordinator.shortcut = $shortcut
+        control.theme = theme
         control.maximumSteps = stepCount
         if control.shortcut != shortcut {
             // SwiftUI clear buttons need not resign this AppKit first responder.
@@ -140,6 +140,9 @@ private struct KeyRecorderRepresentable: NSViewRepresentable {
 }
 
 private final class KeyRecorderControl: NSControl {
+    var theme = WikeyTheme.defaultTheme {
+        didSet { if oldValue != theme { needsDisplay = true } }
+    }
     var shortcut = ShortcutGesture() {
         didSet {
             needsDisplay = true
@@ -255,9 +258,8 @@ private final class KeyRecorderControl: NSControl {
 
     override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
-        let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        let ink = NSColor(Color.wikeyInk(in: dark ? .dark : .light))
-        (isRecording ? ink.withAlphaComponent(0.15) : NSColor.controlBackgroundColor).setFill()
+        let ink = NSColor(theme.accent)
+        NSColor(isRecording ? theme.sidebar : theme.panel).setFill()
         path.fill()
         (isRecording ? ink : NSColor.separatorColor).setStroke()
         path.lineWidth = isRecording ? 2 : 1

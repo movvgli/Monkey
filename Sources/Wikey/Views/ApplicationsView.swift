@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct ApplicationsView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @State private var applications: [InstalledApplication] = []
     @State private var searchText = ""
@@ -114,7 +115,7 @@ struct ApplicationsView: View {
                 Button("새로고침", wikeyIcon: "arrow.clockwise") {
                     Task { await reloadApplications() }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(WikeyGlossyButtonStyle())
                 .controlSize(.large)
                 .disabled(isLoading)
             }
@@ -173,7 +174,7 @@ struct ApplicationsView: View {
             }
         }
         .background(
-            Color(nsColor: .controlBackgroundColor),
+            theme.panel,
             in: RoundedRectangle(cornerRadius: 16, style: .continuous)
         )
         .overlay {

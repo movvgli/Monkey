@@ -2,6 +2,91 @@ import AppKit
 import SwiftUI
 import WikeyCore
 
+enum WikeyTheme: String, CaseIterable {
+    static let storageKey = "appearanceTheme"
+    static let defaultTheme = Self.yellow
+
+    case white, yellow, brown, dark
+
+    var title: String {
+        switch self {
+        case .white: "화이트"
+        case .yellow: "옐로우"
+        case .brown: "브라운"
+        case .dark: "다크"
+        }
+    }
+
+    var colorScheme: ColorScheme { self == .dark ? .dark : .light }
+
+    var canvas: Color {
+        switch self {
+        case .white: Color(white: 0.99)
+        case .yellow: Color(red: 1, green: 0.963, blue: 0.865)
+        case .brown: Color(red: 0.938, green: 0.865, blue: 0.794)
+        case .dark: Color(red: 0.125, green: 0.101, blue: 0.085)
+        }
+    }
+
+    var panel: Color {
+        switch self {
+        case .white: .white
+        case .yellow: Color(red: 1, green: 0.982, blue: 0.926)
+        case .brown: Color(red: 0.976, green: 0.92, blue: 0.864)
+        case .dark: Color(red: 0.184, green: 0.15, blue: 0.123)
+        }
+    }
+
+    var sidebar: Color {
+        switch self {
+        case .white: Color(white: 0.956)
+        case .yellow: Color(red: 0.966, green: 0.91, blue: 0.763)
+        case .brown: Color(red: 0.877, green: 0.768, blue: 0.674)
+        case .dark: Color(red: 0.09, green: 0.074, blue: 0.065)
+        }
+    }
+
+    var accent: Color { Self.controlInk(in: colorScheme) }
+
+    static let banana = Color(red: 0.97, green: 0.79, blue: 0.36)
+    static let cocoa = Color(red: 0.27, green: 0.15, blue: 0.08)
+
+    static func controlInk(in scheme: ColorScheme) -> Color {
+        scheme == .dark ? Color(red: 1, green: 0.86, blue: 0.59) : Color(red: 0.40, green: 0.22, blue: 0.12)
+    }
+}
+
+private struct WikeyThemeKey: EnvironmentKey {
+    static let defaultValue = WikeyTheme.defaultTheme
+}
+
+private struct WikeyPrimarySurfaceKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var wikeyTheme: WikeyTheme {
+        get { self[WikeyThemeKey.self] }
+        set { self[WikeyThemeKey.self] = newValue }
+    }
+
+    fileprivate var wikeyPrimarySurface: Bool {
+        get { self[WikeyPrimarySurfaceKey.self] }
+        set { self[WikeyPrimarySurfaceKey.self] = newValue }
+    }
+}
+
+struct WikeyThemeScope: ViewModifier {
+    @AppStorage(WikeyTheme.storageKey) private var theme = WikeyTheme.defaultTheme
+
+    func body(content: Content) -> some View {
+        content
+            .environment(\.wikeyTheme, theme)
+            .preferredColorScheme(theme.colorScheme)
+            .tint(theme.accent)
+    }
+}
+
 enum WikeyPageMetrics {
     static let padding: CGFloat = 26
     static let maximumWidth: CGFloat = 1000
@@ -33,17 +118,15 @@ struct WikeyMascot: View {
 }
 
 struct WikeyGlossyPanel: View {
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.wikeyTheme) private var theme
     var radius: CGFloat = 20
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: radius)
-        let isDark = colorScheme == .dark
+        let isDark = theme == .dark
         shape.fill(
             LinearGradient(
-                colors: isDark
-                    ? [Color(white: 0.28), Color(white: 0.21), Color(white: 0.17)]
-                    : [.white, Color(white: 0.97), Color(white: 0.90)],
+                colors: [theme.panel, theme.canvas, theme.sidebar],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -63,22 +146,22 @@ extension View {
     }
 
     @ViewBuilder
-    func wikeyLauncherGlass() -> some View {
+    func wikeyLauncherGlass(theme: WikeyTheme) -> some View {
         let shape = RoundedRectangle(cornerRadius: 24)
         #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
-            glassEffect(.regular, in: shape)
+            glassEffect(.regular.tint(theme.panel.opacity(0.78)), in: shape)
         } else {
-            background(.thickMaterial, in: shape)
+            background(theme.panel.opacity(0.96), in: shape)
         }
         #else
-        background(.thickMaterial, in: shape)
+        background(theme.panel.opacity(0.96), in: shape)
         #endif
     }
 }
 
 struct WikeyFilterPicker<Value: Hashable>: View {
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.wikeyTheme) private var theme
     @FocusState private var focusedOption: Value?
     var title: String
     @Binding var selection: Value
@@ -89,39 +172,41 @@ struct WikeyFilterPicker<Value: Hashable>: View {
         HStack(spacing: 2) {
             ForEach(options, id: \.self) { option in
                 Button(label(option)) { selection = option }
-                    .buttonStyle(WikeyWarmButtonStyle(kind: .filter(selected: selection == option)))
+                    .buttonStyle(WikeyWarmButtonStyle(kind: .filter(
+                        selected: selection == option, focused: focusedOption == option
+                    )))
+                    .focusable()
                     .focused($focusedOption, equals: option)
+                    .focusEffectDisabled()
                     .accessibilityAddTraits(selection == option ? .isSelected : [])
+                    .onKeyPress(.leftArrow) { move(from: option, offset: -1) }
+                    .onKeyPress(.rightArrow) { move(from: option, offset: 1) }
             }
         }
         .padding(3)
         .background(
-            colorScheme == .dark
-                ? Color(red: 0.22, green: 0.17, blue: 0.14)
-                : Color(red: 0.96, green: 0.92, blue: 0.86),
+            theme.sidebar,
             in: RoundedRectangle(cornerRadius: 10, style: .continuous)
         )
         .fixedSize()
         .accessibilityElement(children: .contain)
         .accessibilityLabel(title)
-        .onMoveCommand { direction in
-            guard let focusedOption, let index = options.firstIndex(of: focusedOption) else { return }
-            let nextIndex: Int
-            switch direction {
-            case .left: nextIndex = max(0, index - 1)
-            case .right: nextIndex = min(options.count - 1, index + 1)
-            default: return
-            }
-            selection = options[nextIndex]
-            self.focusedOption = selection
-        }
+    }
+
+    private func move(from option: Value, offset: Int) -> KeyPress.Result {
+        guard let index = options.firstIndex(of: option),
+              options.indices.contains(index + offset) else { return .handled }
+        let next = options[index + offset]
+        selection = next
+        focusedOption = next
+        return .handled
     }
 }
 
 private struct WikeyWarmButtonStyle: ButtonStyle {
     enum Kind {
         case primary
-        case filter(selected: Bool)
+        case filter(selected: Bool, focused: Bool)
     }
 
     var kind: Kind
@@ -142,21 +227,18 @@ private struct WikeyWarmButtonStyle: ButtonStyle {
         private var palette: (text: Color, fill: [Color]) {
             switch kind {
             case .primary:
-                (Color(red: 1, green: 0.98, blue: 0.92),
-                 [Color(red: 0.55, green: 0.33, blue: 0.22), Color(red: 0.40, green: 0.22, blue: 0.14)])
-            case .filter(selected: true):
-                (Color(red: 0.27, green: 0.15, blue: 0.08),
-                 [Color(red: 1, green: 0.89, blue: 0.59), Color(red: 0.97, green: 0.79, blue: 0.36)])
-            case .filter(selected: false):
-                (colorScheme == .dark
-                    ? Color(red: 0.94, green: 0.85, blue: 0.74)
-                    : Color(red: 0.32, green: 0.21, blue: 0.14),
-                 [.clear, .clear])
+                (WikeyTheme.cocoa,
+                 [Color(red: 0.91, green: 0.76, blue: 0.57), Color(red: 0.79, green: 0.58, blue: 0.38)])
+            case .filter(selected: true, focused: _):
+                (WikeyTheme.cocoa, [Color(red: 1, green: 0.89, blue: 0.59), WikeyTheme.banana])
+            case .filter(selected: false, focused: _):
+                (WikeyTheme.controlInk(in: colorScheme), [.clear, .clear])
             }
         }
 
         var body: some View {
             let primary = if case .primary = kind { true } else { false }
+            let focused = if case .filter(_, let focused) = kind { focused } else { false }
             let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
             let palette = palette
             let charcoal = Color(white: 0.16).opacity(isPressed ? 0.23 : hovered ? 0.11 : 0)
@@ -164,14 +246,18 @@ private struct WikeyWarmButtonStyle: ButtonStyle {
             label
                 .font(.system(size: primary ? 13 : 12))
                 .foregroundStyle(palette.text)
+                .environment(\.wikeyPrimarySurface, primary)
                 .padding(.horizontal, primary ? 13 : 11)
                 .frame(minHeight: primary ? (controlSize == .large ? 32 : 30) : 25)
                 .background {
                     shape.fill(LinearGradient(colors: palette.fill, startPoint: .top, endPoint: .bottom))
                     if primary {
-                        shape.strokeBorder(.white.opacity(0.13), lineWidth: 1)
+                        shape.strokeBorder(WikeyTheme.cocoa.opacity(0.17), lineWidth: 1)
                     }
                     shape.fill(charcoal)
+                    if focused {
+                        shape.strokeBorder(palette.text.opacity(0.8), lineWidth: 1)
+                    }
                 }
                 .contentShape(shape)
                 .opacity(isEnabled ? 1 : 0.52)
@@ -202,6 +288,7 @@ struct WikeyPageHeader<Actions: View>: View {
 }
 
 struct WikeySearchField: View {
+    @Environment(\.wikeyTheme) private var theme
     var prompt: String
     @Binding var text: String
 
@@ -225,7 +312,7 @@ struct WikeySearchField: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 40)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
+        .background(theme.panel, in: RoundedRectangle(cornerRadius: 12))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
@@ -393,13 +480,14 @@ struct StatusPill: View {
 }
 
 struct PlainPanel<Content: View>: View {
+    @Environment(\.wikeyTheme) private var theme
     @ViewBuilder var content: Content
 
     var body: some View {
         content
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(theme.panel, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
@@ -432,7 +520,7 @@ enum WikeyActionTint {
         let isDark = colorScheme == .dark
         switch self {
         case .accent:
-            return .wikeyInk(in: colorScheme)
+            return WikeyTheme.controlInk(in: colorScheme)
         case .graphite:
             return Color(white: isDark ? 0.77 : 0.35)
         case .blue:
@@ -469,6 +557,7 @@ extension WorkflowAction {
 
 struct WikeyActionIcon: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.wikeyPrimarySurface) private var onPrimarySurface
     var symbol: String
     var tint: WikeyActionTint
     var size: CGFloat = 24
@@ -515,18 +604,34 @@ struct WikeyActionIcon: View {
         }
     }
 
+    private func artworkTint(_ artwork: String) -> Color {
+        switch artwork {
+        case "WikeyCommandAdd":
+            colorScheme == .dark && !onPrimarySurface
+                ? Color(red: 0.97, green: 0.72, blue: 0.44)
+                : Color(red: 0.51, green: 0.29, blue: 0.14)
+        case "WikeyCommandClose":
+            colorScheme == .dark
+                ? Color(red: 1, green: 0.39, blue: 0.38)
+                : Color(red: 0.91, green: 0.23, blue: 0.23)
+        default: .white
+        }
+    }
+
     var body: some View {
         Group {
             if let artwork {
                 let isSilverChain = symbol == "link"
                 let darkModeLift = colorScheme == .dark && (isSilverChain || artwork.hasPrefix("WikeyCommand"))
-                let silverHighlight = isSilverChain ? 0.095 : 0
+                let highlight = isSilverChain ? 0.095 : artwork == "WikeyCommandClose" ? 0.25 : 0
+                let darkLift = darkModeLift && !onPrimarySurface ? 0.19 : 0
                 Image(artwork, bundle: wikeyAssetBundle)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
                     .saturation(isSilverChain ? 0 : 0.78)
-                    .brightness(silverHighlight + (darkModeLift ? 0.19 : 0))
+                    .brightness(highlight + darkLift)
+                    .colorMultiply(artworkTint(artwork))
                     .rotationEffect(rotation)
             } else {
                 Image(systemName: symbol)
@@ -572,7 +677,7 @@ struct WikeyHoverButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         WikeyHoverSurface(
             label: configuration.label,
-            ink: .wikeyInk(in: colorScheme),
+            ink: WikeyTheme.controlInk(in: colorScheme),
             selected: selected,
             filled: filled,
             cornerRadius: cornerRadius,
@@ -622,13 +727,15 @@ private struct WikeyHoverSurface<Label: View>: View {
     var glossy = false
 
     private var fill: Color {
+        let selectedFill = WikeyTheme.banana.opacity(colorScheme == .dark ? 0.20 : 0.48)
         if isEnabled && (isPressed || isHovering) {
+            if selected { return selectedFill }
             let isDark = colorScheme == .dark
             let charcoal = Color(white: isDark ? 0.34 : 0.15)
             let hoverOpacity = isDark ? 0.54 : 0.12
             return charcoal.opacity(isPressed ? hoverOpacity * 1.4 : hoverOpacity)
         }
-        return ink.opacity(selected ? 0.105 : filled ? 0.05 : 0)
+        return selected ? selectedFill : ink.opacity(filled ? 0.08 : 0)
     }
 
     var body: some View {

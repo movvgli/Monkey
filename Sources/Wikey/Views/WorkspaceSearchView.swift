@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct WorkspaceSearchView: View {
+    @Environment(\.wikeyTheme) private var theme
     enum Mode {
         case library(open: (SidebarSelection) -> Void)
         case launcher(close: () -> Void)
@@ -208,6 +209,9 @@ struct WorkspaceSearchView: View {
             .padding(.vertical, 10)
         }
         .frame(width: isLauncher ? 600 : 560, height: 390)
+        .background {
+            if isLauncher { Color.clear.wikeyLauncherGlass(theme: theme).allowsHitTesting(false) }
+        }
         .onChange(of: entries.map(\.id), initial: true) { _, ids in
             if selected.map(ids.contains) != true { selected = ids.first }
         }
@@ -408,8 +412,7 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
         panel.contentView = NSHostingView(rootView:
             WorkspaceSearchView(mode: .launcher(close: { [weak self] in self?.close() }))
                 .environment(runtime)
-                .tint(.wikeyAccent)
-                .background { Color.clear.wikeyLauncherGlass().allowsHitTesting(false) }
+                .modifier(WikeyThemeScope())
         )
         panel.delegate = self
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main {

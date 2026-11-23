@@ -3,8 +3,6 @@ import SwiftUI
 import WikeyCore
 
 extension Color {
-    static let wikeyAccent = Color(white: 0.26)
-
     static func wikeyInk(in colorScheme: ColorScheme) -> Color {
         Color(white: colorScheme == .dark ? 0.9 : 0.15)
     }
@@ -23,8 +21,7 @@ struct WikeyApp: App {
             ContentView()
                 .environment(runtime)
                 .environment(updates)
-                .tint(.wikeyAccent)
-                .accentColor(.wikeyAccent)
+                .modifier(WikeyThemeScope())
                 .task { runtime.start() }
                 .frame(minWidth: 920, minHeight: 620)
         }
@@ -53,7 +50,7 @@ struct WikeyApp: App {
             MenuBarContentView(showSearch: appDelegate.toggleSearch)
                 .environment(runtime)
                 .environment(updates)
-                .tint(.wikeyAccent)
+                .modifier(WikeyThemeScope())
                 .task { runtime.start() }
         } label: {
             Label {
@@ -71,8 +68,7 @@ struct WikeyApp: App {
             WikeySettingsView()
                 .environment(runtime)
                 .environment(updates)
-                .tint(.wikeyAccent)
-                .accentColor(.wikeyAccent)
+                .modifier(WikeyThemeScope())
         }
     }
 

@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct MenuBarContentView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(UpdateController.self) private var updates
     @Environment(\.openWindow) private var openWindow
@@ -98,6 +99,7 @@ struct MenuBarContentView: View {
         }
         .padding(10)
         .frame(width: 290)
+        .background(theme.panel)
     }
 
     private func rowLabel(_ title: String, symbol: String) -> some View {
