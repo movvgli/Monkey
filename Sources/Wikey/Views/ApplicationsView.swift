@@ -125,13 +125,9 @@ struct ApplicationsView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Picker("앱 필터", selection: $showsAssignedOnly) {
-                    Text("전체 앱").tag(false)
-                    Text("단축키 지정됨").tag(true)
+                WikeyFilterPicker(title: "앱 필터", selection: $showsAssignedOnly, options: [false, true]) {
+                    $0 ? "단축키 지정됨" : "전체 앱"
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
             }
         }
     }

@@ -58,17 +58,8 @@ struct WikeyGlossyPanel: View {
 }
 
 extension View {
-    @ViewBuilder
     func wikeyPrimaryButtonStyle() -> some View {
-        #if compiler(>=6.2)
-        if #available(macOS 26.0, *) {
-            buttonStyle(.glass)
-        } else {
-            buttonStyle(.bordered)
-        }
-        #else
-        buttonStyle(.bordered)
-        #endif
+        buttonStyle(WikeyWarmButtonStyle(kind: .primary))
     }
 
     @ViewBuilder
@@ -83,6 +74,109 @@ extension View {
         #else
         background(.thickMaterial, in: shape)
         #endif
+    }
+}
+
+struct WikeyFilterPicker<Value: Hashable>: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var focusedOption: Value?
+    var title: String
+    @Binding var selection: Value
+    var options: [Value]
+    var label: (Value) -> String
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(options, id: \.self) { option in
+                Button(label(option)) { selection = option }
+                    .buttonStyle(WikeyWarmButtonStyle(kind: .filter(selected: selection == option)))
+                    .focused($focusedOption, equals: option)
+                    .accessibilityAddTraits(selection == option ? .isSelected : [])
+            }
+        }
+        .padding(3)
+        .background(
+            colorScheme == .dark
+                ? Color(red: 0.22, green: 0.17, blue: 0.14)
+                : Color(red: 0.96, green: 0.92, blue: 0.86),
+            in: RoundedRectangle(cornerRadius: 10, style: .continuous)
+        )
+        .fixedSize()
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(title)
+        .onMoveCommand { direction in
+            guard let focusedOption, let index = options.firstIndex(of: focusedOption) else { return }
+            let nextIndex: Int
+            switch direction {
+            case .left: nextIndex = max(0, index - 1)
+            case .right: nextIndex = min(options.count - 1, index + 1)
+            default: return
+            }
+            selection = options[nextIndex]
+            self.focusedOption = selection
+        }
+    }
+}
+
+private struct WikeyWarmButtonStyle: ButtonStyle {
+    enum Kind {
+        case primary
+        case filter(selected: Bool)
+    }
+
+    var kind: Kind
+
+    func makeBody(configuration: Configuration) -> some View {
+        Surface(label: configuration.label, kind: kind, isPressed: configuration.isPressed)
+    }
+
+    private struct Surface: View {
+        @Environment(\.colorScheme) private var colorScheme
+        @Environment(\.controlSize) private var controlSize
+        @Environment(\.isEnabled) private var isEnabled
+        @State private var hovered = false
+        var label: Configuration.Label
+        var kind: Kind
+        var isPressed: Bool
+
+        private var palette: (text: Color, fill: [Color]) {
+            switch kind {
+            case .primary:
+                (Color(red: 1, green: 0.98, blue: 0.92),
+                 [Color(red: 0.55, green: 0.33, blue: 0.22), Color(red: 0.40, green: 0.22, blue: 0.14)])
+            case .filter(selected: true):
+                (Color(red: 0.27, green: 0.15, blue: 0.08),
+                 [Color(red: 1, green: 0.89, blue: 0.59), Color(red: 0.97, green: 0.79, blue: 0.36)])
+            case .filter(selected: false):
+                (colorScheme == .dark
+                    ? Color(red: 0.94, green: 0.85, blue: 0.74)
+                    : Color(red: 0.32, green: 0.21, blue: 0.14),
+                 [.clear, .clear])
+            }
+        }
+
+        var body: some View {
+            let primary = if case .primary = kind { true } else { false }
+            let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
+            let palette = palette
+            let charcoal = Color(white: 0.16).opacity(isPressed ? 0.23 : hovered ? 0.11 : 0)
+
+            label
+                .font(.system(size: primary ? 13 : 12))
+                .foregroundStyle(palette.text)
+                .padding(.horizontal, primary ? 13 : 11)
+                .frame(minHeight: primary ? (controlSize == .large ? 32 : 30) : 25)
+                .background {
+                    shape.fill(LinearGradient(colors: palette.fill, startPoint: .top, endPoint: .bottom))
+                    if primary {
+                        shape.strokeBorder(.white.opacity(0.13), lineWidth: 1)
+                    }
+                    shape.fill(charcoal)
+                }
+                .contentShape(shape)
+                .opacity(isEnabled ? 1 : 0.52)
+                .onHover { hovered = isEnabled && $0 }
+        }
     }
 }
 

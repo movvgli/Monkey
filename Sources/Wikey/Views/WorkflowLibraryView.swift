@@ -48,12 +48,9 @@ struct WorkflowLibraryView: View {
                 if !runtime.store.workflows.isEmpty {
                     HStack(spacing: 16) {
                         WikeySearchField(prompt: "이름·단축키·동작 검색", text: $query)
-                        Picker("워크플로 필터", selection: $filter) {
-                            ForEach(Filter.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        WikeyFilterPicker(title: "워크플로 필터", selection: $filter, options: Filter.allCases) {
+                            $0.rawValue
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                        .fixedSize()
                     }
                 }
             }
