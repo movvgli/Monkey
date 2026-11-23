@@ -12,14 +12,20 @@ struct WorkspaceSearchView: View {
         case library(SidebarSelection)
         case run(UUID)
         case copy(UUID)
+        case copyValue(String)
 
         var actionTitle: String {
             switch self {
             case .library: "열기"
             case .run: "실행"
-            case .copy: "복사"
+            case .copy, .copyValue: "복사"
             }
         }
+    }
+
+    private enum Utility {
+        case calculation(SearchCalculation)
+        case exchange(SearchCurrencyQuery)
     }
 
     private struct Result: Identifiable {
@@ -28,6 +34,11 @@ struct WorkspaceSearchView: View {
         var detail: String
         var symbol: String
         var keyword: String? = nil
+
+        var isValue: Bool {
+            if case .copyValue = id { return true }
+            return false
+        }
     }
 
     @Environment(WikeyRuntime.self) private var runtime
@@ -36,6 +47,8 @@ struct WorkspaceSearchView: View {
     @State private var query = ""
     @State private var selected: Destination?
     @State private var copyError: String?
+    @State private var exchangeRates: SearchExchangeRates.Snapshot?
+    @State private var exchangeLoadFailed = false
     var mode: Mode
 
     private var isLauncher: Bool {
@@ -43,14 +56,50 @@ struct WorkspaceSearchView: View {
         return false
     }
 
-    private func results(for query: String) -> [Result] {
+    private func matches(for query: String) -> (entries: [Result], utility: Utility?) {
         let keywordResults = WorkflowKeyword.matches(query, in: runtime.store.workflows).map(workflowResult)
+        if let utility = utility(for: query, keywordResults: keywordResults) {
+            return (utilityResults(utility), utility)
+        }
         let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
         let entries = isLauncher ? launcherResults : libraryResults
         let keywordIDs = Set(keywordResults.map(\.id))
-        return keywordResults + entries.filter { result in
+        let matchingEntries = entries.filter { result in
             !keywordIDs.contains(result.id) && terms.allSatisfy { term in
                 result.name.localizedCaseInsensitiveContains(term) || result.detail.localizedCaseInsensitiveContains(term)
+            }
+        }
+        return (keywordResults + matchingEntries, nil)
+    }
+
+    private func utility(for query: String, keywordResults: [Result]) -> Utility? {
+        guard isLauncher else { return nil }
+        if let keyword = WorkflowKeyword.normalized(query), keywordResults.first?.keyword == keyword { return nil }
+        if let exchange = SearchCurrencyQuery.parse(query) { return .exchange(exchange) }
+        if let calculation = SearchCalculation.evaluate(query) { return .calculation(calculation) }
+        return nil
+    }
+
+    private func utilityResults(_ utility: Utility) -> [Result] {
+        switch utility {
+        case .calculation(.value(let value)):
+            let formatted = SearchNumber.formatted(value)
+            return [Result(id: .copyValue(formatted), name: formatted, detail: "계산 결과", symbol: "equal.circle")]
+        case .calculation(.error):
+            return []
+        case .exchange(let request):
+            guard let table = exchangeRates?.rates else { return [] }
+            return request.targets.compactMap { target in
+                guard let rate = table.rate(from: request.base, to: target) else { return nil }
+                let amount = request.amount * rate
+                guard !amount.isNaN else { return nil }
+                let converted = "\(target.formattedAmount(amount)) \(target.rawValue)"
+                let unitRate = SearchNumber.formatted(rate, maximumFractionDigits: 6)
+                return Result(
+                    id: .copyValue(converted), name: converted,
+                    detail: "\(target.name) · 1 \(request.base.rawValue) ≈ \(unitRate) \(target.rawValue)",
+                    symbol: "arrow.left.arrow.right"
+                )
             }
         }
     }
@@ -98,7 +147,7 @@ struct WorkspaceSearchView: View {
     }
 
     var body: some View {
-        let entries = results(for: query)
+        let (entries, utility) = matches(for: query)
         let actionTitle = selected?.actionTitle ?? "열기"
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -106,7 +155,8 @@ struct WorkspaceSearchView: View {
                     text: Binding(get: { query }, set: changeQuery),
                     onMove: moveSelection,
                     onSubmit: openSelected,
-                    onCancel: close
+                    onCancel: close,
+                    prompt: isLauncher ? "검색 또는 계산·환율 입력" : "템플릿·워크플로·검색 키워드 찾기"
                 )
                 .frame(height: 28)
                 Button("닫기", systemImage: "xmark", action: close)
@@ -117,7 +167,14 @@ struct WorkspaceSearchView: View {
             .padding(18)
             Divider()
 
-            if entries.isEmpty {
+            if case .exchange(let request) = utility {
+                exchangeHeader(request)
+            }
+
+            if entries.isEmpty, let utility {
+                utilityStatus(utility)
+                    .frame(maxHeight: .infinity)
+            } else if entries.isEmpty {
                 if query.isEmpty {
                     ContentUnavailableView("저장한 템플릿이나 워크플로가 없습니다", systemImage: "magnifyingglass")
                         .frame(maxHeight: .infinity)
@@ -154,6 +211,64 @@ struct WorkspaceSearchView: View {
         .onChange(of: entries.map(\.id), initial: true) { _, ids in
             if selected.map(ids.contains) != true { selected = ids.first }
         }
+        .task(id: needsExchangeRates(utility)) {
+            guard needsExchangeRates(utility) else { return }
+            await loadExchangeRates()
+        }
+    }
+
+    private func needsExchangeRates(_ utility: Utility?) -> Bool {
+        if case .exchange = utility { return true }
+        return false
+    }
+
+    private func loadExchangeRates() async {
+        exchangeLoadFailed = false
+        do {
+            let snapshot = try await SearchExchangeRates.shared.latest()
+            guard !Task.isCancelled else { return }
+            exchangeRates = snapshot
+        } catch {
+            guard !Task.isCancelled else { return }
+            exchangeLoadFailed = true
+        }
+    }
+
+    private func exchangeHeader(_ request: SearchCurrencyQuery) -> some View {
+        HStack {
+            Text("\(SearchNumber.formatted(request.amount)) \(request.base.rawValue) 환산")
+                .font(.subheadline.weight(.semibold))
+            Spacer()
+            if let exchangeRates {
+                Text("\(exchangeRates.usedFallback ? "최근 확인값 · " : "")ECB 기준환율 · \(exchangeRates.rates.date)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 13)
+    }
+
+    @ViewBuilder
+    private func utilityStatus(_ utility: Utility) -> some View {
+        switch utility {
+        case .calculation(.error(let error)):
+            ContentUnavailableView(error.localizedDescription, systemImage: "equal.circle")
+        case .calculation(.value):
+            EmptyView()
+        case .exchange:
+            if exchangeLoadFailed {
+                ContentUnavailableView {
+                    Label("환율을 불러오지 못했습니다", systemImage: "wifi.slash")
+                } actions: {
+                    Button("다시 시도") { Task { await loadExchangeRates() } }
+                }
+            } else if exchangeRates != nil {
+                ContentUnavailableView("선택한 통화의 기준환율이 없습니다", systemImage: "arrow.left.arrow.right")
+            } else {
+                ProgressView("환율 확인 중…")
+            }
+        }
     }
 
     private func resultList(_ entries: [Result]) -> some View {
@@ -164,6 +279,7 @@ struct WorkspaceSearchView: View {
                         Button { perform(entry.id) } label: {
                             HStack(spacing: 10) {
                                 Label(entry.name, systemImage: entry.symbol)
+                                    .font(entry.isValue ? .system(.title3, design: .rounded, weight: .semibold) : .body)
                                     .lineLimit(1)
                                 if let keyword = entry.keyword {
                                     Text(keyword)
@@ -178,7 +294,7 @@ struct WorkspaceSearchView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .padding(.horizontal, 10)
-                            .frame(height: 34)
+                            .frame(height: entry.isValue ? 44 : 34)
                         }
                         .buttonStyle(WikeyHoverButtonStyle(selected: selected == entry.id))
                         .accessibilityAddTraits(selected == entry.id ? .isSelected : [])
@@ -195,12 +311,12 @@ struct WorkspaceSearchView: View {
 
     private func changeQuery(_ value: String) {
         query = value
-        selected = results(for: value).first?.id
+        selected = matches(for: value).entries.first?.id
         copyError = nil
     }
 
     private func moveSelection(_ offset: Int) {
-        let ids = results(for: query).map(\.id)
+        let ids = matches(for: query).entries.map(\.id)
         guard !ids.isEmpty else { return }
         guard let selected, let index = ids.firstIndex(of: selected) else {
             self.selected = ids.first
@@ -210,7 +326,7 @@ struct WorkspaceSearchView: View {
     }
 
     private func openSelected() {
-        let entries = results(for: query)
+        let entries = matches(for: query).entries
         guard let destination = entries.first(where: { $0.id == selected })?.id ?? entries.first?.id else { return }
         perform(destination)
     }
@@ -227,6 +343,13 @@ struct WorkspaceSearchView: View {
             guard runtime.store.templates.contains(where: { $0.id == id }) else { return }
             do {
                 try runtime.clipboard.copy(runtime.store.templateDocument(id: id))
+                close()
+            } catch {
+                copyError = error.localizedDescription
+            }
+        case .copyValue(let value):
+            do {
+                try runtime.clipboard.copy(NSAttributedString(string: value))
                 close()
             } catch {
                 copyError = error.localizedDescription
@@ -322,12 +445,13 @@ private struct WorkspaceSearchField: NSViewRepresentable {
     var onMove: (Int) -> Void
     var onSubmit: () -> Void
     var onCancel: () -> Void
+    var prompt: String
 
     func makeCoordinator() -> Coordinator { Coordinator(parent: self) }
 
     func makeNSView(context: Context) -> NSSearchField {
         let field = AutofocusingSearchField()
-        field.placeholderString = "템플릿·워크플로·검색 키워드 찾기"
+        field.placeholderString = prompt
         field.setAccessibilityLabel("Wikey 검색어")
         field.controlSize = .large
         field.delegate = context.coordinator

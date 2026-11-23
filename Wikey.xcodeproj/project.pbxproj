@@ -27,11 +27,13 @@
 		57FCA4BFF1808A3845F2E6B2 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E4044A7589BCC13D42395C5 /* OnboardingView.swift */; };
 		590245A0CFE67869BF4CF7D9 /* MenuBarContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 785E1FA6D60362D2E231CFB0 /* MenuBarContentView.swift */; };
 		63147077D02F807AD118A26A /* PermissionCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E3BAD7A516C118AD61DE4C /* PermissionCenter.swift */; };
+		6E7AA44143D6CF740668DF0F /* SearchCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5010F9413D6A08D7589440 /* SearchCurrency.swift */; };
 		712F8C7FD60150B0B66AF542 /* WorkflowRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB5E59681CF2AF25BFC5FF4B /* WorkflowRunner.swift */; };
 		764F388AE8FB73D0D099FA32 /* LayoutEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B48F73680E3E23180A8E8089 /* LayoutEditorView.swift */; };
 		7BDCBC53E0192FBFFAFEE6F9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2AAC3E4BFBB08DCCCA85D5BC /* Assets.xcassets */; };
 		7CC0613A4BFE3B169DBFB94A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A699EC2BB7C9CCC56AF58A54 /* main.swift */; };
 		7E6F3623DC1A138E9727F277 /* WikeyCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 40179216A1772150F1719EAC /* WikeyCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		7FC721976CD9AA5F3E1DC8E9 /* SearchCalculation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */; };
 		8362354BC1EB4FBE72EA9192 /* WikeyCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40179216A1772150F1719EAC /* WikeyCore.framework */; };
 		854F4322866212E982763957 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD5FD16E604EF4F1646268C /* RichTextEditor.swift */; };
 		8C4980DCEAB4DBFB4490CF2A /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D474D7A2FE6E9C6853A5B0 /* TemplateEditorView.swift */; };
@@ -41,6 +43,7 @@
 		A29D31B4C0383875CBDE463E /* ApplicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8650191882F2C13EE06D44 /* ApplicationsView.swift */; };
 		A2A5F289B4A7E910E11B6BA3 /* DockIconService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8311B814F3B168ADCFCB038 /* DockIconService.swift */; };
 		A4C4AC1BFE45F2466945A51A /* WindowLayoutControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC2B14662FB8FC6B02D3FA9F /* WindowLayoutControllerTests.swift */; };
+		A59D09E4C686D1575A9312DF /* SearchUtilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1352D49A699D9D73E26CDF79 /* SearchUtilityTests.swift */; };
 		A5CDA3E6904085F9FAEA757B /* ICloudSyncSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F81B7F60FA22BFA250E4A5 /* ICloudSyncSettingsSection.swift */; };
 		A82F0ABC9CA30EED0A8635F2 /* ShortcutRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 928C51A8110C6A07CC483231 /* ShortcutRecorderView.swift */; };
 		AC96BF2982CDB8BFD3C83617 /* ShortcutModelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 663A3FFA0154A8359CDC55F4 /* ShortcutModelsTests.swift */; };
@@ -117,6 +120,7 @@
 /* Begin PBXFileReference section */
 		0846B804A546C6724A579006 /* WikeyCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WikeyCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		0C8650191882F2C13EE06D44 /* ApplicationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationsView.swift; sourceTree = "<group>"; };
+		1352D49A699D9D73E26CDF79 /* SearchUtilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchUtilityTests.swift; sourceTree = "<group>"; };
 		1B70528496E7BAEA2E52C082 /* SyncFolderIO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncFolderIO.swift; sourceTree = "<group>"; };
 		1F8F86E61039D8E0A96453B2 /* WikeyRuntime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikeyRuntime.swift; sourceTree = "<group>"; };
 		29F348C057BC64F22F800363 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -128,6 +132,7 @@
 		40179216A1772150F1719EAC /* WikeyCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WikeyCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E4044A7589BCC13D42395C5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		51FDEC8A0E2FCB4DFE3AF16D /* WikeyRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikeyRuntimeTests.swift; sourceTree = "<group>"; };
+		5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCalculation.swift; sourceTree = "<group>"; };
 		63FE0BB2F94CD62E9B19DE0A /* WorkspaceSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSearchView.swift; sourceTree = "<group>"; };
 		663A3FFA0154A8359CDC55F4 /* ShortcutModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutModelsTests.swift; sourceTree = "<group>"; };
 		6A34AA7CAB109B5FC6B0402E /* Wikey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Wikey.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -167,6 +172,7 @@
 		E70E14CFE1AE8F0FFA728406 /* WorkflowIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowIntent.swift; sourceTree = "<group>"; };
 		E7A58779AA8B13CB411D03F8 /* WorkflowDependencyGraphTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowDependencyGraphTests.swift; sourceTree = "<group>"; };
 		EB5E59681CF2AF25BFC5FF4B /* WorkflowRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowRunner.swift; sourceTree = "<group>"; };
+		ED5010F9413D6A08D7589440 /* SearchCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCurrency.swift; sourceTree = "<group>"; };
 		F423893B1BA45A8F9760DDEC /* WorkflowReferenceSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowReferenceSetupView.swift; sourceTree = "<group>"; };
 		F8311B814F3B168ADCFCB038 /* DockIconService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockIconService.swift; sourceTree = "<group>"; };
 		FC2B14662FB8FC6B02D3FA9F /* WindowLayoutControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutControllerTests.swift; sourceTree = "<group>"; };
@@ -212,6 +218,7 @@
 				A470959FA842CDFBBE30E373 /* ICloudSyncTests.swift */,
 				6F907DE950E781134887866B /* KeyboardServiceTests.swift */,
 				DED5C2DC0216363FC43B3BF0 /* LayoutZoneTests.swift */,
+				1352D49A699D9D73E26CDF79 /* SearchUtilityTests.swift */,
 				663A3FFA0154A8359CDC55F4 /* ShortcutModelsTests.swift */,
 				51FDEC8A0E2FCB4DFE3AF16D /* WikeyRuntimeTests.swift */,
 				A29E038D71C3173FDA10BF35 /* WikeyStoreTests.swift */,
@@ -328,6 +335,8 @@
 			isa = PBXGroup;
 			children = (
 				7EDE41677010F0CFC513F4F7 /* AutomationModels.swift */,
+				5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */,
+				ED5010F9413D6A08D7589440 /* SearchCurrency.swift */,
 				6A806BBE6571A9A314CA4626 /* ShortcutModels.swift */,
 				8A79D5DA40723B9FDE481569 /* SyncBackup.swift */,
 			);
@@ -534,6 +543,8 @@
 				F8C4225DF9C0D8447F187BCD /* KeyboardService.swift in Sources */,
 				27A9C27A392B8F1F5A58FB7F /* LoginItemService.swift in Sources */,
 				63147077D02F807AD118A26A /* PermissionCenter.swift in Sources */,
+				7FC721976CD9AA5F3E1DC8E9 /* SearchCalculation.swift in Sources */,
+				6E7AA44143D6CF740668DF0F /* SearchCurrency.swift in Sources */,
 				BC6A1834D3C90304AFE9B0A3 /* SequenceMonitor.swift in Sources */,
 				E24573A2C1C0FF57A601F03A /* ShortcutModels.swift in Sources */,
 				076CDFADE9C8B2E33D9178C2 /* SyncBackup.swift in Sources */,
@@ -590,6 +601,7 @@
 				212EB4359479D9620C2B2781 /* ICloudSyncTests.swift in Sources */,
 				C4498FA942718AE545DBA12B /* KeyboardServiceTests.swift in Sources */,
 				445E014CC3B3C6F67694C884 /* LayoutZoneTests.swift in Sources */,
+				A59D09E4C686D1575A9312DF /* SearchUtilityTests.swift in Sources */,
 				AC96BF2982CDB8BFD3C83617 /* ShortcutModelsTests.swift in Sources */,
 				9326BA0B076DD5284458D227 /* WikeyRuntimeTests.swift in Sources */,
 				C550C2993B9C28E16D2DD1B2 /* WikeyStoreTests.swift in Sources */,
@@ -691,7 +703,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002017;
+				CURRENT_PROJECT_VERSION = 1002018;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -711,7 +723,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -758,7 +770,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002017;
+				CURRENT_PROJECT_VERSION = 1002018;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -772,7 +784,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.17;
+				MARKETING_VERSION = 1.2.18;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
