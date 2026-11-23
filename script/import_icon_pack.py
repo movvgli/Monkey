@@ -12,10 +12,10 @@ from scipy.ndimage import binary_dilation, label
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "Sources/Wookey/Resources/Assets.xcassets"
-# Asset names in the order of the supplied PNGs. The menu variants for
-# Sharkey and Coral come from the same images as their larger illustrations.
+# Asset names in the order of the supplied PNGs. The classic banana (05)
+# is skipped because the menu uses the same banana bolt as the app.
 ASSET_NAMES = """
-AppIcon FileShelfFolderWookey ImageShelfWookey LightningMascot MenuBarBanana MenuBarWookey WookeyCommandAdd WookeyCommandBold
+AppIcon FileShelfFolderWookey ImageShelfWookey LightningMascot - MenuBarWookey WookeyCommandAdd WookeyCommandBold
 WookeyCommandCheck WookeyCommandChevron WookeyCommandClose WookeyCommandCopy WookeyCommandDelete WookeyCommandEdit WookeyCommandItalic WookeyCommandOpen
 WookeyCommandPlay WookeyCommandRefresh WookeyCommandSearch WookeyCommandSettings WookeyCommandStop WookeyCommandUnderline WookeySettingsAccessibility WookeySettingsDiagnostics
 WookeySettingsDownload WookeySettingsInfo WookeySettingsLogin WookeySettingsMenuBar WookeySettingsPalette WookeySettingsPermissions WookeySettingsStorage WookeySettingsSync
@@ -30,7 +30,11 @@ MASCOT_SIZES = {
     "FileShelfFolderSharkey": .953,
     "CoralMascot": .953,
 }
-MENU_VARIANTS = {"FileShelfFolderSharkey": "MenuBarSharkey", "CoralMascot": "MenuBarCoral"}
+MENU_VARIANTS = {
+    "LightningMascot": "MenuBarBanana",
+    "FileShelfFolderSharkey": "MenuBarSharkey",
+    "CoralMascot": "MenuBarCoral",
+}
 
 
 def crop_artwork(path):
@@ -82,14 +86,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pack", type=Path)
     args = parser.parse_args()
-    paths = []
-    for number in range(1, len(ASSET_NAMES) + 1):
+    paths = {}
+    for number, name in enumerate(ASSET_NAMES, start=1):
+        if name == "-":
+            continue
         candidates = list(args.pack.glob(f"{number:02}-*.png"))
         if len(candidates) != 1:
             parser.error(f"Expected exactly one PNG starting with {number:02}- in {args.pack}")
-        paths.append(candidates[0])
-    artwork = [crop_artwork(path) for path in paths]
-    for name, art in zip(ASSET_NAMES, artwork, strict=True):
+        paths[name] = candidates[0]
+    artwork = {name: crop_artwork(path) for name, path in paths.items()}
+    for name, art in artwork.items():
         export_asset(art, name)
         if name in MENU_VARIANTS:
             export_asset(art, MENU_VARIANTS[name])
