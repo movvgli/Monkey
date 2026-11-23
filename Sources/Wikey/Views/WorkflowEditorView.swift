@@ -88,7 +88,7 @@ struct WorkflowEditorView: View {
                             }
 
                             if !workflow.actions.isEmpty {
-                                Button("다음 동작 추가", systemImage: "plus") { showsActionPicker = true }
+                                Button("다음 동작 추가", wikeyIcon: "plus") { showsActionPicker = true }
                                     .buttonStyle(WikeyGlossyButtonStyle())
                                     .padding(.leading, 48)
                                     .padding(.top, 5)
@@ -129,7 +129,7 @@ struct WorkflowEditorView: View {
                             Text(isRunning ? "실행 중" : "대기 중")
                         }
                     } else {
-                        Label("워크플로 실행", systemImage: "play.fill")
+                        WikeyControlLabel(title: "워크플로 실행", symbol: "play.fill")
                     }
                 }
                 .buttonStyle(WikeyGlossyButtonStyle(tint: .accent))
@@ -217,7 +217,7 @@ struct WorkflowEditorView: View {
             subtitle: "동작을 위에서부터 순서대로 실행합니다.",
             onBack: onBack
         ) {
-            Button("동작 추가", systemImage: "plus") { showsActionPicker = true }
+            Button("동작 추가", wikeyIcon: "plus") { showsActionPicker = true }
                 .buttonStyle(WikeyGlossyButtonStyle())
                 .keyboardShortcut("d", modifiers: [.command, .shift])
                 .help("동작 추가 (⇧⌘D)")
@@ -241,7 +241,7 @@ struct WorkflowEditorView: View {
                     .toggleStyle(.switch)
                     .controlSize(.small)
                     .help("끄면 이 워크플로의 전역 단축키를 해제합니다.")
-                Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", systemImage: "keyboard") {
+                Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", wikeyIcon: "keyboard") {
                     showsShortcutEditor.toggle()
                 }
                 .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
@@ -448,15 +448,11 @@ private struct TemplateActionSetupView: View {
             selectedTemplateID = template.id
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: "doc.on.clipboard")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
-                    .frame(width: 38, height: 38)
-                    .background(Color.wikeyInk(in: colorScheme).opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                WikeyActionIcon(symbol: "doc.on.clipboard", tint: .amber, size: 26)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(template.name)
-                        .font(.headline)
+                        .font(.body)
                         .foregroundStyle(.primary)
                     Text(template.plainText.isEmpty ? "내용 없음" : template.plainText)
                         .font(.subheadline)
@@ -466,9 +462,7 @@ private struct TemplateActionSetupView: View {
 
                 Spacer(minLength: 12)
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 19))
-                    .foregroundStyle(isSelected ? Color.wikeyInk(in: colorScheme) : Color.secondary)
+                WikeyActionIcon(symbol: isSelected ? "checkmark.circle.fill" : "circle", tint: .neutral, size: 17)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 11)
@@ -557,7 +551,7 @@ private struct FlowActionRow: View {
                         ActionIcon(action: action)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(actionTitle)
-                                .font(.headline)
+                                .font(.body)
                                 .foregroundStyle(.primary)
                             Text(actionSubtitle)
                                 .font(.subheadline)
@@ -565,7 +559,7 @@ private struct FlowActionRow: View {
                                 .lineLimit(1)
                         }
                         Spacer(minLength: 16)
-                        WikeyActionIcon(symbol: "slider.horizontal.3", tint: .accent, size: 36)
+                        WikeyActionIcon(symbol: "slider.horizontal.3", tint: .accent, size: 17)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(minHeight: 42)
@@ -574,15 +568,15 @@ private struct FlowActionRow: View {
                 .buttonStyle(.plain)
                 .help("동작 세부 설정")
                 Menu("동작 메뉴", systemImage: "ellipsis") {
-                    Button("세부 설정…", systemImage: "slider.horizontal.3") {
+                    Button("세부 설정…", wikeyIcon: "slider.horizontal.3") {
                         showsEditor = true
                     }
-                    Button("위로 이동", systemImage: "arrow.up", action: moveUp)
+                    Button("위로 이동", wikeyIcon: "arrow.up", action: moveUp)
                         .disabled(!canMoveUp)
-                    Button("아래로 이동", systemImage: "arrow.down", action: moveDown)
+                    Button("아래로 이동", wikeyIcon: "arrow.down", action: moveDown)
                         .disabled(!canMoveDown)
                     Divider()
-                    Button("삭제", systemImage: "trash", role: .destructive, action: delete)
+                    Button("삭제", wikeyIcon: "trash", role: .destructive, action: delete)
                 }
                 .labelStyle(.iconOnly)
                 .menuStyle(.borderlessButton)
@@ -598,20 +592,20 @@ private struct FlowActionRow: View {
                         actionEditor
                         Divider()
                         HStack {
-                            Button("위로 이동", systemImage: "arrow.up") {
+                            Button("위로 이동", wikeyIcon: "arrow.up") {
                                 showsEditor = false
                                 moveUp()
                             }
                             .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
                             .disabled(!canMoveUp)
-                            Button("아래로 이동", systemImage: "arrow.down") {
+                            Button("아래로 이동", wikeyIcon: "arrow.down") {
                                 showsEditor = false
                                 moveDown()
                             }
                             .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
                             .disabled(!canMoveDown)
                             Spacer()
-                            Button("삭제", systemImage: "trash", role: .destructive) {
+                            Button("삭제", wikeyIcon: "trash", role: .destructive) {
                                 showsEditor = false
                                 delete()
                             }
@@ -916,7 +910,7 @@ private struct ActionIcon: View {
                 .background(icon.tint.ink(in: colorScheme).opacity(0.13), in: RoundedRectangle(cornerRadius: 9))
                 .accessibilityHidden(true)
         } else {
-            WikeyActionIcon(symbol: icon.symbol, tint: icon.tint, size: 36)
+            WikeyActionIcon(symbol: icon.symbol, tint: icon.tint, size: 28)
         }
     }
 }

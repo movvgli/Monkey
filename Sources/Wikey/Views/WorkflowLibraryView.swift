@@ -111,7 +111,7 @@ struct WorkflowLibraryView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Button("새 워크플로", systemImage: "plus", action: createWorkflow)
+                Button("새 워크플로", wikeyIcon: "plus", action: createWorkflow)
                     .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
                     .padding(.top, 3)
@@ -210,7 +210,7 @@ private struct WorkflowLibraryRow: View {
                     WikeyActionIcon(symbol: icon.symbol, tint: icon.tint)
 
                     Text(workflow.name)
-                        .font(.system(.body, design: .rounded, weight: .medium))
+                        .font(.system(.body, design: .rounded))
                         .lineLimit(1)
                         .layoutPriority(1)
 
@@ -260,9 +260,7 @@ private struct WorkflowLibraryRow: View {
         Button {
             runtime.run(workflowID: workflow.id)
         } label: {
-            Image(systemName: "play.fill")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.wikeyInk(in: colorScheme))
+            WikeyActionIcon(symbol: "play.fill", tint: .accent, size: 14)
                 .frame(width: 28, height: 28)
         }
         .buttonStyle(WikeyHoverButtonStyle(filled: true, cornerRadius: 14))

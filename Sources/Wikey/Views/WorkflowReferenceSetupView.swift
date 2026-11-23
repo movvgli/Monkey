@@ -61,15 +61,11 @@ struct WorkflowReferenceSetupView: View {
             selectedWorkflowID = workflow.id
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
-                    .frame(width: 38, height: 38)
-                    .background(Color.wikeyInk(in: colorScheme).opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                WikeyActionIcon(symbol: "bolt", tint: .accent, size: 26)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(workflow.name)
-                        .font(.headline)
+                        .font(.body)
                         .foregroundStyle(.primary)
                     Text("동작 \(workflow.actions.count)개")
                         .font(.subheadline)
@@ -82,9 +78,7 @@ struct WorkflowReferenceSetupView: View {
                     ShortcutBadge(text: workflow.shortcut.displayName)
                 }
 
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 19))
-                    .foregroundStyle(isSelected ? Color.wikeyInk(in: colorScheme) : Color.secondary)
+                WikeyActionIcon(symbol: isSelected ? "checkmark.circle.fill" : "circle", tint: .neutral, size: 17)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 11)

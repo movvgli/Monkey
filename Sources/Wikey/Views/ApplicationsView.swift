@@ -111,7 +111,7 @@ struct ApplicationsView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 18) {
             WikeyPageHeader(title: "앱", subtitle: "설치된 앱에 단축키를 지정하고 바로 실행합니다.") {
-                Button("새로고침", systemImage: "arrow.clockwise") {
+                Button("새로고침", wikeyIcon: "arrow.clockwise") {
                     Task { await reloadApplications() }
                 }
                 .buttonStyle(.bordered)
@@ -260,8 +260,7 @@ private struct ApplicationShortcutRow: View {
                         if isRunning {
                             ProgressView().controlSize(.small)
                         } else {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 13, weight: .semibold))
+                            WikeyActionIcon(symbol: "play.fill", tint: .accent, size: 14)
                         }
                     }
                     .frame(width: 32, height: 32)

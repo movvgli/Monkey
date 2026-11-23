@@ -26,7 +26,7 @@ struct LayoutEditorView: View {
                 WikeyDeleteButton(title: "레이아웃 삭제") {
                     showsDeleteConfirmation = true
                 }
-                Button("앱 추가", systemImage: "plus", action: addApplication)
+                Button("앱 추가", wikeyIcon: "plus", action: addApplication)
                     .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
                     .disabled(displays.isEmpty)
@@ -97,7 +97,7 @@ struct LayoutEditorView: View {
                 Text("\(layout.placements.count)개 앱 배치")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                Button("레이아웃 적용", systemImage: "play.fill") {
+                Button("레이아웃 적용", wikeyIcon: "play.fill") {
                     runtime.run(layoutID: layout.id)
                 }
                 .wikeyPrimaryButtonStyle()

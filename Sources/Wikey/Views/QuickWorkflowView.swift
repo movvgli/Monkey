@@ -70,7 +70,7 @@ struct QuickWorkflowView: View {
                             HStack(spacing: 9) {
                                 WikeyActionIcon(symbol: option.symbol, tint: option.tint)
                                 Text(option.rawValue)
-                                    .font(.system(.body, design: .rounded, weight: .semibold))
+                                    .font(.system(.body, design: .rounded))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal, 10)
@@ -159,11 +159,11 @@ struct QuickWorkflowView: View {
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("링크 주소")
         case .app:
-            Button(application?.name ?? "앱 선택…", systemImage: "app") {
+            Button(application?.name ?? "앱 선택…", wikeyIcon: "app") {
                 QuickWorkflowTargetPicker.application { application = $0 }
             }
         case .file:
-            Button(file?.lastPathComponent ?? "파일 선택…", systemImage: "doc") {
+            Button(file?.lastPathComponent ?? "파일 선택…", wikeyIcon: "doc") {
                 QuickWorkflowTargetPicker.file { file = $0 }
             }
         }

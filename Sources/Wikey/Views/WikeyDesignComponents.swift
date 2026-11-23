@@ -64,12 +64,12 @@ extension View {
     func wikeyPrimaryButtonStyle() -> some View {
         #if compiler(>=6.2)
         if #available(macOS 26.0, *) {
-            buttonStyle(.glassProminent)
+            buttonStyle(.glass)
         } else {
-            buttonStyle(.borderedProminent)
+            buttonStyle(.bordered)
         }
         #else
-        buttonStyle(.borderedProminent)
+        buttonStyle(.bordered)
         #endif
     }
 
@@ -122,8 +122,7 @@ struct WikeySearchField: View {
                 .accessibilityLabel(prompt)
             if !text.isEmpty {
                 Button { text = "" } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                    WikeyActionIcon(symbol: "xmark", tint: .neutral, size: 13)
                         .frame(width: 24, height: 24)
                         .contentShape(Rectangle())
                 }
@@ -163,8 +162,7 @@ struct WikeyDeleteButton: View {
 
     var body: some View {
         Button(role: .destructive, action: action) {
-            Image(systemName: "trash")
-                .font(.system(size: 14, weight: .medium))
+            WikeyActionIcon(symbol: "trash", tint: .rose, size: 16)
         }
         .buttonStyle(WikeyGlossyButtonStyle(tint: .rose, iconOnly: true))
         .help(title)
@@ -184,8 +182,8 @@ struct WikeyEditorHeader<Actions: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             if let onBack {
                 Button(action: onBack) {
-                    Label("목록", systemImage: "chevron.left")
-                        .font(.subheadline.weight(.medium))
+                    WikeyControlLabel(title: "목록", symbol: "chevron.left")
+                        .font(.subheadline)
                         .foregroundStyle(Color.wikeyInk(in: colorScheme))
                         .padding(.horizontal, 8)
                         .frame(height: 26)
@@ -200,7 +198,7 @@ struct WikeyEditorHeader<Actions: View>: View {
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 9) {
                         Button { isEditingName = true } label: {
-                            WikeyActionIcon(symbol: "pencil", tint: .accent)
+                            WikeyActionIcon(symbol: "pencil", tint: .accent, size: 19)
                         }
                         .buttonStyle(WikeyHoverButtonStyle())
                         .accessibilityLabel("이름 수정")
@@ -380,14 +378,14 @@ struct WikeyActionIcon: View {
     @Environment(\.colorScheme) private var colorScheme
     var symbol: String
     var tint: WikeyActionTint
-    var size: CGFloat = 28
+    var size: CGFloat = 24
 
     private var artwork: String? {
         switch symbol {
-        case "bolt": "WorkflowActionBolt"
+        case "bolt", "bolt.fill": "WorkflowActionBolt"
         case "link": "WorkflowActionLink"
         case "doc.on.clipboard": "WorkflowActionTemplate"
-        case "app": "WorkflowActionApplication"
+        case "app", "macwindow", "dock.rectangle": "WorkflowActionApplication"
         case "doc": "WorkflowActionDocument"
         case "rectangle.3.group": "WorkflowActionLayout"
         case "keyboard": "WorkflowActionKeyboard"
@@ -395,7 +393,32 @@ struct WikeyActionIcon: View {
         case "photo": "WorkflowActionPhoto"
         case "paperclip": "WorkflowActionAttachment"
         case "return", "arrow.turn.down.left": "WorkflowActionReturn"
+        case "plus", "plus.circle": "WikeyCommandAdd"
+        case "play.fill": "WikeyCommandPlay"
+        case "gearshape", "slider.horizontal.3": "WikeyCommandSettings"
+        case "magnifyingglass": "WikeyCommandSearch"
+        case "pencil": "WikeyCommandEdit"
+        case "trash": "WikeyCommandDelete"
+        case "doc.on.doc": "WikeyCommandCopy"
+        case "xmark", "xmark.circle.fill": "WikeyCommandClose"
+        case "arrow.up.right", "arrow.up", "arrow.down": "WikeyCommandOpen"
+        case "chevron.left", "chevron.right": "WikeyCommandChevron"
+        case "arrow.clockwise", "arrow.clockwise.circle.fill", "arrow.triangle.2.circlepath": "WikeyCommandRefresh"
+        case "stop.fill": "WikeyCommandStop"
+        case "checkmark.circle.fill": "WikeyCommandCheck"
+        case "bold": "WikeyCommandBold"
+        case "italic": "WikeyCommandItalic"
+        case "underline": "WikeyCommandUnderline"
         default: nil
+        }
+    }
+
+    private var rotation: Angle {
+        switch symbol {
+        case "chevron.left": .degrees(180)
+        case "arrow.up": .degrees(-45)
+        case "arrow.down": .degrees(135)
+        default: .zero
         }
     }
 
@@ -406,14 +429,39 @@ struct WikeyActionIcon: View {
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
+                    .saturation(0.78)
+                    .brightness(colorScheme == .dark && artwork.hasPrefix("WikeyCommand") ? 0.19 : 0)
+                    .rotationEffect(rotation)
             } else {
                 Image(systemName: symbol)
-                    .font(.system(size: size > 30 ? 16 : 13, weight: .medium))
-                    .foregroundStyle(tint.ink(in: colorScheme))
+                    .font(.system(size: min(size, 15), weight: .regular))
+                    .foregroundStyle(tint.ink(in: colorScheme).gradient)
             }
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
+    }
+}
+
+struct WikeyControlLabel: View {
+    var title: String
+    var symbol: String
+
+    var body: some View {
+        Label {
+            Text(title).fontWeight(.regular)
+        } icon: {
+            WikeyActionIcon(symbol: symbol, tint: WikeyActionTint(symbol: symbol), size: 15)
+        }
+        .accessibilityLabel(title)
+    }
+}
+
+extension Button where Label == WikeyControlLabel {
+    init(_ title: String, wikeyIcon symbol: String, role: ButtonRole? = nil, action: @escaping () -> Void) {
+        self.init(role: role, action: action) {
+            WikeyControlLabel(title: title, symbol: symbol)
+        }
     }
 }
 
@@ -449,7 +497,7 @@ struct WikeyGlossyButtonStyle: ButtonStyle {
         let ink = tint.ink(in: colorScheme)
         return WikeyHoverSurface(
             label: configuration.label
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(ink)
                 .padding(.horizontal, iconOnly ? 0 : 12)
                 .frame(minWidth: 36, minHeight: 36),
@@ -484,7 +532,7 @@ private struct WikeyHoverSurface<Label: View>: View {
             let hoverOpacity = isDark ? 0.54 : 0.12
             return charcoal.opacity(isPressed ? hoverOpacity * 1.4 : hoverOpacity)
         }
-        return ink.opacity(selected ? 0.14 : filled ? 0.075 : 0)
+        return ink.opacity(selected ? 0.105 : filled ? 0.05 : 0)
     }
 
     var body: some View {
@@ -494,15 +542,15 @@ private struct WikeyHoverSurface<Label: View>: View {
                 shape.fill(fill)
                     .overlay {
                         if focused {
-                            shape.inset(by: 1).strokeBorder(ink.opacity(0.75), lineWidth: 1)
+                            shape.inset(by: 1).strokeBorder(ink.opacity(0.62), lineWidth: 1)
                         }
                         if glossy {
                             shape.fill(LinearGradient(
-                                colors: [Color.white.opacity(colorScheme == .dark ? 0.13 : 0.65), .clear],
+                                colors: [Color.white.opacity(colorScheme == .dark ? 0.08 : 0.45), .clear],
                                 startPoint: .top, endPoint: .bottom
                             ))
                             shape.strokeBorder(LinearGradient(
-                                colors: [Color.white.opacity(colorScheme == .dark ? 0.18 : 0.8), Color.black.opacity(0.11)],
+                                colors: [Color.white.opacity(colorScheme == .dark ? 0.13 : 0.65), Color.black.opacity(0.075)],
                                 startPoint: .top, endPoint: .bottom
                             ))
                         }

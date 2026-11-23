@@ -83,13 +83,10 @@ private struct WikeySidebar: View {
             navigate(section)
         } label: {
             HStack(spacing: 9) {
-                Image(systemName: section.symbol)
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(WikeyActionTint(symbol: section.symbol).ink(in: colorScheme))
+                WikeyActionIcon(symbol: section.symbol, tint: WikeyActionTint(symbol: section.symbol), size: 17)
                     .frame(width: 19)
-                    .accessibilityHidden(true)
                 Text(section.title)
-                    .font(.body.weight(isSelected ? .semibold : .regular))
+                    .font(.body.weight(isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? ink : Color.primary)
                 Spacer(minLength: 0)
             }
@@ -163,7 +160,7 @@ struct ContentView: View {
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button("실행 중지", systemImage: "stop.fill") { runtime.runner.cancel() }
+                        Button("실행 중지", wikeyIcon: "stop.fill") { runtime.runner.cancel() }
                     }
                     .padding(.horizontal, WikeyPageMetrics.padding)
                     .padding(.vertical, 12)
@@ -173,24 +170,27 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Wikey 검색", systemImage: "magnifyingglass") { showsSearch = true }
+                Button("Wikey 검색", wikeyIcon: "magnifyingglass") { showsSearch = true }
+                    .labelStyle(.iconOnly)
                     .help("Wikey 검색 (⌘K)")
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("새 워크플로", systemImage: "bolt", action: addWorkflow)
-                    Button("새 링크", systemImage: "link", action: addLink)
-                    Button("새 템플릿", systemImage: "doc.on.clipboard", action: addTemplate)
-                    Button("새 레이아웃", systemImage: "rectangle.3.group", action: addLayout)
+                    Button("새 워크플로", wikeyIcon: "bolt", action: addWorkflow)
+                    Button("새 링크", wikeyIcon: "link", action: addLink)
+                    Button("새 템플릿", wikeyIcon: "doc.on.clipboard", action: addTemplate)
+                    Button("새 레이아웃", wikeyIcon: "rectangle.3.group", action: addLayout)
                 } label: {
-                    Label("새로 만들기", systemImage: "plus")
+                    WikeyControlLabel(title: "새로 만들기", symbol: "plus")
+                        .labelStyle(.iconOnly)
                 }
                 .help("새로 만들기")
             }
             ToolbarItem(placement: .primaryAction) {
                 SettingsLink {
-                    Label("설정", systemImage: "gearshape")
+                    WikeyControlLabel(title: "설정", symbol: "gearshape")
                 }
+                .labelStyle(.iconOnly)
                 .help("설정 (⌘,)")
             }
         }
@@ -457,7 +457,7 @@ private struct LinkLibraryView: View {
                     Button {
                         runtime.run(workflowID: link.id)
                     } label: {
-                        Image(systemName: "arrow.up.right")
+                        WikeyActionIcon(symbol: "arrow.up.right", tint: .graphite, size: 14)
                     }
                     .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite, iconOnly: true))
                     .accessibilityLabel("\(link.workflow.name) 링크 열기")
@@ -564,7 +564,7 @@ private struct LibraryLandingView<Content: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
                 WikeyPageHeader(title: title, subtitle: subtitle) {
-                    Button(addTitle, systemImage: "plus", action: add)
+                    Button(addTitle, wikeyIcon: "plus", action: add)
                         .wikeyPrimaryButtonStyle()
                         .controlSize(.large)
                 }
@@ -613,11 +613,11 @@ private struct LibraryItemButton: View {
                 WikeyActionIcon(
                     symbol: systemImage,
                     tint: WikeyActionTint(symbol: systemImage),
-                    size: 30
+                    size: 24
                 )
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.headline)
+                        .font(.body)
                     Text(subtitle)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -630,8 +630,7 @@ private struct LibraryItemButton: View {
                     }
                 }
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.secondary)
+                WikeyActionIcon(symbol: "chevron.right", tint: .neutral, size: 13)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)

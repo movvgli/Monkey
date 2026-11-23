@@ -128,7 +128,7 @@ struct WikeySettingsView: View {
                 .background(Color.wikeyAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
-            Button("권한 상태 새로고침", systemImage: "arrow.clockwise") {
+            Button("권한 상태 새로고침", wikeyIcon: "arrow.clockwise") {
                 runtime.permissions.refresh()
             }
             .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
