@@ -384,11 +384,41 @@ struct WikeyActionIcon: View {
 
     var body: some View {
         let ink = tint.ink(in: colorScheme)
+        let isDark = colorScheme == .dark
+        let tile = RoundedRectangle(cornerRadius: size * 0.30)
+
         Image(systemName: symbol)
-            .font(.system(size: size > 30 ? 16 : 13, weight: .medium))
-            .foregroundStyle(ink)
+            .symbolVariant(.fill)
+            .font(.system(size: size > 30 ? 16 : 13, weight: .semibold))
+            .foregroundStyle(LinearGradient(
+                colors: [ink.opacity(0.83), ink],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ))
+            .shadow(color: .black.opacity(isDark ? 0.38 : 0.20), radius: 0.65, y: 1)
             .frame(width: size, height: size)
-            .background(ink.opacity(colorScheme == .dark ? 0.16 : 0.10), in: RoundedRectangle(cornerRadius: 9))
+            .background {
+                tile.fill(ink.opacity(isDark ? 0.18 : 0.13))
+                    .overlay {
+                        tile.fill(LinearGradient(
+                            colors: [
+                                .white.opacity(isDark ? 0.23 : 0.86),
+                                .clear,
+                                ink.opacity(isDark ? 0.08 : 0.15)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    }
+                    .overlay {
+                        tile.strokeBorder(LinearGradient(
+                            colors: [.white.opacity(isDark ? 0.30 : 0.94), .black.opacity(0.19)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ))
+                    }
+                    .shadow(color: .black.opacity(isDark ? 0.27 : 0.13), radius: 1.5, y: 1)
+            }
             .accessibilityHidden(true)
     }
 }
