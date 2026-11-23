@@ -14,10 +14,11 @@ struct WorkspaceSearchView: View {
         case run(UUID)
         case copy(UUID)
         case copyValue(String)
+        case openApplication(InstalledApplication)
 
         var actionTitle: String {
             switch self {
-            case .library: "열기"
+            case .library, .openApplication: "열기"
             case .run: "실행"
             case .copy, .copyValue: "복사"
             }
@@ -47,7 +48,8 @@ struct WorkspaceSearchView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     @State private var selected: Destination?
-    @State private var copyError: String?
+    @State private var actionError: String?
+    @State private var installedApplications: [InstalledApplication] = []
     @State private var exchangeRates: SearchExchangeRates.Snapshot?
     @State private var exchangeLoadFailed = false
     var mode: Mode
@@ -58,7 +60,9 @@ struct WorkspaceSearchView: View {
     }
 
     private func matches(for query: String) -> (entries: [Result], utility: Utility?) {
-        let keywordResults = WorkflowKeyword.matches(query, in: runtime.store.workflows).map(workflowResult)
+        let keywordResults = WorkflowKeyword.matches(query, in: runtime.store.workflows).map {
+            workflowResult($0.workflow, matchingKeyword: $0.keyword)
+        }
         if let utility = utility(for: query, keywordResults: keywordResults) {
             return (utilityResults(utility), utility)
         }
@@ -70,7 +74,20 @@ struct WorkspaceSearchView: View {
                 result.name.localizedCaseInsensitiveContains(term) || result.detail.localizedCaseInsensitiveContains(term)
             }
         }
-        return (keywordResults + matchingEntries, nil)
+        let applications = isLauncher && !terms.isEmpty ? applicationResults(matching: terms) : []
+        return (keywordResults + matchingEntries + applications, nil)
+    }
+
+    private func applicationResults(matching terms: [String]) -> [Result] {
+        installedApplications.compactMap { application in
+            let fileName = URL(fileURLWithPath: application.path).deletingPathExtension().lastPathComponent
+            guard terms.allSatisfy({ term in
+                application.displayName.localizedStandardContains(term)
+                    || fileName.localizedStandardContains(term)
+                    || application.bundleIdentifier.localizedStandardContains(term)
+            }) else { return nil }
+            return Result(id: .openApplication(application), name: application.displayName, detail: "설치된 앱", symbol: "app")
+        }
     }
 
     private func utility(for query: String, keywordResults: [Result]) -> Utility? {
@@ -109,17 +126,17 @@ struct WorkspaceSearchView: View {
         let templates = runtime.store.templates.map {
             Result(id: .copy($0.id), name: $0.name, detail: "템플릿", symbol: "doc.on.clipboard")
         }
-        return templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map(workflowResult)
+        return templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map { workflowResult($0) }
     }
 
-    private func workflowResult(_ workflow: Workflow) -> Result {
+    private func workflowResult(_ workflow: Workflow, matchingKeyword: String? = nil) -> Result {
         let action = workflow.actions.count == 1 ? workflow.actions.first : nil
         return Result(
             id: .run(workflow.id),
             name: workflow.name,
             detail: action?.title ?? "워크플로",
             symbol: action?.monkeyIcon.symbol ?? "bolt",
-            keyword: WorkflowKeyword.normalized(workflow.keyword)
+            keyword: matchingKeyword ?? WorkflowKeyword.normalized(workflow.keywords.first)
         )
     }
 
@@ -157,7 +174,7 @@ struct WorkspaceSearchView: View {
                     onMove: moveSelection,
                     onSubmit: openSelected,
                     onCancel: close,
-                    prompt: isLauncher ? "검색 또는 계산·환율 입력" : "템플릿·워크플로·검색 키워드 찾기"
+                    prompt: isLauncher ? "앱·워크플로·템플릿 검색 또는 계산·환율 입력" : "템플릿·워크플로·검색 키워드 찾기"
                 )
                 .frame(height: 28)
                 Button("닫기", monkeyIcon: "xmark", action: close)
@@ -177,7 +194,8 @@ struct WorkspaceSearchView: View {
                     .frame(maxHeight: .infinity)
             } else if entries.isEmpty {
                 if query.isEmpty {
-                    ContentUnavailableView("저장한 템플릿이나 워크플로가 없습니다", systemImage: "magnifyingglass")
+                    ContentUnavailableView(isLauncher ? "앱 이름을 입력해 검색하세요" : "저장한 템플릿이나 워크플로가 없습니다",
+                                           systemImage: "magnifyingglass")
                         .frame(maxHeight: .infinity)
                 } else {
                     ContentUnavailableView.search(text: query)
@@ -188,8 +206,8 @@ struct WorkspaceSearchView: View {
             }
 
             Divider()
-            if let copyError {
-                Label(copyError, systemImage: "exclamationmark.triangle")
+            if let actionError {
+                Label(actionError, systemImage: "exclamationmark.triangle")
                     .font(.caption)
                     .foregroundStyle(MonkeyActionTint.rose.ink(in: colorScheme))
                     .padding(.horizontal, 18)
@@ -214,6 +232,12 @@ struct WorkspaceSearchView: View {
         }
         .onChange(of: entries.map(\.id), initial: true) { _, ids in
             if selected.map(ids.contains) != true { selected = ids.first }
+        }
+        .task {
+            guard isLauncher else { return }
+            let applications = await InstalledApplicationCatalog.load()
+            guard !Task.isCancelled else { return }
+            installedApplications = applications
         }
         .task(id: needsExchangeRates(utility)) {
             guard needsExchangeRates(utility) else { return }
@@ -286,7 +310,14 @@ struct WorkspaceSearchView: View {
                                     Text(entry.name)
                                         .lineLimit(1)
                                 } icon: {
-                                    MonkeyActionIcon(symbol: entry.symbol, tint: MonkeyActionTint(symbol: entry.symbol), size: 17)
+                                    if case .openApplication(let application) = entry.id {
+                                        Image(nsImage: NSWorkspace.shared.icon(forFile: application.path))
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 17, height: 17)
+                                    } else {
+                                        MonkeyActionIcon(symbol: entry.symbol, tint: MonkeyActionTint(symbol: entry.symbol), size: 17)
+                                    }
                                 }
                                 .font(entry.isValue ? .system(.title3, design: .rounded, weight: .semibold) : .body)
                                 if let keyword = entry.keyword {
@@ -320,7 +351,7 @@ struct WorkspaceSearchView: View {
     private func changeQuery(_ value: String) {
         query = value
         selected = matches(for: value).entries.first?.id
-        copyError = nil
+        actionError = nil
     }
 
     private func moveSelection(_ offset: Int) {
@@ -343,6 +374,12 @@ struct WorkspaceSearchView: View {
         switch destination {
         case .library(let location):
             if case .library(let open) = mode { open(location) }
+        case .openApplication(let application):
+            if NSWorkspace.shared.open(URL(fileURLWithPath: application.path)) {
+                close()
+            } else {
+                actionError = "‘\(application.displayName)’ 앱을 열지 못했습니다."
+            }
         case .run(let id):
             guard runtime.store.workflows.contains(where: { $0.id == id && !$0.actions.isEmpty }) else { return }
             close()
@@ -353,14 +390,14 @@ struct WorkspaceSearchView: View {
                 try runtime.clipboard.copy(runtime.store.templateDocument(id: id))
                 close()
             } catch {
-                copyError = error.localizedDescription
+                actionError = error.localizedDescription
             }
         case .copyValue(let value):
             do {
                 try runtime.clipboard.copy(NSAttributedString(string: value))
                 close()
             } catch {
-                copyError = error.localizedDescription
+                actionError = error.localizedDescription
             }
         }
     }

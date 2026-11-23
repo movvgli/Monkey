@@ -438,7 +438,7 @@ private struct LinkLibraryView: View {
         let filtered = links.filter { link in
             query.isEmpty || link.workflow.name.localizedCaseInsensitiveContains(query)
                 || link.address.localizedCaseInsensitiveContains(query)
-                || link.workflow.keyword?.localizedCaseInsensitiveContains(query) == true
+                || link.workflow.keywords.contains { $0.localizedCaseInsensitiveContains(query) }
         }
 
         LibraryLandingView(
@@ -456,7 +456,7 @@ private struct LinkLibraryView: View {
                 HStack(spacing: 4) {
                     LibraryItemButton(
                         title: link.workflow.name,
-                        subtitle: [link.address, link.workflow.keyword].compactMap { $0 }.joined(separator: " · "),
+                        subtitle: ([link.address] + link.workflow.keywords).joined(separator: " · "),
                         systemImage: "link",
                         warning: runtime.hotkeys.registrationErrors[link.id],
                         action: { open(link.id) }

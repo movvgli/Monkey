@@ -7,6 +7,16 @@ public struct Workflow: Identifiable, Codable, Hashable, Sendable {
     public var shortcut: ShortcutGesture
     public var actions: [WorkflowAction]
     public var keyword: String?
+    private var additionalKeywords: [String]?
+
+    // Keep the first keyword readable by versions that only support one.
+    public var keywords: [String] {
+        get { [keyword].compactMap { $0 } + (additionalKeywords ?? []) }
+        set {
+            keyword = newValue.first
+            additionalKeywords = newValue.count > 1 ? Array(newValue.dropFirst()) : nil
+        }
+    }
 
     public init(
         id: UUID = UUID(),
@@ -26,6 +36,11 @@ public struct Workflow: Identifiable, Codable, Hashable, Sendable {
 }
 
 public enum WorkflowKeyword {
+    public struct Match {
+        public let workflow: Workflow
+        public let keyword: String
+    }
+
     public static func normalized(_ text: String?) -> String? {
         guard let text else { return nil }
         let token = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -35,25 +50,44 @@ public enum WorkflowKeyword {
         return token.lowercased(with: Locale(identifier: "en_US_POSIX"))
     }
 
-    public static func validationMessage(for text: String?, excluding id: UUID? = nil, in workflows: [Workflow]) -> String? {
-        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        guard let token = normalized(text) else { return "공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요." }
-        if let conflict = workflows.first(where: { $0.id != id && normalized($0.keyword) == token }) {
-            return "‘\(conflict.name)’에서 이미 사용 중인 키워드입니다."
+    public static func parseList(_ text: String) -> [String]? {
+        var tokens: [String] = []
+        var seen = Set<String>()
+        for part in text.split(separator: ",") {
+            let value = part.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !value.isEmpty else { continue }
+            guard let token = normalized(value) else { return nil }
+            if seen.insert(token).inserted { tokens.append(token) }
+        }
+        return tokens
+    }
+
+    public static func validationMessage(for text: String, excluding id: UUID? = nil, in workflows: [Workflow]) -> String? {
+        guard let tokens = parseList(text) else { return "키워드마다 공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요." }
+        let requested = Set(tokens)
+        for workflow in workflows where workflow.id != id {
+            if let conflict = workflow.keywords.compactMap(normalized).first(where: requested.contains) {
+                return "‘\(conflict)’ 키워드는 ‘\(workflow.name)’에서 이미 사용 중입니다."
+            }
         }
         return nil
     }
 
-    public static func matches(_ query: String, in workflows: [Workflow]) -> [Workflow] {
+    public static func matches(_ query: String, in workflows: [Workflow]) -> [Match] {
         guard let token = normalized(query) else { return [] }
-        let candidates = workflows.compactMap { workflow -> (keyword: String, workflow: Workflow)? in
-            guard let keyword = normalized(workflow.keyword), keyword.hasPrefix(token) else { return nil }
-            return (keyword, workflow)
+        let candidates = workflows.flatMap { workflow in
+            var seen = Set<String>()
+            return workflow.keywords.compactMap(normalized).compactMap { keyword -> Match? in
+                guard keyword.hasPrefix(token), seen.insert(keyword).inserted else { return nil }
+                return Match(workflow: workflow, keyword: keyword)
+            }
         }
         let grouped = Dictionary(grouping: candidates, by: \.keyword)
         // Imported or synced workflows can share a keyword. Leave ambiguous commands out.
         let unique = candidates.filter { grouped[$0.keyword]?.count == 1 && !$0.workflow.actions.isEmpty }
-        return (unique.filter { $0.keyword == token } + unique.filter { $0.keyword != token }).map(\.workflow)
+        let ranked = unique.filter { $0.keyword == token } + unique.filter { $0.keyword != token }
+        var matchedWorkflows = Set<UUID>()
+        return ranked.filter { matchedWorkflows.insert($0.workflow.id).inserted }
     }
 }
 
