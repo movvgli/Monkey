@@ -1,6 +1,15 @@
 import SwiftUI
 import WikeyCore
 
+private enum WorkflowListMetrics {
+    static let columnPadding: CGFloat = 16
+    static let shortcutWidth: CGFloat = 136
+    static let runWidth: CGFloat = 56
+    static let controlHeight: CGFloat = 42
+    static let editInset: CGFloat = 8
+    static let controlSpacing: CGFloat = 6
+}
+
 struct WorkflowLibraryView: View {
     private enum Filter: String, CaseIterable {
         case all = "전체"
@@ -127,16 +136,18 @@ struct WorkflowLibraryView: View {
 
     private func workflowList(_ workflows: [Workflow]) -> some View {
         LazyVStack(spacing: 0) {
-            HStack(spacing: 14) {
+            HStack(spacing: WorkflowListMetrics.controlSpacing + WorkflowListMetrics.editInset) {
                 Text("이름").frame(maxWidth: .infinity, alignment: .leading)
-                Text("단축키").frame(width: 136, alignment: .leading)
-                Text("실행").frame(width: 56)
+                Text("단축키").frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
+                Text("실행").frame(width: WorkflowListMetrics.runWidth)
             }
             .font(.caption.weight(.semibold))
             .foregroundStyle(.secondary)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, WorkflowListMetrics.columnPadding)
             .padding(.vertical, 10)
-            .background(Color.wikeyAccent.opacity(0.063))
+            .background {
+                Rectangle().fill(Color.wikeyAccent.opacity(0.063))
+            }
 
             ForEach(workflows) { workflow in
                 Divider()
@@ -174,7 +185,7 @@ private struct WorkflowLibraryRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: WorkflowListMetrics.controlSpacing) {
             Button(action: open) {
                 HStack(spacing: 12) {
                     Image(systemName: workflow.isEnabled ? "bolt.fill" : "pause.fill")
@@ -208,12 +219,12 @@ private struct WorkflowLibraryRow: View {
                             isMuted: workflow.shortcut.steps.isEmpty || !workflow.isEnabled
                         )
                     }
-                    .frame(width: 136, alignment: .leading)
+                    .frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
                 }
-                .frame(minHeight: 50)
-                .contentShape(Rectangle())
+                .padding(.horizontal, WorkflowListMetrics.editInset)
+                .frame(minHeight: WorkflowListMetrics.controlHeight)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(WikeyHoverButtonStyle())
             .help("\(workflow.name) 편집")
             .accessibilityLabel("\(workflow.name) 편집")
 
@@ -222,15 +233,15 @@ private struct WorkflowLibraryRow: View {
             } label: {
                 Image(systemName: "play.fill")
                     .foregroundStyle(Color.wikeyInk(in: colorScheme))
-                    .frame(width: 44, height: 27)
+                    .frame(width: WorkflowListMetrics.runWidth, height: WorkflowListMetrics.controlHeight)
             }
             .buttonStyle(WikeyHoverButtonStyle(filled: true))
             .disabled(workflow.actions.isEmpty || executionStatus != nil)
             .help("워크플로 실행")
             .accessibilityLabel("\(workflow.name) 실행")
-            .frame(width: 56)
         }
-        .padding(.horizontal, 16)
-
+        .padding(.leading, WorkflowListMetrics.columnPadding - WorkflowListMetrics.editInset)
+        .padding(.trailing, WorkflowListMetrics.columnPadding)
+        .padding(.vertical, 4)
     }
 }
