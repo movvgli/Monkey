@@ -57,22 +57,21 @@ public struct SyncPayload: Codable, Sendable {
             result.templateDocuments[template.id.uuidString] = try read(root.appendingPathComponent("Templates").appendingPathComponent(template.fileName))
             result.state.templates[index].fileName = "\(template.id.uuidString).rtfd"
         }
-        func archive(_ paths: [String]) throws -> [String] {
-            try paths.map { path in
-                let url = URL(fileURLWithPath: path)
-                let data = try read(url)
-                let name = url.lastPathComponent
-                guard safeName(name) else { throw SyncError.invalidArchive }
-                let key = digest(Data(name.utf8) + data)
-                result.assets[key] = SyncAsset(name: name, data: data)
-                return key
-            }
+        func archive(_ path: String) throws -> String {
+            let url = URL(fileURLWithPath: path)
+            let data = try read(url)
+            let name = url.lastPathComponent
+            guard safeName(name) else { throw SyncError.invalidArchive }
+            let key = digest(Data(name.utf8) + data)
+            result.assets[key] = SyncAsset(name: name, data: data)
+            return key
         }
         for index in result.state.workflows.indices {
             result.state.workflows[index].actions = try state.workflows[index].actions.map { action in
                 switch action {
-                case .pasteFiles(let paths): return .pasteFiles(filePaths: try archive(paths))
-                case .pasteImages(let paths): return .pasteImages(filePaths: try archive(paths))
+                case .openFile(let path): return .openFile(path: try archive(path))
+                case .pasteFiles(let paths): return .pasteFiles(filePaths: try paths.map(archive))
+                case .pasteImages(let paths): return .pasteImages(filePaths: try paths.map(archive))
                 default: return action
                 }
             }
@@ -103,6 +102,8 @@ public struct SyncPayload: Codable, Sendable {
         for workflow in state.workflows {
             for action in workflow.actions {
                 switch action {
+                case .openFile(let key):
+                    guard assets[key] != nil else { throw SyncError.invalidArchive }
                 case .pasteFiles(let keys), .pasteImages(let keys):
                     guard keys.allSatisfy({ assets[$0] != nil }) else { throw SyncError.invalidArchive }
                 default: break

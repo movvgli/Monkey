@@ -3,8 +3,50 @@ import SwiftUI
 import WikeyCore
 
 enum WikeyPageMetrics {
-    static let padding: CGFloat = 32
+    static let padding: CGFloat = 26
     static let maximumWidth: CGFloat = 1000
+}
+
+struct WikeyMascot: View {
+    var size: CGFloat
+
+    var body: some View {
+        Image("LightningMascot", bundle: assetBundle)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    private var assetBundle: Bundle {
+        #if SWIFT_PACKAGE
+        .module
+        #else
+        .main
+        #endif
+    }
+}
+
+struct WikeyLavenderPanel: View {
+    @Environment(\.colorScheme) private var colorScheme
+    var radius: CGFloat = 20
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius)
+        let isDark = colorScheme == .dark
+        shape.fill(
+            LinearGradient(
+                colors: isDark
+                    ? [Color(red: 0.20, green: 0.15, blue: 0.29), Color(red: 0.26, green: 0.18, blue: 0.32)]
+                    : [Color(red: 0.94, green: 0.91, blue: 1), Color(red: 0.99, green: 0.94, blue: 0.98)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .overlay {
+            shape.strokeBorder(isDark ? Color.white.opacity(0.10) : Color.wikeyAccent.opacity(0.13))
+        }
+    }
 }
 
 struct WikeyPageHeader<Actions: View>: View {
@@ -16,7 +58,7 @@ struct WikeyPageHeader<Actions: View>: View {
         HStack(alignment: .center, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -53,9 +95,9 @@ struct WikeySearchField: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 40)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
         .overlay {
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         }
     }
@@ -101,45 +143,42 @@ struct WikeyEditorHeader<Actions: View>: View {
     @ViewBuilder var actions: Actions
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 10) {
             if let onBack {
-                HStack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                            .frame(width: 38, height: 38)
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .background(Color(nsColor: .controlBackgroundColor), in: Circle())
-                    .overlay {
-                        Circle().stroke(Color(nsColor: .separatorColor).opacity(0.4), lineWidth: 1)
-                    }
-                    .help("뒤로가기")
-                    .accessibilityLabel("목록으로 돌아가기")
-                    .keyboardShortcut("[", modifiers: [.command])
-                    Spacer()
+                Button(action: onBack) {
+                    Label("목록", systemImage: "chevron.left")
+                        .font(.subheadline.weight(.medium))
                 }
+                .buttonStyle(.borderless)
+                .help("목록으로 돌아가기 (⌘[)")
+                .accessibilityLabel("목록으로 돌아가기")
+                .keyboardShortcut("[", modifiers: [.command])
             }
 
-            HStack(alignment: .center, spacing: 20) {
+            HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 5) {
-                    TextField("이름", text: $title)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 30, weight: .semibold))
-                        .accessibilityLabel("이름")
+                    HStack(spacing: 7) {
+                        Image(systemName: "pencil")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        TextField("이름", text: $title)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 25, weight: .semibold, design: .rounded))
+                            .accessibilityLabel("이름")
+                            .help("이름 편집")
+                    }
                     Text(subtitle)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
-                Spacer(minLength: 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 actions
             }
         }
         .padding(.horizontal, WikeyPageMetrics.padding)
-        .padding(.vertical, 24)
-        .background(.bar)
+        .padding(.vertical, 16)
     }
 }
 
@@ -167,13 +206,14 @@ struct WikeySection<Content: View>: View {
 }
 
 struct ShortcutBadge: View {
+    @Environment(\.colorScheme) private var colorScheme
     var text: String
     var isMuted = false
 
     var body: some View {
         Text(text)
             .font(.system(size: 11, weight: .medium, design: .monospaced))
-            .foregroundStyle(isMuted ? Color.secondary : Color.accentColor)
+            .foregroundStyle(isMuted ? Color.secondary : Color.wikeyInk(in: colorScheme))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(
@@ -230,5 +270,48 @@ struct PlainPanel<Content: View>: View {
                     .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
             }
             .shadow(color: .black.opacity(0.04), radius: 10, y: 3)
+    }
+}
+
+struct WikeyHoverButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isEnabled) private var isEnabled
+    var selected = false
+    var filled = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        HoverSurface(
+            label: configuration.label,
+            ink: .wikeyInk(in: colorScheme),
+            selected: selected,
+            filled: filled,
+            isPressed: configuration.isPressed,
+            isEnabled: isEnabled
+        )
+    }
+
+    private struct HoverSurface<Label: View>: View {
+        @State private var isHovering = false
+        var label: Label
+        var ink: Color
+        var selected: Bool
+        var filled: Bool
+        var isPressed: Bool
+        var isEnabled: Bool
+
+        private var fillOpacity: Double {
+            if isPressed { return 0.24 }
+            if isHovering && isEnabled { return 0.17 }
+            if selected { return 0.14 }
+            return filled ? 0.075 : 0
+        }
+
+        var body: some View {
+            label
+                .background(ink.opacity(fillOpacity), in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(RoundedRectangle(cornerRadius: 9))
+                .opacity(isEnabled ? 1 : 0.5)
+                .onHover { isHovering = $0 }
+        }
     }
 }

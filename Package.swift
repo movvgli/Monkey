@@ -27,7 +27,7 @@ let package = Package(
                 "WikeyCore",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
-            exclude: ["Resources"]
+            resources: [.process("Resources/Assets.xcassets")]
         ),
         .executableTarget(
             name: "WikeyLoginHelper"

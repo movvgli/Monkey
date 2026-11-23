@@ -9,68 +9,87 @@ struct ApplicationsView: View {
     @State private var isLoading = true
     @State private var showsAssignedOnly = false
 
+    init(initialSearch: String = "") {
+        _searchText = State(initialValue: initialSearch)
+    }
+
+    private var searchQuery: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var missingApplications: [ApplicationShortcut] {
         runtime.store.applicationShortcuts.filter { shortcut in
-            !applications.contains { $0.bundleIdentifier == shortcut.bundleIdentifier }
+            (searchQuery.isEmpty || shortcut.displayName.localizedCaseInsensitiveContains(searchQuery)
+                || shortcut.bundleIdentifier.localizedCaseInsensitiveContains(searchQuery))
+                && !applications.contains { $0.bundleIdentifier == shortcut.bundleIdentifier }
                 && NSWorkspace.shared.urlForApplication(withBundleIdentifier: shortcut.bundleIdentifier) == nil
         }
     }
 
     private var filteredApplications: [InstalledApplication] {
+        let shortcuts = Dictionary(
+            runtime.store.applicationShortcuts.map { ($0.bundleIdentifier, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let query = searchQuery
         return applications.filter { application in
-            let savedShortcut = runtime.store.applicationShortcuts.first {
-                $0.bundleIdentifier == application.bundleIdentifier
-            }
-            let matchesSearch = searchText.isEmpty
-                || application.displayName.localizedCaseInsensitiveContains(searchText)
-                || application.bundleIdentifier.localizedCaseInsensitiveContains(searchText)
-                || URL(fileURLWithPath: application.path).deletingPathExtension().lastPathComponent.localizedCaseInsensitiveContains(searchText)
-                || savedShortcut?.displayName.localizedCaseInsensitiveContains(searchText) == true
+            let savedShortcut = shortcuts[application.bundleIdentifier]
+            let matchesSearch = query.isEmpty
+                || application.displayName.localizedCaseInsensitiveContains(query)
+                || application.bundleIdentifier.localizedCaseInsensitiveContains(query)
+                || URL(fileURLWithPath: application.path).deletingPathExtension().lastPathComponent.localizedCaseInsensitiveContains(query)
+                || savedShortcut?.displayName.localizedCaseInsensitiveContains(query) == true
+                || savedShortcut?.shortcut.displayName.localizedCaseInsensitiveContains(query) == true
             let hasShortcut = savedShortcut != nil
             return matchesSearch && (!showsAssignedOnly || hasShortcut)
         }
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                header
+        VStack(spacing: 0) {
+            header
+                .padding(WikeyPageMetrics.padding)
+                .frame(maxWidth: WikeyPageMetrics.maximumWidth)
+            Divider()
 
-                if isLoading {
-                    HStack(spacing: 10) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text("설치된 앱을 불러오는 중입니다.")
-                            .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    if isLoading {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                                .controlSize(.small)
+                            Text("설치된 앱을 불러오는 중입니다.")
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 180)
+                    } else if filteredApplications.isEmpty && missingApplications.isEmpty {
+                        ContentUnavailableView {
+                            Label(showsAssignedOnly && searchText.isEmpty ? "지정된 단축키가 없습니다" : "앱을 찾을 수 없습니다", systemImage: "app.dashed")
+                        } description: {
+                            Text(showsAssignedOnly ? "‘전체 앱’에서 앱을 선택해 단축키를 지정하세요." : "다른 이름으로 검색하거나 앱 목록을 새로고침해 주세요.")
+                        }
+                            .frame(maxWidth: .infinity, minHeight: 240)
+                    } else if !filteredApplications.isEmpty {
+                        applicationList(filteredApplications)
                     }
-                    .frame(maxWidth: .infinity, minHeight: 180)
-                } else if filteredApplications.isEmpty {
-                    ContentUnavailableView {
-                        Label(showsAssignedOnly && searchText.isEmpty ? "지정된 단축키가 없습니다" : "앱을 찾을 수 없습니다", systemImage: "app.dashed")
-                    } description: {
-                        Text(showsAssignedOnly ? "‘단축키 지정된 앱만’을 끄고 앱에 단축키를 지정하세요." : "다른 이름으로 검색하거나 앱 목록을 새로고침해 주세요.")
-                    }
-                        .frame(maxWidth: .infinity, minHeight: 240)
-                } else {
-                    applicationList
-                }
 
-                if !isLoading && !missingApplications.isEmpty {
-                    WikeySection(title: "설치 위치를 찾을 수 없는 앱", detail: "앱을 다시 설치하거나 사용하지 않는 단축키를 지워 주세요.") {
-                        PlainPanel {
-                            VStack(spacing: 12) {
-                                ForEach(missingApplications) { application in
-                                    HStack {
-                                        Label(application.displayName, systemImage: "exclamationmark.triangle")
-                                            .foregroundStyle(.orange)
-                                        Spacer()
-                                        ShortcutBadge(text: application.shortcut.displayName)
-                                        Button("단축키 삭제") {
-                                            runtime.setApplicationShortcut(
-                                                bundleIdentifier: application.bundleIdentifier,
-                                                displayName: application.displayName,
-                                                shortcut: ShortcutGesture()
-                                            )
+                    if !isLoading && !missingApplications.isEmpty {
+                        WikeySection(title: "설치 위치를 찾을 수 없는 앱", detail: "앱을 다시 설치하거나 사용하지 않는 단축키를 지워 주세요.") {
+                            PlainPanel {
+                                VStack(spacing: 12) {
+                                    ForEach(missingApplications) { application in
+                                        HStack {
+                                            Label(application.displayName, systemImage: "exclamationmark.triangle")
+                                                .foregroundStyle(.orange)
+                                            Spacer()
+                                            ShortcutBadge(text: application.shortcut.displayName)
+                                            Button("단축키 삭제") {
+                                                runtime.setApplicationShortcut(
+                                                    bundleIdentifier: application.bundleIdentifier,
+                                                    displayName: application.displayName,
+                                                    shortcut: ShortcutGesture()
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -78,10 +97,10 @@ struct ApplicationsView: View {
                         }
                     }
                 }
+                .padding(WikeyPageMetrics.padding)
+                .frame(maxWidth: WikeyPageMetrics.maximumWidth, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .padding(WikeyPageMetrics.padding)
-            .frame(maxWidth: WikeyPageMetrics.maximumWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .navigationTitle("앱")
         .task {
@@ -100,19 +119,24 @@ struct ApplicationsView: View {
                 .disabled(isLoading)
             }
 
-            WikeySearchField(prompt: "앱 검색", text: $searchText)
+            WikeySearchField(prompt: "앱 이름·단축키 검색", text: $searchText)
             HStack {
                 Text("설치된 앱 \(applications.count)개 · 단축키 \(runtime.store.applicationShortcuts.count)개")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Toggle("단축키 지정된 앱만", isOn: $showsAssignedOnly)
-                    .toggleStyle(.checkbox)
+                Picker("앱 필터", selection: $showsAssignedOnly) {
+                    Text("전체 앱").tag(false)
+                    Text("단축키 지정됨").tag(true)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
             }
         }
     }
 
-    private var applicationList: some View {
+    private func applicationList(_ applications: [InstalledApplication]) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
                 Text("앱")
@@ -131,7 +155,7 @@ struct ApplicationsView: View {
                 .padding(.horizontal, 18)
 
             LazyVStack(spacing: 0) {
-                ForEach(filteredApplications) { application in
+                ForEach(applications) { application in
                     ApplicationShortcutRow(
                         application: application,
                         shortcut: shortcutBinding(for: application),
@@ -145,7 +169,7 @@ struct ApplicationsView: View {
                             )
                         }
                     )
-                    if application.id != filteredApplications.last?.id {
+                    if application.id != applications.last?.id {
                         Divider()
                             .padding(.leading, 66)
                     }

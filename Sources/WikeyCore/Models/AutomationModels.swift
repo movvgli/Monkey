@@ -69,6 +69,7 @@ public enum WorkflowAction: Identifiable, Codable, Hashable, Sendable {
     case launchApplication(bundleIdentifier: String, displayName: String)
     case copyTemplate(templateID: UUID, mode: TemplateDeliveryMode)
     case openURL(String)
+    case openFile(path: String)
     case applyLayout(layoutID: UUID)
     case pressKey(WorkflowKeyPress)
     case runWorkflow(workflowID: UUID)
@@ -80,6 +81,7 @@ public enum WorkflowAction: Identifiable, Codable, Hashable, Sendable {
         switch self {
         case .launchApplication(let bundleID, _): "app:\(bundleID)"
         case .copyTemplate(let id, _): "template:\(id)"
+        case .openFile(let path): "open-file:\(path)"
         case .openURL(let url): "url:\(url)"
         case .applyLayout(let id): "layout:\(id)"
         case .pressKey(let key): "key:\(key.rawValue)"
@@ -94,7 +96,8 @@ public enum WorkflowAction: Identifiable, Codable, Hashable, Sendable {
         switch self {
         case .launchApplication(_, let name): "앱 실행 · \(name)"
         case .copyTemplate: "템플릿 붙여넣기"
-        case .openURL: "웹사이트 열기"
+        case .openURL: "링크 열기"
+        case .openFile: "파일 열기"
         case .applyLayout: "창 레이아웃 적용"
         case .pressKey(let key): "\(key.title) 입력"
         case .runWorkflow: "다른 워크플로 실행"

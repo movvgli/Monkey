@@ -3,26 +3,18 @@ import SwiftUI
 import WikeyCore
 
 extension Color {
-    static let wikeyAccent = Color(red: 0.31, green: 0.29, blue: 0.93)
+    static let wikeyAccent = Color(red: 0.40, green: 0.26, blue: 0.73)
+
+    static func wikeyInk(in colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(red: 0.80, green: 0.71, blue: 1) : wikeyAccent
+    }
 }
 
 @main
 struct WikeyApp: App {
     @NSApplicationDelegateAdaptor(WikeyAppDelegate.self) private var appDelegate
-    @State private var runtime = WikeyRuntime()
+    @State private var runtime = WikeyAppRuntime.shared
     @State private var updates = UpdateController()
-
-    init() {
-        // A separate store lets local regression checks exercise the signed app
-        // without changing the user's workflows, templates, or app shortcuts.
-        let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "--test-store"),
-           arguments.indices.contains(index + 1), arguments[index + 1].hasPrefix("/") {
-            _runtime = State(initialValue: WikeyRuntime(
-                storeRootURL: URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
-            ))
-        }
-    }
 
     var body: some Scene {
         Window("Wikey", id: "main") {
@@ -30,6 +22,7 @@ struct WikeyApp: App {
                 .environment(runtime)
                 .environment(updates)
                 .tint(.wikeyAccent)
+                .accentColor(.wikeyAccent)
                 .task { runtime.start() }
                 .frame(minWidth: 920, minHeight: 620)
         }
@@ -42,6 +35,8 @@ struct WikeyApp: App {
                 }
                 .disabled(!updates.canCheckForUpdates)
             }
+
+            WorkspaceCommands()
 
             CommandMenu("워크플로") {
                 ForEach(runtime.store.workflows.filter(\.isEnabled)) { workflow in
@@ -56,14 +51,17 @@ struct WikeyApp: App {
             MenuBarContentView()
                 .environment(runtime)
                 .environment(updates)
+                .tint(.wikeyAccent)
                 .task { runtime.start() }
         }
+        .menuBarExtraStyle(.window)
 
         Settings {
             WikeySettingsView()
                 .environment(runtime)
                 .environment(updates)
                 .tint(.wikeyAccent)
+                .accentColor(.wikeyAccent)
         }
     }
 
@@ -71,6 +69,56 @@ struct WikeyApp: App {
         if runtime.lastRun?.failures.isEmpty == false { return "bolt.trianglebadge.exclamationmark" }
         if runtime.runner.runningWorkflowID != nil { return "bolt.badge.clock" }
         return "bolt.circle"
+    }
+}
+
+@MainActor
+enum WikeyAppRuntime {
+    static let shared: WikeyRuntime = {
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "--test-store"),
+           arguments.indices.contains(index + 1), arguments[index + 1].hasPrefix("/") {
+            return WikeyRuntime(storeRootURL: URL(fileURLWithPath: arguments[index + 1], isDirectory: true))
+        }
+        return WikeyRuntime()
+    }()
+
+    static func start() -> WikeyRuntime {
+        shared.start()
+        return shared
+    }
+}
+
+struct WorkspaceActions {
+    var createWorkflow: () -> Void
+    var search: () -> Void
+}
+
+private struct WorkspaceActionsKey: FocusedValueKey {
+    typealias Value = WorkspaceActions
+}
+
+extension FocusedValues {
+    var workspaceActions: WorkspaceActions? {
+        get { self[WorkspaceActionsKey.self] }
+        set { self[WorkspaceActionsKey.self] = newValue }
+    }
+}
+
+private struct WorkspaceCommands: Commands {
+    @FocusedValue(\.workspaceActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("새 워크플로") { actions?.createWorkflow() }
+                .keyboardShortcut("n", modifiers: .command)
+                .disabled(actions == nil)
+        }
+        CommandGroup(after: .textEditing) {
+            Button("Wikey 검색…") { actions?.search() }
+                .keyboardShortcut("k", modifiers: .command)
+                .disabled(actions == nil)
+        }
     }
 }
 

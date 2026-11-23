@@ -10,6 +10,12 @@ struct WorkflowEditorView: View {
     var onDelete: () -> Void
 
     @State private var showsShortcutEditor = false
+    @State private var showsActionPicker = false
+    @State private var pendingAction: WorkflowActionPicker.Option?
+    @State private var showsURLSetup = false
+    @State private var showsLayoutSetup = false
+    @State private var selectedLayoutID: UUID?
+    @State private var newURL = ""
     @State private var showsDeleteConfirmation = false
     @State private var showsTemplateActionSetup = false
     @State private var selectedTemplateID: UUID?
@@ -35,72 +41,75 @@ struct WorkflowEditorView: View {
         VStack(spacing: 0) {
             editorHeader
             Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    shortcutSummary
-
-                    if !workflow.isEnabled {
-                        Label("이 워크플로는 꺼져 있습니다. 단축키로 실행하려면 다시 켜 주세요.", systemImage: "pause.circle")
-                            .font(.subheadline)
-                            .foregroundStyle(.orange)
-                            .padding(.top, 16)
-                    }
-
+            ScrollViewReader { scroll in
+                ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
-                        TriggerSummaryRow(continues: !workflow.actions.isEmpty)
+                        shortcutSummary
 
-                        if workflow.actions.isEmpty {
-                            EmptyActionsView()
-                                .padding(.leading, 60)
-                                .padding(.top, 12)
-                        } else {
-                            ForEach(Array(workflow.actions.enumerated()), id: \.offset) { index, fallback in
-                                FlowActionRow(
-                                    number: index + 1,
-                                    isLast: index == workflow.actions.count - 1,
-                                    action: Binding(
-                                        get: {
-                                            workflow.actions.indices.contains(index)
-                                                ? workflow.actions[index]
-                                                : fallback
-                                        },
-                                        set: { updated in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text("실행 순서")
+                                .font(.headline)
+                                .padding(.bottom, 14)
+
+                            if workflow.actions.isEmpty {
+                                EmptyActionsView()
+                            } else {
+                                ForEach(Array(workflow.actions.enumerated()), id: \.offset) { index, fallback in
+                                    FlowActionRow(
+                                        number: index + 1,
+                                        isLast: index == workflow.actions.count - 1,
+                                        action: Binding(
+                                            get: {
+                                                workflow.actions.indices.contains(index)
+                                                    ? workflow.actions[index]
+                                                    : fallback
+                                            },
+                                            set: { updated in
+                                                guard workflow.actions.indices.contains(index) else { return }
+                                                workflow.actions[index] = updated
+                                            }
+                                        ),
+                                        templates: runtime.store.templates,
+                                        layouts: runtime.store.layouts,
+                                        workflows: runtime.store.workflows,
+                                        currentWorkflowID: workflow.id,
+                                        moveUp: { move(index, offset: -1) },
+                                        moveDown: { move(index, offset: 1) },
+                                        delete: {
                                             guard workflow.actions.indices.contains(index) else { return }
-                                            workflow.actions[index] = updated
-                                        }
-                                    ),
-                                    templates: runtime.store.templates,
-                                    layouts: runtime.store.layouts,
-                                    workflows: runtime.store.workflows,
-                                    currentWorkflowID: workflow.id,
-                                    moveUp: { move(index, offset: -1) },
-                                    moveDown: { move(index, offset: 1) },
-                                    delete: {
-                                        guard workflow.actions.indices.contains(index) else { return }
-                                        workflow.actions.remove(at: index)
-                                    },
-                                    canMoveUp: index > 0,
-                                    canMoveDown: index < workflow.actions.count - 1
-                                )
+                                            workflow.actions.remove(at: index)
+                                        },
+                                        canMoveUp: index > 0,
+                                        canMoveDown: index < workflow.actions.count - 1
+                                    )
+                                    .id(index)
+                                }
+                            }
+
+                            if !workflow.actions.isEmpty {
+                                Button("다음 동작 추가", systemImage: "plus") { showsActionPicker = true }
+                                    .buttonStyle(.bordered)
+                                    .padding(.leading, 48)
+                                    .padding(.top, 5)
                             }
                         }
+                        .padding(.top, 20)
 
-                        addActionMenu
-                            .padding(.leading, 60)
-                            .padding(.top, 10)
+                        if let summary = runtime.lastRun, summary.workflowID == workflow.id {
+                            PlainPanel { RunSummaryView(summary: summary) }
+                                .padding(.top, 24)
+                        }
                     }
-                    .padding(.top, 20)
-
-                    if let summary = runtime.lastRun, summary.workflowID == workflow.id {
-                        PlainPanel { RunSummaryView(summary: summary) }
-                            .padding(.top, 24)
+                    .padding(WikeyPageMetrics.padding)
+                    .frame(maxWidth: WikeyPageMetrics.maximumWidth, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                }
+                .onChange(of: workflow.actions.count) { previous, current in
+                    if current > previous {
+                        withAnimation(.easeOut(duration: 0.2)) { scroll.scrollTo(current - 1, anchor: .bottom) }
                     }
                 }
-                .padding(WikeyPageMetrics.padding)
-                .frame(maxWidth: WikeyPageMetrics.maximumWidth, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .background(Color(nsColor: .windowBackgroundColor))
 
             Divider()
 
@@ -119,7 +128,7 @@ struct WorkflowEditorView: View {
                             Text(isRunning ? "실행 중" : "대기 중")
                         }
                     } else {
-                        Label("테스트 실행", systemImage: "play.fill")
+                        Label("워크플로 실행", systemImage: "play.fill")
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -130,6 +139,48 @@ struct WorkflowEditorView: View {
             .padding(.horizontal, WikeyPageMetrics.padding)
             .padding(.vertical, 13)
             .background(.bar)
+        }
+        .navigationTitle(workflow.name)
+        .sheet(isPresented: $showsActionPicker, onDismiss: addPickedAction) {
+            WorkflowActionPicker(
+                templatesAvailable: !runtime.store.templates.isEmpty,
+                layoutsAvailable: !runtime.store.layouts.isEmpty,
+                workflowsAvailable: !availableReferencedWorkflows.isEmpty
+            ) { option in
+                pendingAction = option
+                showsActionPicker = false
+            }
+        }
+        .sheet(isPresented: $showsURLSetup) {
+            WorkflowActionSetupSheet(
+                title: "웹사이트 열기", canAdd: validWebURL != nil,
+                cancel: { showsURLSetup = false }
+            ) {
+                guard let validWebURL else { return }
+                workflow.actions.append(.openURL(validWebURL))
+                showsURLSetup = false
+            } content: {
+                TextField("웹사이트 주소", text: $newURL, prompt: Text("https://example.com"))
+                    .textFieldStyle(.roundedBorder)
+            }
+        }
+        .sheet(isPresented: $showsLayoutSetup) {
+            WorkflowActionSetupSheet(
+                title: "창 레이아웃 적용", canAdd: selectedLayoutID != nil,
+                cancel: { showsLayoutSetup = false }
+            ) {
+                guard let selectedLayoutID, runtime.store.layouts.contains(where: { $0.id == selectedLayoutID })
+                else { return }
+                workflow.actions.append(.applyLayout(layoutID: selectedLayoutID))
+                showsLayoutSetup = false
+            } content: {
+                Picker("레이아웃", selection: $selectedLayoutID) {
+                    Text("레이아웃 선택").tag(nil as UUID?)
+                    ForEach(runtime.store.layouts) { layout in
+                        Text(layout.name).tag(Optional(layout.id))
+                    }
+                }
+            }
         }
         .confirmationDialog(
             "이 워크플로를 삭제할까요?",
@@ -163,15 +214,24 @@ struct WorkflowEditorView: View {
     private var editorHeader: some View {
         WikeyEditorHeader(
             title: $workflow.name,
-            subtitle: "필요한 앱과 작업을 위에서부터 순서대로 실행합니다.",
+            subtitle: "동작을 위에서부터 순서대로 실행합니다.",
             onBack: onBack
         ) {
-            Toggle("활성화", isOn: $workflow.isEnabled)
-                .toggleStyle(.switch)
-                .help("끄면 이 워크플로의 단축키를 해제합니다.")
-            WikeyDeleteButton(title: "워크플로 삭제") {
-                showsDeleteConfirmation = true
+            Button("동작 추가", systemImage: "plus") { showsActionPicker = true }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .keyboardShortcut("d", modifiers: [.command, .shift])
+                .help("동작 추가 (⇧⌘D)")
+            Menu {
+                Button("워크플로 삭제…", systemImage: "trash", role: .destructive) {
+                    showsDeleteConfirmation = true
+                }
+            } label: {
+                Label("워크플로 메뉴", systemImage: "ellipsis.circle")
+                    .labelStyle(.iconOnly)
             }
+            .menuIndicator(.hidden)
+            .fixedSize()
         }
     }
 
@@ -185,7 +245,11 @@ struct WorkflowEditorView: View {
                     isMuted: workflow.shortcut.steps.isEmpty
                 )
                 Spacer()
-                Button("단축키 변경") {
+                Toggle("단축키 활성", isOn: $workflow.isEnabled)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .help("끄면 이 워크플로의 전역 단축키를 해제합니다.")
+                Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경") {
                     showsShortcutEditor.toggle()
                 }
                 .buttonStyle(.bordered)
@@ -209,68 +273,47 @@ struct WorkflowEditorView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(FlowCardBackground())
+        .background(WikeyLavenderPanel(radius: 16))
     }
 
-    private var addActionMenu: some View {
-        Menu {
-            Button("앱 실행…", systemImage: "app") { chooseApplication() }
-            Button("웹사이트 열기", systemImage: "globe") {
-                workflow.actions.append(.openURL("https://"))
+    private var validWebURL: String? {
+        let input = newURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: input),
+              ["https", "http"].contains(url.scheme?.lowercased() ?? ""),
+              let host = url.host, !host.isEmpty else { return nil }
+        return input
+    }
+
+    private func addPickedAction() {
+        guard let option = pendingAction else { return }
+        pendingAction = nil
+        switch option {
+        case .app: chooseApplication()
+        case .file:
+            QuickWorkflowTargetPicker.file { url in
+                workflow.actions.append(.openFile(path: url.path))
             }
-            Divider()
-            Button("Enter 입력", systemImage: "return") {
-                workflow.actions.append(.pressKey(.enter))
+        case .website:
+            newURL = ""
+            showsURLSetup = true
+        case .enter: workflow.actions.append(.pressKey(.enter))
+        case .shiftEnter: workflow.actions.append(.pressKey(.shiftEnter))
+        case .wait: workflow.actions.append(.wait(seconds: 1))
+        case .template: beginTemplateActionSetup()
+        case .images:
+            if let paths = chooseFiles(title: "붙여넣을 이미지 선택", contentType: .image) {
+                workflow.actions.append(.pasteImages(filePaths: paths))
             }
-            Button("Shift + Enter 입력", systemImage: "arrow.turn.down.left") {
-                workflow.actions.append(.pressKey(.shiftEnter))
+        case .files:
+            if let paths = chooseFiles(title: "붙여넣을 파일 선택", contentType: .item) {
+                workflow.actions.append(.pasteFiles(filePaths: paths))
             }
-            Button("잠시 기다리기…", systemImage: "clock") {
-                workflow.actions.append(.wait(seconds: 1))
-            }
-            Divider()
-            Button("템플릿 붙여넣기…", systemImage: "doc.on.clipboard", action: beginTemplateActionSetup)
-            .disabled(runtime.store.templates.isEmpty)
-            Button("이미지 붙여넣기…", systemImage: "photo.on.rectangle") {
-                if let paths = chooseFiles(title: "붙여넣을 이미지 선택", contentType: .image) {
-                    workflow.actions.append(.pasteImages(filePaths: paths))
-                }
-            }
-            Button("파일 붙여넣기…", systemImage: "paperclip") {
-                if let paths = chooseFiles(title: "붙여넣을 파일 선택", contentType: .item) {
-                    workflow.actions.append(.pasteFiles(filePaths: paths))
-                }
-            }
-            Button("다른 워크플로 실행…", systemImage: "arrow.triangle.branch") {
-                selectedWorkflowID = nil
-                showsWorkflowActionSetup = true
-            }
-            .disabled(availableReferencedWorkflows.isEmpty)
-            Button("창 레이아웃 적용", systemImage: "rectangle.3.group") {
-                if let layout = runtime.store.layouts.first {
-                    workflow.actions.append(.applyLayout(layoutID: layout.id))
-                }
-            }
-            .disabled(runtime.store.layouts.isEmpty)
-        } label: {
-            HStack {
-                Spacer()
-                Label("동작 추가", systemImage: "plus")
-                    .font(.headline)
-                Spacer()
-            }
-            .frame(height: 58)
-            .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .frame(maxWidth: .infinity, minHeight: 58)
-        .background(Color.wikeyAccent.opacity(0.025), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(
-                    Color.wikeyAccent.opacity(0.36),
-                    style: StrokeStyle(lineWidth: 1.2, dash: [6, 4])
-                )
+        case .workflow:
+            selectedWorkflowID = nil
+            showsWorkflowActionSetup = true
+        case .layout:
+            selectedLayoutID = nil
+            showsLayoutSetup = true
         }
     }
 
@@ -303,17 +346,9 @@ struct WorkflowEditorView: View {
     }
 
     private func chooseApplication() {
-        let panel = NSOpenPanel()
-        panel.title = "실행할 앱 선택"
-        panel.allowedContentTypes = [.application]
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
-        guard panel.runModal() == .OK, let url = panel.url, let bundle = Bundle(url: url),
-              let identifier = bundle.bundleIdentifier else { return }
-        let name = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
-            ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
-            ?? url.deletingPathExtension().lastPathComponent
-        workflow.actions.append(.launchApplication(bundleIdentifier: identifier, displayName: name))
+        QuickWorkflowTargetPicker.application { app in
+            workflow.actions.append(.launchApplication(bundleIdentifier: app.id, displayName: app.name))
+        }
     }
 
     private func chooseFiles(title: String, contentType: UTType) -> [String]? {
@@ -463,10 +498,10 @@ private struct TemplateActionSetupView: View {
 
 private struct FlowCardBackground: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
+        RoundedRectangle(cornerRadius: 17, style: .continuous)
             .fill(Color(nsColor: .controlBackgroundColor))
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.34), lineWidth: 1)
             }
             .shadow(color: .black.opacity(0.045), radius: 10, y: 3)
@@ -476,9 +511,7 @@ private struct FlowCardBackground: View {
 private struct EmptyActionsView: View {
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: "list.number")
-                .font(.title2)
-                .foregroundStyle(.secondary)
+            WikeyMascot(size: 66)
             VStack(alignment: .leading, spacing: 3) {
                 Text("첫 동작을 추가해 보세요")
                     .font(.headline)
@@ -489,27 +522,7 @@ private struct EmptyActionsView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(FlowCardBackground())
-    }
-}
-
-private struct TriggerSummaryRow: View {
-    var continues: Bool
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            FlowMarker(symbol: "bolt.fill", continues: continues)
-            VStack(alignment: .leading, spacing: 5) {
-                Text("트리거")
-                    .font(.title3.weight(.semibold))
-                Text("단축키 사용 시 실행")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.top, 6)
-        }
-        .padding(.leading, 4)
-        .padding(.bottom, 15)
+        .background(WikeyLavenderPanel(radius: 17))
     }
 }
 
@@ -531,7 +544,7 @@ private struct FlowActionRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 14) {
-            FlowMarker(number: number, continues: true, endsFlow: isLast)
+            FlowMarker(number: number, endsFlow: isLast)
 
             HStack(spacing: 16) {
                 Button { showsEditor = true } label: {
@@ -614,7 +627,8 @@ private struct FlowActionRow: View {
         switch action {
         case .launchApplication: "앱 열기"
         case .copyTemplate: "템플릿 붙여넣기"
-        case .openURL: "웹사이트 열기"
+        case .openURL: "링크 열기"
+        case .openFile: "파일 열기"
         case .applyLayout: "창 배치"
         case .pressKey(let key): "\(key.title) 입력"
         case .wait: "잠시 기다리기"
@@ -633,6 +647,8 @@ private struct FlowActionRow: View {
             return "\(name) · \(mode.title)"
         case .openURL(let url):
             return URL(string: url)?.host ?? url
+        case .openFile(let path):
+            return URL(fileURLWithPath: path).lastPathComponent
         case .applyLayout(let layoutID):
             return layouts.first(where: { $0.id == layoutID })?.name ?? "레이아웃 선택"
         case .pressKey(let key):
@@ -669,6 +685,17 @@ private struct FlowActionRow: View {
                         ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
                         ?? url.deletingPathExtension().lastPathComponent
                     action = .launchApplication(bundleIdentifier: identifier, displayName: displayName)
+                }
+            }
+
+        case .openFile(let path):
+            VStack(alignment: .leading, spacing: 8) {
+                Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "doc")
+                    .lineLimit(1)
+                Button("파일 변경…") {
+                    QuickWorkflowTargetPicker.file { url in
+                        action = .openFile(path: url.path)
+                    }
                 }
             }
 
@@ -834,80 +861,40 @@ private struct FlowActionRow: View {
 }
 
 private struct FlowMarker: View {
-    var number: Int?
-    var symbol: String?
-    var continues: Bool
+    @Environment(\.colorScheme) private var colorScheme
+    var number: Int
     var endsFlow: Bool
-
-    init(number: Int, continues: Bool) {
-        self.number = number
-        self.symbol = nil
-        self.continues = continues
-        self.endsFlow = false
-    }
-
-    init(number: Int, continues: Bool, endsFlow: Bool) {
-        self.number = number
-        self.symbol = nil
-        self.continues = continues
-        self.endsFlow = endsFlow
-    }
-
-    init(symbol: String, continues: Bool) {
-        self.number = nil
-        self.symbol = symbol
-        self.continues = continues
-        self.endsFlow = false
-    }
 
     var body: some View {
         ZStack(alignment: .top) {
-            if continues {
-                Rectangle()
-                    .fill(Color.wikeyAccent.opacity(0.24))
-                    .frame(width: 2)
-                    .padding(.top, symbol == nil ? 44 : 54)
-            }
+            Rectangle()
+                .fill(Color.wikeyAccent.opacity(0.24))
+                .frame(width: 2)
+                .padding(.top, 44)
 
             if endsFlow {
                 VStack {
                     Spacer()
                     Circle()
-                        .fill(Color.wikeyAccent)
+                        .fill(Color.wikeyInk(in: colorScheme))
                         .frame(width: 6, height: 6)
                 }
             }
 
-            Group {
-                if let number {
-                    Text("\(number)")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(Color.wikeyAccent)
-                        .frame(width: 38, height: 38)
-                        .background(Color.wikeyAccent.opacity(0.11), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                } else if let symbol {
-                    Image(systemName: symbol)
-                        .font(.system(size: 21, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 46, height: 46)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(red: 0.31, green: 0.27, blue: 0.94), Color(red: 0.25, green: 0.45, blue: 1.0)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        )
-                        .shadow(color: Color.indigo.opacity(0.24), radius: 8, y: 4)
-                }
-            }
+            Text("\(number)")
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
+                .frame(width: 38, height: 38)
+                .background(Color.wikeyAccent.opacity(0.11), in: RoundedRectangle(cornerRadius: 12))
         }
         .frame(width: 46)
         .frame(maxHeight: .infinity)
+        .accessibilityLabel("\(number)번째 동작")
     }
 }
 
 private struct ActionIcon: View {
+    @Environment(\.colorScheme) private var colorScheme
     var action: WorkflowAction
 
     var body: some View {
@@ -920,7 +907,7 @@ private struct ActionIcon: View {
             } else {
                 Image(systemName: symbol)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.wikeyAccent)
+                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
             }
         }
         .frame(width: 24, height: 24)
@@ -933,6 +920,7 @@ private struct ActionIcon: View {
         case .launchApplication: "app"
         case .copyTemplate: "doc.on.clipboard"
         case .openURL: "globe"
+        case .openFile: "doc"
         case .applyLayout: "rectangle.3.group"
         case .pressKey: "return"
         case .wait: "clock"

@@ -3,38 +3,136 @@ import SwiftUI
 import WikeyCore
 
 enum SidebarSelection: Hashable {
-    case overview
     case workflowCollection
     case workflow(UUID)
     case applications
+    case application(String)
     case templateCollection
     case template(UUID)
     case layoutCollection
     case layout(UUID)
-    case settings
+
+    var section: Self {
+        switch self {
+        case .workflow: .workflowCollection
+        case .application: .applications
+        case .template: .templateCollection
+        case .layout: .layoutCollection
+        default: self
+        }
+    }
+
+    static let sections: [Self] = [.workflowCollection, .applications, .templateCollection, .layoutCollection]
+
+    var title: String {
+        switch section {
+        case .workflowCollection: "워크플로"
+        case .applications: "앱"
+        case .templateCollection: "템플릿"
+        case .layoutCollection: "레이아웃"
+        default: ""
+        }
+    }
+
+    var symbol: String {
+        switch section {
+        case .workflowCollection: "bolt"
+        case .applications: "app"
+        case .templateCollection: "doc.on.clipboard"
+        case .layoutCollection: "rectangle.3.group"
+        default: ""
+        }
+    }
+}
+
+private struct WikeySidebar: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var focusedSection: SidebarSelection?
+    var selected: SidebarSelection
+    var navigate: (SidebarSelection) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("보관함")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 11)
+                    .padding(.bottom, 3)
+                    .accessibilityAddTraits(.isHeader)
+
+                ForEach(SidebarSelection.sections, id: \.self) { section in
+                    row(section)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+        }
+        .background(Color.wikeyAccent.opacity(colorScheme == .dark ? 0.07 : 0.035))
+        .accessibilityLabel("사이드바")
+    }
+
+    private func row(_ section: SidebarSelection) -> some View {
+        let isSelected = selected == section
+        let ink = Color.wikeyInk(in: colorScheme)
+        let shape = RoundedRectangle(cornerRadius: 9)
+
+        return Button {
+            navigate(section)
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(ink)
+                    .frame(width: 19)
+                    .accessibilityHidden(true)
+                Text(section.title)
+                    .font(.body.weight(isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? ink : Color.primary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .frame(minHeight: 32)
+            .overlay {
+                if focusedSection == section {
+                    shape.strokeBorder(ink, lineWidth: 1.5)
+                }
+            }
+            .contentShape(shape)
+        }
+        .buttonStyle(WikeyHoverButtonStyle(selected: isSelected))
+        .focusable()
+        .focused($focusedSection, equals: section)
+        .focusEffectDisabled()
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .onKeyPress(.upArrow) { move(from: section, offset: -1) }
+        .onKeyPress(.downArrow) { move(from: section, offset: 1) }
+    }
+
+    private func move(from section: SidebarSelection, offset: Int) -> KeyPress.Result {
+        let sections = SidebarSelection.sections
+        guard let current = sections.firstIndex(of: section),
+              sections.indices.contains(current + offset) else { return .handled }
+        let destination = sections[current + offset]
+        focusedSection = destination
+        navigate(destination)
+        return .handled
+    }
 }
 
 struct ContentView: View {
     @Environment(WikeyRuntime.self) private var runtime
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
-    @State private var selection: SidebarSelection? = .overview
+    @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
-    @State private var workflowToDelete: UUID?
+    @State private var showsQuickCreate = false
+    @State private var showsSearch = false
     @State private var editingSession = UUID()
 
     var body: some View {
         NavigationSplitView {
-            WikeySidebar(
-                workflows: runtime.store.workflows,
-                selection: selection ?? .overview,
-                select: { selection = $0 },
-                addWorkflow: addWorkflow,
-                showTemplates: showTemplates,
-                showLayouts: showLayouts,
-                deleteWorkflow: { workflowToDelete = $0 }
-            )
-            .ignoresSafeArea(.container, edges: .top)
-            .navigationSplitViewColumnWidth(min: 238, ideal: 260, max: 300)
+            WikeySidebar(selected: selection.section) { selection = $0 }
+                .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
         } detail: {
             VStack(spacing: 0) {
                 if let error = runtime.store.lastPersistenceError {
@@ -69,10 +167,39 @@ struct ContentView: View {
                     .background(.bar)
                 }
             }
-                .ignoresSafeArea(.container, edges: .top)
         }
-        .toolbar(removing: .sidebarToggle)
-        .background(WindowToolbarConfigurator())
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Wikey 검색", systemImage: "magnifyingglass") { showsSearch = true }
+                    .help("Wikey 검색 (⌘K)")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                Menu {
+                    Button("새 워크플로", systemImage: "bolt", action: addWorkflow)
+                    Button("새 템플릿", systemImage: "doc.on.clipboard", action: addTemplate)
+                    Button("새 레이아웃", systemImage: "rectangle.3.group", action: addLayout)
+                } label: {
+                    Label("새로 만들기", systemImage: "plus")
+                }
+                .help("새로 만들기")
+            }
+            ToolbarItem(placement: .primaryAction) {
+                SettingsLink {
+                    Label("설정", systemImage: "gearshape")
+                }
+                .help("설정 (⌘,)")
+            }
+        }
+        .focusedSceneValue(\.workspaceActions, WorkspaceActions(
+            createWorkflow: {
+                guard !showOnboarding, !showsSearch, !showsQuickCreate else { return }
+                addWorkflow()
+            },
+            search: {
+                guard !showOnboarding, !showsQuickCreate else { return }
+                showsSearch = true
+            }
+        ))
         .onAppear {
             if !didCompleteOnboarding { showOnboarding = true }
         }
@@ -87,36 +214,35 @@ struct ContentView: View {
             OnboardingView(isPresented: $showOnboarding)
                 .environment(runtime)
         }
-        .alert("워크플로를 삭제할까요?", isPresented: Binding(
-            get: { workflowToDelete != nil },
-            set: { if !$0 { workflowToDelete = nil } }
-        )) {
-            Button("취소", role: .cancel) { workflowToDelete = nil }
-            Button("삭제", role: .destructive) {
-                if let id = workflowToDelete { deleteWorkflow(id) }
-                workflowToDelete = nil
+        .sheet(isPresented: $showsQuickCreate) {
+            QuickWorkflowView(
+                onSave: { workflow in
+                    _ = runtime.store.addWorkflow(workflow)
+                    runtime.reloadHotkeys()
+                    selection = .workflowCollection
+                    showsQuickCreate = false
+                },
+                onAdvanced: {
+                    selection = .workflow(runtime.store.addWorkflow())
+                    showsQuickCreate = false
+                }
+            )
+        }
+        .sheet(isPresented: $showsSearch) {
+            WorkspaceSearchView { destination in
+                selection = destination
+                showsSearch = false
             }
-        } message: {
-            Text("다른 워크플로에서 이 워크플로를 실행하는 동작도 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
         }
     }
 
     @ViewBuilder
     private var detail: some View {
-        switch selection ?? .overview {
-        case .overview:
-            OverviewView(
-                isHome: true,
-                createWorkflow: addWorkflow,
-                openWorkflow: { selection = .workflow($0) },
-                openSettings: { selection = .settings }
-            )
+        switch selection {
         case .workflowCollection:
-            OverviewView(
-                isHome: false,
+            WorkflowLibraryView(
                 createWorkflow: addWorkflow,
-                openWorkflow: { selection = .workflow($0) },
-                openSettings: { selection = .settings }
+                openWorkflow: { selection = .workflow($0) }
             )
         case .workflow(let id):
             if let binding = workflowBinding(id) {
@@ -131,6 +257,9 @@ struct ContentView: View {
             }
         case .applications:
             ApplicationsView()
+        case .application(let bundleID):
+            ApplicationsView(initialSearch: bundleID)
+                .id(bundleID)
         case .templateCollection:
             TemplateLibraryView(
                 templates: runtime.store.templates,
@@ -165,8 +294,6 @@ struct ContentView: View {
             } else {
                 ContentUnavailableView("레이아웃을 찾을 수 없습니다", systemImage: "rectangle.3.group")
             }
-        case .settings:
-            WikeySettingsView()
         }
     }
 
@@ -176,8 +303,12 @@ struct ContentView: View {
             get: { runtime.store.workflows.first(where: { $0.id == id }) ?? fallback },
             set: { updated in
                 guard let index = runtime.store.workflows.firstIndex(where: { $0.id == id }) else { return }
+                let previous = runtime.store.workflows[index]
                 runtime.store.workflows[index] = updated
-                runtime.saveAndReloadHotkeys()
+                runtime.store.save()
+                if previous.shortcut != updated.shortcut || previous.isEnabled != updated.isEnabled {
+                    runtime.reloadHotkeys()
+                }
             }
         )
     }
@@ -207,7 +338,7 @@ struct ContentView: View {
     }
 
     private func addWorkflow() {
-        selection = .workflow(runtime.store.addWorkflow())
+        showsQuickCreate = true
     }
 
     private func addTemplate() {
@@ -216,14 +347,6 @@ struct ContentView: View {
 
     private func addLayout() {
         selection = .layout(runtime.store.addLayout())
-    }
-
-    private func showTemplates() {
-        selection = .templateCollection
-    }
-
-    private func showLayouts() {
-        selection = .layoutCollection
     }
 
     private func deleteWorkflow(_ id: UUID) {
@@ -242,271 +365,6 @@ struct ContentView: View {
         runtime.store.deleteLayout(id: id)
         runtime.reloadHotkeys()
         selection = .layoutCollection
-    }
-}
-
-private struct WindowToolbarConfigurator: NSViewRepresentable {
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        scheduleConfiguration(for: view)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        scheduleConfiguration(for: nsView)
-    }
-
-    private func scheduleConfiguration(for view: NSView) {
-        for delay in [0.0, 0.15, 0.6] {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                configure(view.window)
-            }
-        }
-    }
-
-    private func configure(_ window: NSWindow?) {
-        guard let window, let toolbar = window.toolbar else { return }
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        window.styleMask.insert(.fullSizeContentView)
-        toolbar.isVisible = false
-        for index in toolbar.items.indices.reversed() {
-            let item = toolbar.items[index]
-            let identifier = item.itemIdentifier
-            let looksLikeSidebarControl = identifier.rawValue.localizedCaseInsensitiveContains("sidebar")
-                || item.label.localizedCaseInsensitiveContains("sidebar")
-                || item.paletteLabel.localizedCaseInsensitiveContains("sidebar")
-            if identifier == .toggleSidebar || identifier == .sidebarTrackingSeparator || looksLikeSidebarControl {
-                toolbar.removeItem(at: index)
-            }
-        }
-    }
-}
-
-private struct OverviewView: View {
-    @Environment(WikeyRuntime.self) private var runtime
-    var isHome: Bool
-    var createWorkflow: () -> Void
-    var openWorkflow: (UUID) -> Void
-    var openSettings: () -> Void
-    @State private var searchText = ""
-
-    private var activeWorkflows: [Workflow] {
-        runtime.store.workflows.filter(\.isEnabled)
-    }
-
-    private var visibleWorkflows: [Workflow] {
-        let workflows = isHome ? activeWorkflows : runtime.store.workflows
-        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return workflows }
-        return workflows.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
-    }
-
-    private var needsSetup: Bool {
-        !runtime.permissions.accessibilityGranted || !runtime.permissions.inputMonitoringGranted
-    }
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
-                WikeyPageHeader(
-                    title: isHome ? "홈" : "워크플로",
-                    subtitle: isHome
-                        ? "자주 하는 일을 실행하고 최근 결과를 확인하세요."
-                        : "모든 워크플로 \(runtime.store.workflows.count)개 · 활성화 \(activeWorkflows.count)개"
-                ) {
-                    Button("새 워크플로", systemImage: "plus", action: createWorkflow)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                }
-
-                if needsSetup {
-                    SetupNotice(openSettings: openSettings)
-                }
-
-                if !isHome {
-                    WikeySearchField(prompt: "워크플로 검색", text: $searchText)
-                }
-
-                WikeySection(
-                    title: isHome ? "빠른 실행" : "내 워크플로",
-                    detail: runtime.store.workflows.isEmpty ? "이름과 단축키를 정한 뒤 실행할 동작을 순서대로 추가합니다." : nil
-                ) {
-                    if visibleWorkflows.isEmpty && !searchText.isEmpty {
-                        ContentUnavailableView.search(text: searchText)
-                    } else if visibleWorkflows.isEmpty {
-                        PlainPanel {
-                            HStack(spacing: 14) {
-                                Image(systemName: "bolt")
-                                    .font(.title2)
-                                    .foregroundStyle(.tint)
-                                    .frame(width: 30)
-                                VStack(alignment: .leading, spacing: 3) {
-                                    Text(runtime.store.workflows.isEmpty ? "앱 열기부터 시작해 보세요" : "활성화된 워크플로가 없습니다")
-                                        .font(.headline)
-                                    Text(runtime.store.workflows.isEmpty
-                                         ? "웹사이트, 템플릿, 창 배치도 같은 단축키에 이어 붙일 수 있습니다."
-                                         : "워크플로 탭에서 기존 워크플로를 켜거나 새로 만들 수 있습니다.")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Button("만들기", action: createWorkflow)
-                            }
-                        }
-                    } else {
-                        LazyVStack(spacing: 12) {
-                            ForEach(visibleWorkflows) { workflow in
-                                WorkflowQuickRunCard(
-                                    workflow: workflow,
-                                    isRunning: runtime.runner.runningWorkflowID == workflow.id
-                                        || runtime.runner.queuedWorkflowIDs.contains(workflow.id),
-                                    hasConflict: runtime.hotkeys.registrationErrors[workflow.id] != nil,
-                                    open: { openWorkflow(workflow.id) },
-                                    run: { runtime.run(workflowID: workflow.id) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if isHome, let lastRun = runtime.lastRun {
-                    WikeySection(title: "최근 실행") {
-                        PlainPanel {
-                            RunSummaryView(summary: lastRun)
-                        }
-                    }
-                }
-            }
-            .padding(WikeyPageMetrics.padding)
-            .frame(maxWidth: WikeyPageMetrics.maximumWidth, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-        .navigationTitle(isHome ? "홈" : "워크플로")
-    }
-}
-
-private struct SetupNotice: View {
-    @Environment(WikeyRuntime.self) private var runtime
-    var openSettings: () -> Void
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "lock.open.display")
-                .font(.title2)
-                .foregroundStyle(.orange)
-                .frame(width: 28)
-            VStack(alignment: .leading, spacing: 3) {
-                Text("일부 기능을 사용하려면 권한이 필요합니다")
-                    .font(.headline)
-                Text(missingPermissionText)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Button("설정 확인", action: openSettings)
-        }
-        .padding(16)
-        .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.orange.opacity(0.25), lineWidth: 1)
-        }
-    }
-
-    private var missingPermissionText: String {
-        switch (runtime.permissions.accessibilityGranted, runtime.permissions.inputMonitoringGranted) {
-        case (false, false): "창 배치·자동 붙여넣기에는 손쉬운 사용, 두 단계 단축키에는 두 권한이 필요합니다."
-        case (false, true): "창 배치·자동 붙여넣기와 두 단계 단축키에 손쉬운 사용 권한이 필요합니다."
-        case (true, false): "두 단계 단축키가 아직 꺼져 있습니다."
-        case (true, true): ""
-        }
-    }
-}
-
-private struct WorkflowQuickRunCard: View {
-    var workflow: Workflow
-    var isRunning: Bool
-    var hasConflict: Bool
-    var open: () -> Void
-    var run: () -> Void
-    @State private var isHovering = false
-
-    var body: some View {
-        HStack(spacing: 0) {
-            Button(action: open) {
-                HStack(spacing: 16) {
-                    Image(systemName: hasConflict ? "exclamationmark.triangle.fill" : "bolt.fill")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(hasConflict ? Color.orange : Color.wikeyAccent)
-                        .frame(width: 44, height: 44)
-                        .background(
-                            (hasConflict ? Color.orange : Color.wikeyAccent).opacity(0.08),
-                            in: RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        )
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(workflow.name)
-                            .font(.headline)
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                        Text("동작 \(workflow.actions.count)개" + (workflow.isEnabled ? "" : " · 비활성화됨"))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer(minLength: 12)
-                    ShortcutBadge(
-                        text: workflow.shortcut.steps.isEmpty ? "미지정" : workflow.shortcut.displayName,
-                        isMuted: workflow.shortcut.steps.isEmpty
-                    )
-                }
-                .padding(.leading, 18)
-                .padding(.trailing, 14)
-                .padding(.vertical, 18)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("워크플로 편집")
-
-            Button {
-                run()
-            } label: {
-                if isRunning {
-                    ProgressView()
-                        .controlSize(.small)
-                        .frame(width: 28, height: 28)
-                } else {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 14, weight: .semibold))
-                        .frame(width: 28, height: 28)
-                        .contentShape(Rectangle())
-                }
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(Color.wikeyAccent)
-            .help("워크플로 실행")
-            .accessibilityLabel("\(workflow.name) 실행")
-            .disabled(isRunning || workflow.actions.isEmpty)
-            .padding(.trailing, 18)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            Color(nsColor: .controlBackgroundColor),
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(
-                    isHovering ? Color.wikeyAccent.opacity(0.22) : Color(nsColor: .separatorColor).opacity(0.3),
-                    lineWidth: 1
-                )
-        }
-        .shadow(color: .black.opacity(isHovering ? 0.06 : 0.04), radius: isHovering ? 12 : 10, y: 3)
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.14)) {
-                isHovering = hovering
-            }
-        }
     }
 }
 
@@ -544,10 +402,11 @@ private struct TemplateLibraryView: View {
     @State private var searchText = ""
 
     private var filteredTemplates: [RichTemplate] {
-        guard !searchText.isEmpty else { return templates }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return templates }
         return templates.filter {
-            $0.name.localizedCaseInsensitiveContains(searchText)
-                || $0.plainText.localizedCaseInsensitiveContains(searchText)
+            $0.name.localizedCaseInsensitiveContains(query)
+                || $0.plainText.localizedCaseInsensitiveContains(query)
         }
     }
 
@@ -583,8 +442,9 @@ private struct LayoutLibraryView: View {
     @State private var searchText = ""
 
     private var filteredLayouts: [WindowLayout] {
-        guard !searchText.isEmpty else { return layouts }
-        return layouts.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return layouts }
+        return layouts.filter { $0.name.localizedCaseInsensitiveContains(query) }
     }
 
     var body: some View {
@@ -648,8 +508,12 @@ private struct LibraryLandingView<Content: View>: View {
                     ContentUnavailableView.search(text: searchText)
                         .frame(maxWidth: .infinity, minHeight: 240)
                 } else {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(spacing: 0) {
                         content
+                    }
+                    .background(.background, in: RoundedRectangle(cornerRadius: 12))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary)
                     }
                 }
             }
@@ -672,10 +536,9 @@ private struct LibraryItemButton: View {
         Button(action: action) {
             HStack(spacing: 16) {
                 Image(systemName: systemImage)
-                    .font(.title2)
-                    .foregroundStyle(Color.wikeyAccent)
-                    .frame(width: 44, height: 44)
-                    .background(Color.wikeyAccent.opacity(0.08), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.tint)
+                    .frame(width: 30, height: 30)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.headline)
@@ -694,200 +557,11 @@ private struct LibraryItemButton: View {
                 Image(systemName: "chevron.right")
                     .foregroundStyle(.tertiary)
             }
-            .padding(18)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
-            }
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct WikeySidebar: View {
-    var workflows: [Workflow]
-    var selection: SidebarSelection
-    var select: (SidebarSelection) -> Void
-    var addWorkflow: () -> Void
-    var showTemplates: () -> Void
-    var showLayouts: () -> Void
-    var deleteWorkflow: (UUID) -> Void
-
-    private var isWorkflowSection: Bool {
-        if case .workflow = selection { return true }
-        return selection == .workflowCollection
-    }
-
-    private var isTemplateSection: Bool {
-        if case .template = selection { return true }
-        return selection == .templateCollection
-    }
-
-    private var isApplicationSection: Bool {
-        selection == .applications
-    }
-
-    private var isLayoutSection: Bool {
-        if case .layout = selection { return true }
-        return selection == .layoutCollection
-    }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Wikey")
-                        .font(.system(size: 22, weight: .bold))
-                        .padding(.horizontal, 24)
-                        .padding(.top, 58)
-                        .padding(.bottom, 12)
-
-                    VStack(spacing: 3) {
-                        SidebarNavigationRow(
-                            title: "홈",
-                            systemImage: "house",
-                            isActive: selection == .overview,
-                            action: { select(.overview) }
-                        )
-                        SidebarNavigationRow(
-                            title: "워크플로",
-                            systemImage: "point.3.connected.trianglepath.dotted",
-                            isActive: isWorkflowSection,
-                            action: { select(.workflowCollection) }
-                        )
-                        SidebarNavigationRow(
-                            title: "앱",
-                            systemImage: "app.dashed",
-                            isActive: isApplicationSection,
-                            action: { select(.applications) }
-                        )
-                        SidebarNavigationRow(
-                            title: "템플릿",
-                            systemImage: "square.grid.2x2",
-                            isActive: isTemplateSection,
-                            action: showTemplates
-                        )
-                        SidebarNavigationRow(
-                            title: "레이아웃",
-                            systemImage: "rectangle.3.group",
-                            isActive: isLayoutSection,
-                            action: showLayouts
-                        )
-                        SidebarNavigationRow(
-                            title: "설정",
-                            systemImage: "gearshape",
-                            isActive: selection == .settings,
-                            action: { select(.settings) }
-                        )
-                    }
-                    .padding(.horizontal, 14)
-
-                    HStack {
-                        Text("내 워크플로")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button(action: addWorkflow) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 13, weight: .semibold))
-                                .frame(width: 28, height: 28)
-                        }
-                        .buttonStyle(.plain)
-                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
-                        }
-                        .help("워크플로 추가")
-                    }
-                    .padding(.horizontal, 22)
-                    .padding(.top, 32)
-                    .padding(.bottom, 6)
-
-                    VStack(spacing: 5) {
-                        ForEach(workflows) { workflow in
-                            SidebarWorkflowButton(
-                                workflow: workflow,
-                                isActive: selection == .workflow(workflow.id),
-                                action: { select(.workflow(workflow.id)) }
-                            )
-                            .contextMenu {
-                                Button("삭제", role: .destructive) { deleteWorkflow(workflow.id) }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                }
-                .padding(.bottom, 18)
-            }
-
-        }
-        .background(.thinMaterial)
-    }
-}
-
-private struct SidebarNavigationRow: View {
-    var title: String
-    var systemImage: String
-    var isActive: Bool
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 13) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .medium))
-                    .frame(width: 22)
-                Text(title)
-                    .font(.system(size: 15, weight: isActive ? .semibold : .medium))
-                Spacer()
-            }
-            .foregroundStyle(isActive ? Color.wikeyAccent : Color.primary.opacity(0.78))
-            .padding(.horizontal, 14)
-            .frame(height: 36)
-            .background(
-                isActive ? Color.wikeyAccent.opacity(0.11) : Color.clear,
-                in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
-    }
-}
-
-private struct SidebarWorkflowButton: View {
-    var workflow: Workflow
-    var isActive: Bool
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Circle()
-                    .fill(workflow.isEnabled ? Color.wikeyAccent.opacity(0.7) : Color.secondary.opacity(0.35))
-                    .frame(width: 6, height: 6)
-                Text(workflow.name)
-                    .font(.system(size: 14, weight: isActive ? .semibold : .regular))
-                    .lineLimit(1)
-                Spacer(minLength: 8)
-                if !workflow.shortcut.steps.isEmpty {
-                    ShortcutBadge(text: workflow.shortcut.displayName, isMuted: !isActive)
-                }
-            }
-            .foregroundStyle(isActive ? Color.wikeyAccent : Color.primary.opacity(0.7))
-            .padding(.horizontal, 12)
-            .frame(height: 38)
-            .background(
-                isActive ? Color.wikeyAccent.opacity(0.11) : Color.clear,
-                in: RoundedRectangle(cornerRadius: 9, style: .continuous)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .frame(maxWidth: .infinity)
     }
 }

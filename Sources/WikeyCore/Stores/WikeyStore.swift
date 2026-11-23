@@ -91,8 +91,7 @@ public final class WikeyStore {
         }
     }
 
-    public func addWorkflow() -> UUID {
-        let workflow = Workflow()
+    public func addWorkflow(_ workflow: Workflow = Workflow()) -> UUID {
         state.workflows.append(workflow)
         save()
         return workflow.id
@@ -253,6 +252,7 @@ public final class WikeyStore {
         for index in imported.workflows.indices {
             imported.workflows[index].actions = try imported.workflows[index].actions.map { action in
                 switch action {
+                case .openFile(let key): return .openFile(path: try Self.assetPath(key, in: paths))
                 case .pasteFiles(let keys): return .pasteFiles(filePaths: try keys.map { try Self.assetPath($0, in: paths) })
                 case .pasteImages(let keys): return .pasteImages(filePaths: try keys.map { try Self.assetPath($0, in: paths) })
                 default: return action
