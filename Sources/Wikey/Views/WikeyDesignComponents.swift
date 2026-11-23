@@ -16,8 +16,8 @@ struct WikeyMascot: View {
             .resizable()
             .scaledToFit()
             .saturation(0)
-            .contrast(1.25)
-            .colorMultiply(Color(white: 0.54))
+            .contrast(1.1)
+            .colorMultiply(Color(red: 1, green: 0.80, blue: 0.39))
             .frame(width: size, height: size)
             .shadow(color: colorScheme == .dark ? .white.opacity(0.26) : .black.opacity(0.16),
                     radius: colorScheme == .dark ? 1 : 3,
@@ -397,6 +397,7 @@ struct WikeyHoverButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isEnabled) private var isEnabled
     var selected = false
+    var focused = false
     var filled = false
     var cornerRadius: CGFloat = 9
 
@@ -408,7 +409,8 @@ struct WikeyHoverButtonStyle: ButtonStyle {
             filled: filled,
             cornerRadius: cornerRadius,
             isPressed: configuration.isPressed,
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
+            focused: focused
         )
     }
 }
@@ -448,6 +450,7 @@ private struct WikeyHoverSurface<Label: View>: View {
     var cornerRadius: CGFloat
     var isPressed: Bool
     var isEnabled: Bool
+    var focused = false
     var glossy = false
 
     private var fill: Color {
@@ -466,6 +469,9 @@ private struct WikeyHoverSurface<Label: View>: View {
             .background {
                 shape.fill(fill)
                     .overlay {
+                        if focused {
+                            shape.inset(by: 1).strokeBorder(ink.opacity(0.75), lineWidth: 1)
+                        }
                         if glossy {
                             shape.fill(LinearGradient(
                                 colors: [Color.white.opacity(colorScheme == .dark ? 0.13 : 0.65), .clear],
