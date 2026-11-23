@@ -273,11 +273,52 @@ struct PlainPanel<Content: View>: View {
     }
 }
 
+enum WikeyActionTint {
+    case lavender
+    case periwinkle
+    case mint
+    case peach
+    case neutral
+
+    func ink(in colorScheme: ColorScheme) -> Color {
+        let isDark = colorScheme == .dark
+        switch self {
+        case .lavender:
+            return .wikeyInk(in: colorScheme)
+        case .periwinkle:
+            return isDark ? Color(red: 0.72, green: 0.77, blue: 1) : Color(red: 0.30, green: 0.36, blue: 0.67)
+        case .mint:
+            return isDark ? Color(red: 0.64, green: 0.88, blue: 0.80) : Color(red: 0.23, green: 0.42, blue: 0.37)
+        case .peach:
+            return isDark ? Color(red: 1, green: 0.76, blue: 0.66) : Color(red: 0.65, green: 0.32, blue: 0.25)
+        case .neutral:
+            return .secondary
+        }
+    }
+}
+
+struct WikeyActionIcon: View {
+    @Environment(\.colorScheme) private var colorScheme
+    var symbol: String
+    var tint: WikeyActionTint
+
+    var body: some View {
+        let ink = tint.ink(in: colorScheme)
+        Image(systemName: symbol)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(ink)
+            .frame(width: 28, height: 28)
+            .background(ink.opacity(colorScheme == .dark ? 0.16 : 0.10), in: RoundedRectangle(cornerRadius: 9))
+            .accessibilityHidden(true)
+    }
+}
+
 struct WikeyHoverButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isEnabled) private var isEnabled
     var selected = false
     var filled = false
+    var cornerRadius: CGFloat = 9
 
     func makeBody(configuration: Configuration) -> some View {
         HoverSurface(
@@ -285,6 +326,7 @@ struct WikeyHoverButtonStyle: ButtonStyle {
             ink: .wikeyInk(in: colorScheme),
             selected: selected,
             filled: filled,
+            cornerRadius: cornerRadius,
             isPressed: configuration.isPressed,
             isEnabled: isEnabled
         )
@@ -296,6 +338,7 @@ struct WikeyHoverButtonStyle: ButtonStyle {
         var ink: Color
         var selected: Bool
         var filled: Bool
+        var cornerRadius: CGFloat
         var isPressed: Bool
         var isEnabled: Bool
 
@@ -307,9 +350,10 @@ struct WikeyHoverButtonStyle: ButtonStyle {
         }
 
         var body: some View {
+            let shape = RoundedRectangle(cornerRadius: cornerRadius)
             label
-                .background(ink.opacity(fillOpacity), in: RoundedRectangle(cornerRadius: 9))
-                .contentShape(RoundedRectangle(cornerRadius: 9))
+                .background(ink.opacity(fillOpacity), in: shape)
+                .contentShape(shape)
                 .opacity(isEnabled ? 1 : 0.5)
                 .onHover { isHovering = $0 }
         }
