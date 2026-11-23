@@ -87,7 +87,7 @@ private struct WikeySidebar: View {
             HStack(spacing: 9) {
                 Image(systemName: section.symbol)
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(ink)
+                    .foregroundStyle(WikeyActionTint(symbol: section.symbol).ink(in: colorScheme))
                     .frame(width: 19)
                     .accessibilityHidden(true)
                 Text(section.title)
@@ -620,7 +620,7 @@ private struct LibraryItemButton: View {
             HStack(spacing: 16) {
                 WikeyActionIcon(
                     symbol: systemImage,
-                    tint: ["link", "rectangle.3.group"].contains(systemImage) ? .graphite : .accent,
+                    tint: WikeyActionTint(symbol: systemImage),
                     size: 30
                 )
                 VStack(alignment: .leading, spacing: 4) {

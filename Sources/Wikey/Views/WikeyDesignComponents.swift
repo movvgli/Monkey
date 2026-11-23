@@ -8,6 +8,7 @@ enum WikeyPageMetrics {
 }
 
 struct WikeyMascot: View {
+    @Environment(\.colorScheme) private var colorScheme
     var size: CGFloat
 
     var body: some View {
@@ -15,7 +16,12 @@ struct WikeyMascot: View {
             .resizable()
             .scaledToFit()
             .saturation(0)
+            .contrast(1.25)
+            .colorMultiply(Color(white: 0.54))
             .frame(width: size, height: size)
+            .shadow(color: colorScheme == .dark ? .white.opacity(0.26) : .black.opacity(0.16),
+                    radius: colorScheme == .dark ? 1 : 3,
+                    y: colorScheme == .dark ? -1 : 2)
             .accessibilityHidden(true)
     }
 
@@ -38,8 +44,8 @@ struct WikeyGlossyPanel: View {
         shape.fill(
             LinearGradient(
                 colors: isDark
-                    ? [Color(white: 0.29), Color(white: 0.18), Color(white: 0.11)]
-                    : [Color(white: 0.99), Color(white: 0.94), Color(white: 0.86)],
+                    ? [Color(white: 0.28), Color(white: 0.21), Color(white: 0.17)]
+                    : [.white, Color(white: 0.97), Color(white: 0.90)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -315,8 +321,21 @@ struct PlainPanel<Content: View>: View {
 enum WikeyActionTint {
     case accent
     case graphite
+    case blue
+    case teal
+    case amber
     case rose
     case neutral
+
+    init(symbol: String) {
+        switch symbol {
+        case "link", "rectangle.3.group": self = .blue
+        case "app", "arrow.left.arrow.right": self = .teal
+        case "doc", "doc.on.clipboard", "photo", "paperclip": self = .amber
+        case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
+        default: self = .accent
+        }
+    }
 
     func ink(in colorScheme: ColorScheme) -> Color {
         let isDark = colorScheme == .dark
@@ -325,6 +344,12 @@ enum WikeyActionTint {
             return .wikeyInk(in: colorScheme)
         case .graphite:
             return Color(white: isDark ? 0.77 : 0.35)
+        case .blue:
+            return isDark ? Color(red: 0.61, green: 0.78, blue: 0.99) : Color(red: 0.19, green: 0.36, blue: 0.59)
+        case .teal:
+            return isDark ? Color(red: 0.51, green: 0.84, blue: 0.74) : Color(red: 0.11, green: 0.40, blue: 0.33)
+        case .amber:
+            return isDark ? Color(red: 1, green: 0.76, blue: 0.50) : Color(red: 0.55, green: 0.30, blue: 0.09)
         case .rose:
             return isDark ? Color(red: 1, green: 0.57, blue: 0.59) : Color(red: 0.68, green: 0.14, blue: 0.24)
         case .neutral:
@@ -335,18 +360,19 @@ enum WikeyActionTint {
 
 extension WorkflowAction {
     var wikeyIcon: (symbol: String, tint: WikeyActionTint) {
-        switch self {
-        case .copyTemplate: ("doc.on.clipboard", .accent)
-        case .openURL: ("link", .graphite)
-        case .launchApplication: ("app", .accent)
-        case .openFile: ("doc", .graphite)
-        case .applyLayout: ("rectangle.3.group", .accent)
-        case .pressKey: ("keyboard", .neutral)
-        case .runWorkflow: ("bolt", .accent)
-        case .pasteImages: ("photo", .graphite)
-        case .pasteFiles: ("paperclip", .graphite)
-        case .wait: ("clock", .neutral)
+        let symbol = switch self {
+        case .copyTemplate: "doc.on.clipboard"
+        case .openURL: "link"
+        case .launchApplication: "app"
+        case .openFile: "doc"
+        case .applyLayout: "rectangle.3.group"
+        case .pressKey: "keyboard"
+        case .runWorkflow: "bolt"
+        case .pasteImages: "photo"
+        case .pasteFiles: "paperclip"
+        case .wait: "clock"
         }
+        return (symbol, WikeyActionTint(symbol: symbol))
     }
 }
 
@@ -424,18 +450,21 @@ private struct WikeyHoverSurface<Label: View>: View {
     var isEnabled: Bool
     var glossy = false
 
-    private var fillOpacity: Double {
-        if isPressed { return 0.24 }
-        if isHovering && isEnabled { return 0.17 }
-        if selected { return 0.14 }
-        return filled ? 0.075 : 0
+    private var fill: Color {
+        if isEnabled && (isPressed || isHovering) {
+            let isDark = colorScheme == .dark
+            let charcoal = Color(white: isDark ? 0.34 : 0.15)
+            let hoverOpacity = isDark ? 0.54 : 0.12
+            return charcoal.opacity(isPressed ? hoverOpacity * 1.4 : hoverOpacity)
+        }
+        return ink.opacity(selected ? 0.14 : filled ? 0.075 : 0)
     }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius)
         label
             .background {
-                shape.fill(ink.opacity(fillOpacity))
+                shape.fill(fill)
                     .overlay {
                         if glossy {
                             shape.fill(LinearGradient(

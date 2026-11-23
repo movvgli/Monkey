@@ -23,10 +23,9 @@ struct QuickWorkflowView: View {
 
         var tint: WikeyActionTint {
             switch self {
-            case .template: .accent
-            case .link: .graphite
-            case .app: .accent
-            case .file: .graphite
+            case .template, .file: .amber
+            case .link: .blue
+            case .app: .teal
             }
         }
     }

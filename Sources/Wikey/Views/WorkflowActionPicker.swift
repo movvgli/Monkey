@@ -29,19 +29,20 @@ struct WorkflowActionPicker: View {
         case wait = "잠시 기다리기"
 
         var icon: (symbol: String, tint: WikeyActionTint) {
-            switch self {
-            case .app: ("app", .accent)
-            case .website: ("link", .graphite)
-            case .file: ("doc", .graphite)
-            case .layout: ("rectangle.3.group", .accent)
-            case .workflow: ("bolt", .accent)
-            case .template: ("doc.on.clipboard", .accent)
-            case .images: ("photo", .graphite)
-            case .files: ("paperclip", .graphite)
-            case .enter: ("return", .neutral)
-            case .shiftEnter: ("arrow.turn.down.left", .neutral)
-            case .wait: ("clock", .neutral)
+            let symbol = switch self {
+            case .app: "app"
+            case .website: "link"
+            case .file: "doc"
+            case .layout: "rectangle.3.group"
+            case .workflow: "bolt"
+            case .template: "doc.on.clipboard"
+            case .images: "photo"
+            case .files: "paperclip"
+            case .enter: "return"
+            case .shiftEnter: "arrow.turn.down.left"
+            case .wait: "clock"
             }
+            return (symbol, WikeyActionTint(symbol: symbol))
         }
     }
 
