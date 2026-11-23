@@ -45,6 +45,82 @@ enum SidebarSelection: Hashable {
     }
 }
 
+private struct WikeySidebar: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var focusedSection: SidebarSelection?
+    var selected: SidebarSelection
+    var navigate: (SidebarSelection) -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("보관함")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 11)
+                    .padding(.bottom, 3)
+                    .accessibilityAddTraits(.isHeader)
+
+                ForEach(SidebarSelection.sections, id: \.self) { section in
+                    row(section)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 10)
+        }
+        .background(Color.wikeyAccent.opacity(colorScheme == .dark ? 0.07 : 0.035))
+        .accessibilityLabel("사이드바")
+    }
+
+    private func row(_ section: SidebarSelection) -> some View {
+        let isSelected = selected == section
+        let ink = Color.wikeyInk(in: colorScheme)
+        let shape = RoundedRectangle(cornerRadius: 9)
+
+        return Button {
+            navigate(section)
+        } label: {
+            HStack(spacing: 9) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(ink)
+                    .frame(width: 19)
+                    .accessibilityHidden(true)
+                Text(section.title)
+                    .font(.body.weight(isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? ink : Color.primary)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 10)
+            .frame(minHeight: 32)
+            .background(ink.opacity(isSelected ? (colorScheme == .dark ? 0.19 : 0.13) : 0), in: shape)
+            .overlay {
+                if focusedSection == section {
+                    shape.strokeBorder(ink, lineWidth: 1.5)
+                }
+            }
+            .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .focusable()
+        .focused($focusedSection, equals: section)
+        .focusEffectDisabled()
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .onKeyPress(.upArrow) { move(from: section, offset: -1) }
+        .onKeyPress(.downArrow) { move(from: section, offset: 1) }
+    }
+
+    private func move(from section: SidebarSelection, offset: Int) -> KeyPress.Result {
+        let sections = SidebarSelection.sections
+        guard let current = sections.firstIndex(of: section),
+              sections.indices.contains(current + offset) else { return .handled }
+        let destination = sections[current + offset]
+        focusedSection = destination
+        navigate(destination)
+        return .handled
+    }
+}
+
 struct ContentView: View {
     @Environment(WikeyRuntime.self) private var runtime
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
@@ -55,16 +131,8 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(selection: sidebarSelection) {
-                Section("보관함") {
-                    ForEach(SidebarSelection.sections, id: \.self) { section in
-                        Label(section.title, systemImage: section.symbol)
-                            .tag(section)
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
+            WikeySidebar(selected: selection.section) { selection = $0 }
+                .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
         } detail: {
             VStack(spacing: 0) {
                 if let error = runtime.store.lastPersistenceError {
@@ -152,13 +220,6 @@ struct ContentView: View {
                 showsSearch = false
             }
         }
-    }
-
-    private var sidebarSelection: Binding<SidebarSelection?> {
-        Binding(
-            get: { selection.section },
-            set: { if let section = $0 { selection = section } }
-        )
     }
 
     @ViewBuilder

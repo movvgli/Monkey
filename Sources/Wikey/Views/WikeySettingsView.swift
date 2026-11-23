@@ -2,6 +2,7 @@ import SwiftUI
 import WikeyCore
 
 struct WikeySettingsView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(UpdateController.self) private var updates
 
@@ -108,7 +109,7 @@ struct WikeySettingsView: View {
             if runtime.permissions.inputMonitoringRestartRecommended {
                 HStack(spacing: 12) {
                     Image(systemName: "arrow.clockwise.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.wikeyInk(in: colorScheme))
                         .font(.title3)
                         .frame(width: 30)
                     VStack(alignment: .leading, spacing: 3) {
@@ -124,7 +125,7 @@ struct WikeySettingsView: View {
                     }
                 }
                 .padding(14)
-                .background(Color.blue.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.wikeyAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
             Button("권한 상태 새로고침", systemImage: "arrow.clockwise") {
