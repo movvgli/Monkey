@@ -159,7 +159,7 @@ struct WorkspaceSearchView: View {
                     prompt: isLauncher ? "검색 또는 계산·환율 입력" : "템플릿·워크플로·검색 키워드 찾기"
                 )
                 .frame(height: 28)
-                Button("닫기", systemImage: "xmark", action: close)
+                Button("닫기", wikeyIcon: "xmark", action: close)
                     .labelStyle(.iconOnly)
                     .buttonStyle(WikeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
                     .keyboardShortcut(.cancelAction)
@@ -282,8 +282,7 @@ struct WorkspaceSearchView: View {
                                     Text(entry.name)
                                         .lineLimit(1)
                                 } icon: {
-                                    Image(systemName: entry.symbol)
-                                        .foregroundStyle(WikeyActionTint(symbol: entry.symbol).ink(in: colorScheme))
+                                    WikeyActionIcon(symbol: entry.symbol, tint: WikeyActionTint(symbol: entry.symbol), size: 17)
                                 }
                                 .font(entry.isValue ? .system(.title3, design: .rounded, weight: .semibold) : .body)
                                 if let keyword = entry.keyword {

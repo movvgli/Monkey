@@ -58,7 +58,6 @@ struct ShortcutRecorderView: View {
 }
 
 struct CompactShortcutRecorderView: View {
-    @Environment(\.colorScheme) private var colorScheme
     @Binding var shortcut: ShortcutGesture
     @State private var recordingRequest = 0
 
@@ -78,14 +77,13 @@ struct CompactShortcutRecorderView: View {
                     shortcut = ShortcutGesture()
                 }
             } label: {
-                Image(systemName: shortcut.steps.isEmpty ? "plus.circle" : "xmark.circle.fill")
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(shortcut.steps.isEmpty ? Color.secondary : Color.wikeyInk(in: colorScheme))
+                WikeyActionIcon(symbol: shortcut.steps.isEmpty ? "plus" : "xmark", tint: .neutral, size: 15)
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .help(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
+            .accessibilityLabel(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
         }
     }
 }

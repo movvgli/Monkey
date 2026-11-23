@@ -37,7 +37,7 @@ struct TemplateEditorView: View {
                 WikeyDeleteButton(title: "템플릿 삭제") {
                     showsDeleteConfirmation = true
                 }
-                Button("클립보드에 복사", systemImage: "doc.on.doc", action: copyTemplate)
+                Button("클립보드에 복사", wikeyIcon: "doc.on.doc", action: copyTemplate)
                     .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
             }
@@ -117,8 +117,7 @@ struct TemplateEditorView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .semibold))
+            WikeyActionIcon(symbol: symbol, tint: tint, size: 15)
         }
         .buttonStyle(WikeyGlossyButtonStyle(tint: tint, iconOnly: true))
         .accessibilityLabel(title)

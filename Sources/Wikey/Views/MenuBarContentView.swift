@@ -7,7 +7,6 @@ struct MenuBarContentView: View {
     @Environment(UpdateController.self) private var updates
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
     var showSearch: () -> Void
 
     var body: some View {
@@ -103,10 +102,7 @@ struct MenuBarContentView: View {
 
     private func rowLabel(_ title: String, symbol: String) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: symbol)
-                .foregroundStyle(Color.wikeyInk(in: colorScheme))
-                .frame(width: 16)
-                .accessibilityHidden(true)
+            WikeyActionIcon(symbol: symbol, tint: WikeyActionTint(symbol: symbol), size: 16)
             Text(title).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
