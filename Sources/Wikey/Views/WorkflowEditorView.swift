@@ -10,6 +10,7 @@ struct WorkflowEditorView: View {
     var onDelete: () -> Void
 
     @State private var showsShortcutEditor = false
+    @State private var keywordDraft = ""
     @State private var showsActionPicker = false
     @State private var pendingAction: WorkflowActionPicker.Option?
     @State private var showsURLSetup = false
@@ -260,6 +261,18 @@ struct WorkflowEditorView: View {
                     .font(.caption)
                     .foregroundStyle(.orange)
             }
+
+            Divider()
+            WorkflowKeywordField(keyword: $keywordDraft, workflowID: workflow.id)
+                .frame(maxWidth: 340)
+                .onChange(of: workflow.keyword, initial: true) { _, saved in
+                    if WorkflowKeyword.normalized(keywordDraft) != saved { keywordDraft = saved ?? "" }
+                }
+                .onChange(of: keywordDraft) { _, value in
+                    guard WorkflowKeyword.validationMessage(for: value, excluding: workflow.id, in: runtime.store.workflows) == nil else { return }
+                    let keyword = WorkflowKeyword.normalized(value)
+                    if workflow.keyword != keyword { workflow.keyword = keyword }
+                }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)

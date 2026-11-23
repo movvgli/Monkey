@@ -10,9 +10,11 @@ public final class HotkeyRegistrar {
     public private(set) var registrationErrors: [UUID: String] = [:]
     public private(set) var applicationRegistrationErrors: [UUID: String] = [:]
     public private(set) var layoutRegistrationErrors: [UUID: String] = [:]
+    public private(set) var searchRegistrationError: String?
     public var onWorkflow: ((UUID) -> Void)?
     public var onApplication: ((UUID) -> Void)?
     public var onLayout: ((UUID) -> Void)?
+    public var onSearch: (() -> Void)?
 
     private let sequenceMonitor: SequenceMonitor
     private var handlerRef: EventHandlerRef?
@@ -24,6 +26,7 @@ public final class HotkeyRegistrar {
     private var configuredWorkflows: [Workflow] = []
     private var configuredApplications: [ApplicationShortcut] = []
     private var configuredLayouts: [WindowLayout] = []
+    private var configuredSearchShortcut = ShortcutGesture()
     private var installationStatus: OSStatus = noErr
 
     private enum Route {
@@ -35,6 +38,7 @@ public final class HotkeyRegistrar {
         case workflow(UUID)
         case application(UUID)
         case layout(UUID)
+        case search
     }
 
     private struct Candidate {
@@ -77,11 +81,13 @@ public final class HotkeyRegistrar {
     public func configure(
         workflows: [Workflow],
         applicationShortcuts: [ApplicationShortcut] = [],
-        layouts: [WindowLayout] = []
+        layouts: [WindowLayout] = [],
+        searchShortcut: ShortcutGesture = .init()
     ) {
         configuredWorkflows = workflows
         configuredApplications = applicationShortcuts
         configuredLayouts = layouts
+        configuredSearchShortcut = searchShortcut
         unregisterAll()
         // Changing NSApplication's activation policy (for example, hiding the
         // Dock icon) can replace the Carbon application event target. Install
@@ -96,6 +102,7 @@ public final class HotkeyRegistrar {
         registrationErrors = conflicts.workflows
         applicationRegistrationErrors = conflicts.applications
         layoutRegistrationErrors = conflicts.layouts
+        searchRegistrationError = nil
         guard recordingTokens.isEmpty else { return }
 
         let workflowCandidates = workflows.compactMap { workflow -> Candidate? in
@@ -142,6 +149,15 @@ public final class HotkeyRegistrar {
             }
             register(firstChord, route: route, affected: group.map(\.target))
         }
+        if let chord = searchShortcut.steps.first {
+            if searchShortcut.steps.count != 1 || searchShortcut.validationMessage != nil {
+                searchRegistrationError = "검색창 단축키에는 보조키를 포함한 한 단계가 필요합니다."
+            } else if let candidate = grouped[chord]?.first {
+                searchRegistrationError = "‘\(candidate.name)’의 단축키와 겹칩니다. 검색창 단축키를 변경하세요."
+            } else {
+                register(chord, route: .single(.search), affected: [.search])
+            }
+        }
         shortcutLogger.info("Global shortcuts ready: \(self.routes.count, privacy: .public) registered prefixes")
     }
 
@@ -153,7 +169,12 @@ public final class HotkeyRegistrar {
 
     public func endRecording(token: UUID) {
         guard recordingTokens.remove(token) != nil, recordingTokens.isEmpty else { return }
-        configure(workflows: configuredWorkflows, applicationShortcuts: configuredApplications, layouts: configuredLayouts)
+        configure(
+            workflows: configuredWorkflows,
+            applicationShortcuts: configuredApplications,
+            layouts: configuredLayouts,
+            searchShortcut: configuredSearchShortcut
+        )
     }
 
     fileprivate func receive(_ event: EventRef) -> OSStatus {
@@ -230,6 +251,7 @@ public final class HotkeyRegistrar {
         case .workflow(let id): onWorkflow?(id)
         case .application(let id): onApplication?(id)
         case .layout(let id): onLayout?(id)
+        case .search: onSearch?()
         }
     }
 
@@ -238,6 +260,7 @@ public final class HotkeyRegistrar {
         case .workflow(let id): registrationErrors[id] = message
         case .application(let id): applicationRegistrationErrors[id] = message
         case .layout(let id): layoutRegistrationErrors[id] = message
+        case .search: searchRegistrationError = message
         }
     }
 

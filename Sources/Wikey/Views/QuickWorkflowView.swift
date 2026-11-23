@@ -36,6 +36,7 @@ struct QuickWorkflowView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var kind: Kind?
     @State private var name = ""
+    @State private var keyword = ""
     @State private var shortcut = ShortcutGesture()
     @State private var templateID: UUID?
     @State private var templateMode: TemplateDeliveryMode = .copyOnly
@@ -92,7 +93,7 @@ struct QuickWorkflowView: View {
                     Button("저장") { save(kind) }
                         .buttonStyle(.borderedProminent)
                         .keyboardShortcut(.defaultAction)
-                        .disabled(action(kind) == nil || (!shortcut.steps.isEmpty && shortcut.validationMessage != nil))
+                        .disabled(action(kind) == nil || keywordError != nil || (!shortcut.steps.isEmpty && shortcut.validationMessage != nil))
                 }
             }
         }
@@ -107,6 +108,8 @@ struct QuickWorkflowView: View {
             TextField("이름", text: $name, prompt: Text(defaultName(kind)))
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("자동화 이름")
+
+            WorkflowKeywordField(keyword: $keyword)
 
             VStack(alignment: .leading, spacing: 5) {
                 Text("단축키 (선택)")
@@ -193,9 +196,38 @@ struct QuickWorkflowView: View {
     }
 
     private func save(_ kind: Kind) {
-        guard let action = action(kind) else { return }
+        guard let action = action(kind), keywordError == nil else { return }
         let title = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        onSave(Workflow(name: title.isEmpty ? defaultName(kind) : title, shortcut: shortcut, actions: [action]))
+        onSave(Workflow(
+            name: title.isEmpty ? defaultName(kind) : title,
+            shortcut: shortcut,
+            actions: [action],
+            keyword: WorkflowKeyword.normalized(keyword)
+        ))
+    }
+
+    private var keywordError: String? {
+        WorkflowKeyword.validationMessage(for: keyword, in: runtime.store.workflows)
+    }
+}
+
+struct WorkflowKeywordField: View {
+    @Environment(WikeyRuntime.self) private var runtime
+    @Environment(\.colorScheme) private var colorScheme
+    @Binding var keyword: String
+    var workflowID: UUID? = nil
+
+    var body: some View {
+        let error = WorkflowKeyword.validationMessage(for: keyword, excluding: workflowID, in: runtime.store.workflows)
+        VStack(alignment: .leading, spacing: 5) {
+            Text("검색 키워드 (선택)").font(.headline)
+            TextField("검색 키워드", text: $keyword, prompt: Text("예: gcal"))
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("검색 키워드")
+            Text(error ?? "검색창에 이 키워드를 입력하면 워크플로를 실행할 수 있습니다.")
+                .font(.caption)
+                .foregroundStyle(error == nil ? Color.secondary : WikeyActionTint.rose.ink(in: colorScheme))
+        }
     }
 }
 

@@ -99,7 +99,8 @@ public final class WikeyRuntime {
         hotkeys.configure(
             workflows: store.workflows,
             applicationShortcuts: store.applicationShortcuts,
-            layouts: store.layouts
+            layouts: store.layouts,
+            searchShortcut: store.searchShortcut
         )
     }
 

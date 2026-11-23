@@ -8,6 +8,7 @@ struct MenuBarContentView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    var showSearch: () -> Void
 
     var body: some View {
         let workflows = runtime.store.workflows.filter { $0.isEnabled && !$0.actions.isEmpty }
@@ -75,6 +76,10 @@ struct MenuBarContentView: View {
             }
 
             Divider()
+            menuButton("Wikey 검색창 열기", symbol: "magnifyingglass") {
+                dismiss()
+                Task { @MainActor in showSearch() }
+            }
             menuButton("Wikey 열기", symbol: "macwindow") {
                 dismiss()
                 NSApp.unhide(nil)

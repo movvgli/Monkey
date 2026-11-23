@@ -73,6 +73,7 @@ public struct KeyChord: Codable, Hashable, Sendable {
 }
 
 public struct ShortcutGesture: Codable, Hashable, Sendable {
+    public static let defaultSearch = Self(steps: [KeyChord(keyCode: UInt32(kVK_Space), modifiers: .option)])
     public var steps: [KeyChord]
 
     public init(steps: [KeyChord] = []) {
