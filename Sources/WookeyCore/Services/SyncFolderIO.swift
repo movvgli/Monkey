@@ -2,7 +2,16 @@ import Foundation
 
 /// Serialized, coordinated I/O runs off the main actor. iCloud owns network transfer.
 actor SyncFolderIO {
+    func pruneLocalBackups(in folder: URL, expiringThrough cutoff: Date) throws -> [SyncBackup] {
+        guard FileManager.default.fileExists(atPath: folder.path) else { return [] }
+        return try readBackups(in: folder, expiringThrough: cutoff)
+    }
+
     func read(_ folder: URL) throws -> [SyncBackup] {
+        try readBackups(in: folder, expiringThrough: nil)
+    }
+
+    private func readBackups(in folder: URL, expiringThrough cutoff: Date?) throws -> [SyncBackup] {
         let urls = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey, .isRegularFileKey, .isSymbolicLinkKey])
         let placeholders = urls.filter { $0.lastPathComponent.hasSuffix(".wikeybackup.icloud") }
         if !placeholders.isEmpty {
@@ -33,9 +42,25 @@ actor SyncFolderIO {
             }
             if let coordinationError { throw coordinationError }
             guard let outcome else { throw SyncError.invalidArchive }
-            backups.append(try outcome.get())
+            let backup = try outcome.get()
+            if let cutoff, backup.createdAt <= cutoff {
+                try removeBackup(at: url)
+            } else {
+                backups.append(backup)
+            }
         }
         return backups
+    }
+
+    private func removeBackup(at url: URL) throws {
+        var coordinationError: NSError?
+        var deletionError: Error?
+        NSFileCoordinator().coordinate(writingItemAt: url, options: .forDeleting, error: &coordinationError) { writable in
+            do { try FileManager.default.removeItem(at: writable) }
+            catch let error as CocoaError where error.code == .fileNoSuchFile {}
+            catch { deletionError = error }
+        }
+        if let error = coordinationError ?? deletionError { throw error }
     }
 
     func write(_ backup: SyncBackup, folder: URL) throws {

@@ -171,6 +171,34 @@ import Testing
         #expect(sync.versions.contains { $0.payload.state.workflows.count == 1 })
     }
 
+    @Test func localBackupRetentionPrunesExpiredArchivesWithoutDeletingCloudHistory() async throws {
+        let root = try fixture()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = WookeyStore(rootURL: root.appendingPathComponent("local"))
+        store.load()
+        let local = store.storageURL.appendingPathComponent("Backups")
+        let shared = root.appendingPathComponent("shared")
+        let payload = try SyncPayload.capture(state: store.state, root: store.storageURL)
+        var expired = SyncBackup(payload: payload, device: "Remote")
+        expired.createdAt = Date().addingTimeInterval(-31 * 24 * 60 * 60)
+        var recent = SyncBackup(payload: payload, device: "Local")
+        recent.createdAt = Date().addingTimeInterval(-29 * 24 * 60 * 60)
+        let io = SyncFolderIO()
+        try await io.write(expired, folder: local)
+        try await io.write(recent, folder: local)
+        try await io.write(expired, folder: shared)
+
+        let sync = ICloudSyncService(store: store)
+        await sync.refreshBackups()
+        #expect(sync.versions.map(\.id) == [recent.id])
+        #expect(try await io.read(local).map(\.id) == [recent.id])
+
+        await sync.connect(to: shared, requireICloud: false)
+        #expect(sync.conflicts.contains { $0.id == expired.id })
+        #expect(!sync.versions.contains { $0.id == expired.id })
+        #expect(try await io.read(shared).contains { $0.id == expired.id })
+    }
+
     @Test func offlineBackupAndRestoreWithoutCloudOptIn() async throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
         let store = WookeyStore(rootURL: root); store.load(); _ = store.addWorkflow()

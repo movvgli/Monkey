@@ -4,6 +4,34 @@ import Testing
 
 @MainActor
 struct WookeyStoreTests {
+    @Test func createsTemplateWithItsRichContentInOneSave() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = WookeyStore(rootURL: root)
+        let link = URL(string: "https://example.com")!
+        let document = NSAttributedString(string: "첫 문장\n둘째 문장", attributes: [.link: link])
+        let id = try #require(store.addTemplate(name: "답변", document: document))
+
+        let reloaded = WookeyStore(rootURL: root)
+        reloaded.load()
+        #expect(reloaded.templates.first?.name == "답변")
+        #expect(reloaded.templates.first?.plainText == document.string)
+        #expect(reloaded.templateDocument(id: id).attribute(.link, at: 0, effectiveRange: nil) as? URL == link)
+    }
+
+    @Test func failedTemplateCreationLeavesNoEmptyTemplateOrDocument() throws {
+        let files = FileManager.default
+        let root = files.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? files.removeItem(at: root) }
+        try files.createDirectory(at: root.appendingPathComponent("config.json"), withIntermediateDirectories: true)
+
+        let store = WookeyStore(rootURL: root)
+        #expect(store.addTemplate(name: "답변", document: NSAttributedString(string: "본문")) == nil)
+        #expect(store.templates.isEmpty)
+        #expect(store.lastPersistenceError != nil)
+        #expect(try files.contentsOfDirectory(atPath: root.appendingPathComponent("Templates").path).isEmpty)
+    }
+
     @Test func stateAndRichTemplateRoundTrip() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }

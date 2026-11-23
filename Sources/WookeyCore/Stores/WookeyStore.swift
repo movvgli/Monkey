@@ -111,6 +111,24 @@ public final class WookeyStore {
         return template.id
     }
 
+    public func addTemplate(name: String, document: NSAttributedString) -> UUID? {
+        let template = RichTemplate(name: name, plainText: document.string)
+        let url = templatesURL.appendingPathComponent(template.fileName)
+        do {
+            try writeTemplateDocument(document, to: url)
+        } catch {
+            lastPersistenceError = "템플릿을 저장하지 못했습니다: \(error.localizedDescription)"
+            return nil
+        }
+        state.templates.append(template)
+        guard save() else {
+            state.templates.removeLast()
+            try? FileManager.default.removeItem(at: url)
+            return nil
+        }
+        return template.id
+    }
+
     public func addLayout(_ layout: WindowLayout) -> Bool {
         state.layouts.append(layout)
         guard save() else {
@@ -202,18 +220,22 @@ public final class WookeyStore {
     public func saveTemplateDocument(_ document: NSAttributedString, for id: UUID) {
         guard let index = state.templates.firstIndex(where: { $0.id == id }) else { return }
         do {
-            try FileManager.default.createDirectory(at: templatesURL, withIntermediateDirectories: true)
-            let range = NSRange(location: 0, length: document.length)
-            guard let data = document.rtfd(from: range, documentAttributes: [.documentType: NSAttributedString.DocumentType.rtfd]) else {
-                throw StoreError.couldNotEncodeTemplate
-            }
             let url = templatesURL.appendingPathComponent(state.templates[index].fileName)
-            try data.write(to: url, options: .atomic)
+            try writeTemplateDocument(document, to: url)
             state.templates[index].plainText = document.string
             save()
         } catch {
             lastPersistenceError = "템플릿을 저장하지 못했습니다: \(error.localizedDescription)"
         }
+    }
+
+    private func writeTemplateDocument(_ document: NSAttributedString, to url: URL) throws {
+        try FileManager.default.createDirectory(at: templatesURL, withIntermediateDirectories: true)
+        let range = NSRange(location: 0, length: document.length)
+        guard let data = document.rtfd(from: range, documentAttributes: [.documentType: NSAttributedString.DocumentType.rtfd]) else {
+            throw StoreError.couldNotEncodeTemplate
+        }
+        try data.write(to: url, options: .atomic)
     }
 
     private func backUpCorruptStateIfPresent() {

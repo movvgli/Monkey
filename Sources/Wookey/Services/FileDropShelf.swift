@@ -3,6 +3,39 @@ import Observation
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum ShelfAfterDrop: String, CaseIterable {
+    case hide, keep
+
+    static let storageKey = "shelfAfterDrop"
+    static let defaultValue = Self.keep
+
+    var title: String { self == .hide ? "즉시 숨기기" : "유지하기" }
+}
+
+@MainActor
+@Observable
+final class FloatingShelfSession {
+    static let mascotSize = NSSize(width: 148, height: 134)
+    static let preferredBubbleWidth: CGFloat = 258
+    static let cardHeight: CGFloat = 80
+    static let cardSpacing: CGFloat = 8
+    static let bubblePadding: CGFloat = 12
+    static let tailWidth: CGFloat = 11
+
+    let mascotFrame: NSRect
+    var entries: [LocalHistoryStore.Entry] = []
+    var isExpanded = false
+    var bubbleOnLeft = false
+    var bubbleWidth: CGFloat = 0
+    var mascotTopInset: CGFloat = 0
+
+    init(mascotFrame: NSRect) {
+        self.mascotFrame = mascotFrame
+    }
+
+    var columnCount: Int { bubbleWidth >= 226 ? 2 : 1 }
+}
+
 struct FileDropTarget: NSViewRepresentable {
     let history: LocalHistoryStore
 
@@ -27,10 +60,12 @@ final class FileDropFeedback {
 @MainActor
 final class FileDropView: NSView {
     private let history: LocalHistoryStore
+    private let onSaved: ([LocalHistoryStore.Entry]) -> Void
     private let feedback = FileDropFeedback()
-    private(set) var visibleUntil: TimeInterval = 0
     private var activeImports = 0
-    var isImporting: Bool { activeImports > 0 }
+    private var pendingPromises = 0
+    private var promiseDeadline: TimeInterval = 0
+    var isImporting: Bool { activeImports > 0 || pendingPromises > 0 }
     private static let imageTypes: [NSPasteboard.PasteboardType] = [.png, .tiff, .init(UTType.jpeg.identifier)]
     private static let promiseTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
     private static let shelfTypes: [NSPasteboard.PasteboardType] = [.fileURL, .URL] + imageTypes + promiseTypes
@@ -40,13 +75,23 @@ final class FileDropView: NSView {
         return queue
     }()
 
-    init(history: LocalHistoryStore, floating: Bool = false) {
+    init(
+        history: LocalHistoryStore, shelf: FloatingShelfSession? = nil, onToggle: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}, onSaved: @escaping ([LocalHistoryStore.Entry]) -> Void = { _ in }
+    ) {
         self.history = history
+        self.onSaved = onSaved
         super.init(frame: .zero)
         let artwork = NSHostingView(rootView:
-            FileDropSurface(feedback: feedback, floating: floating)
-                .modifier(WookeyThemeScope())
-                .allowsHitTesting(false)
+            Group {
+                if let shelf {
+                    FloatingShelfView(history: history, session: shelf, feedback: feedback, onToggle: onToggle, onClose: onClose)
+                } else {
+                    FileDropSurface(feedback: feedback, floating: false)
+                        .allowsHitTesting(false)
+                }
+            }
+            .modifier(WookeyThemeScope())
         )
         artwork.sizingOptions = []
         artwork.translatesAutoresizingMaskIntoConstraints = false
@@ -57,9 +102,11 @@ final class FileDropView: NSView {
             artwork.leadingAnchor.constraint(equalTo: leadingAnchor),
             artwork.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
-        setAccessibilityElement(true)
-        setAccessibilityRole(.group)
-        setAccessibilityLabel("우키에게 파일이나 링크를 놓는 드롭 영역")
+        if shelf == nil {
+            setAccessibilityElement(true)
+            setAccessibilityRole(.group)
+            setAccessibilityLabel("우키에게 파일이나 링크를 놓는 드롭 영역")
+        }
         registerForDraggedTypes(Self.shelfTypes + [.string])
     }
 
@@ -105,7 +152,7 @@ final class FileDropView: NSView {
         for type in Self.imageTypes {
             guard let data = pasteboard.data(forType: type), let imageType = UTType(type.rawValue) else { continue }
             if let entry = history.importImage(data: data, type: imageType) {
-                showReceipt(entry)
+                finishSaving([entry])
                 return true
             }
         }
@@ -114,7 +161,7 @@ final class FileDropView: NSView {
 
     private func saveLinks(_ links: [WebLink]) -> Bool {
         let saved = links.compactMap { history.importLink($0.url, title: $0.title) }
-        if let entry = saved.last { showReceipt(entry) }
+        finishSaving(saved)
         if saved.isEmpty || saved.count < links.count { history.showFileImportError() }
         return !saved.isEmpty
     }
@@ -144,7 +191,7 @@ final class FileDropView: NSView {
         }
         saved += links.compactMap { history.importLink($0.url, title: $0.title) }
         endImport()
-        if let entry = saved.last { showReceipt(entry) }
+        finishSaving(saved)
         if saved.count < files.count + links.count { history.showFileImportError() }
     }
 
@@ -165,35 +212,50 @@ final class FileDropView: NSView {
             history.showFileImportError()
             return false
         }
-        var receiving = false
+        var count = 0
         for receiver in receivers {
-            let destination = folder.appendingPathComponent(UUID().uuidString, isDirectory: true)
-            guard (try? files.createDirectory(at: destination, withIntermediateDirectories: false)) != nil else { continue }
-            receiver.receivePromisedFiles(atDestination: destination, options: [:], operationQueue: Self.promiseQueue) { [history, weak self] url, error in
+            receiver.receivePromisedFiles(atDestination: folder, options: [:], operationQueue: Self.promiseQueue) { [history, weak self] url, error in
                 Task { @MainActor in
                     defer {
-                        if url.deletingLastPathComponent() == destination { try? files.removeItem(at: url) }
+                        if error == nil, url.deletingLastPathComponent() == folder { try? files.removeItem(at: url) }
                     }
                     self?.beginImport()
+                    self?.completePromise()
                     let entry = error == nil ? await history.importFile(at: url) : nil
                     self?.endImport()
                     if let entry {
-                        self?.showReceipt(entry)
+                        self?.finishSaving([entry])
                     } else {
                         history.showFileImportError()
                     }
                 }
             }
-            receiving = true
+            count += max(1, receiver.fileNames.isEmpty ? receiver.fileTypes.count : receiver.fileNames.count)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 600) { try? files.removeItem(at: folder) }
-        if receiving {
+        if count > 0 {
+            pendingPromises += count
+            promiseDeadline = ProcessInfo.processInfo.systemUptime + 30
             feedback.isReceiving = true
-            visibleUntil = ProcessInfo.processInfo.systemUptime + 2
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(30))
+                self?.expirePromises()
+            }
         } else {
             history.showFileImportError()
         }
-        return receiving
+        return count > 0
+    }
+
+    private func completePromise() {
+        pendingPromises = max(0, pendingPromises - 1)
+        feedback.isReceiving = isImporting
+    }
+
+    private func expirePromises() {
+        guard ProcessInfo.processInfo.systemUptime >= promiseDeadline else { return }
+        pendingPromises = 0
+        feedback.isReceiving = isImporting
     }
 
     private func beginImport() {
@@ -206,11 +268,12 @@ final class FileDropView: NSView {
         feedback.isReceiving = isImporting
     }
 
-    private func showReceipt(_ entry: LocalHistoryStore.Entry) {
+    private func finishSaving(_ entries: [LocalHistoryStore.Entry]) {
+        guard let entry = entries.last else { return }
         let photo = entry.symbol == "photo"
             ? historyImageThumbnail(at: history.fileURL(for: entry, kind: .files), maxPixelSize: 96) : nil
         feedback.receipt = FileDropFeedback.Receipt(photo: photo, symbol: entry.symbol)
-        visibleUntil = ProcessInfo.processInfo.systemUptime + 1.1
+        onSaved(entries)
     }
 }
 
@@ -220,15 +283,22 @@ final class FileDropShelf {
     private let pasteboard = NSPasteboard(name: .drag)
     private var timer: Timer?
     private var panel: NSPanel?
+    private var session: FloatingShelfSession?
     private var dragChangeCount = 0
     private var shake = DragShake()
     private var tracking = false
     private var lastRelease: TimeInterval?
 
+    private var behavior: ShelfAfterDrop {
+        UserDefaults.standard.string(forKey: ShelfAfterDrop.storageKey).flatMap(ShelfAfterDrop.init(rawValue:))
+            ?? ShelfAfterDrop.defaultValue
+    }
+
     init(history: LocalHistoryStore) { self.history = history }
 
     func start() {
         guard timer == nil else { return }
+        history.onFileTakenFromShelf = { [weak self] id in self?.takeFile(id) }
         dragChangeCount = pasteboard.changeCount
         let timer = Timer(timeInterval: 0.025, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.sample() }
@@ -247,11 +317,10 @@ final class FileDropShelf {
             }
             let dropView = panel?.contentView as? FileDropView
             guard dropView?.isImporting != true else { return }
-            let visibleUntil = dropView?.visibleUntil ?? 0
-            if let lastRelease, now >= max(visibleUntil, lastRelease + 0.20) {
-                panel?.orderOut(nil)
-                panel = nil
-                self.lastRelease = nil
+            let hasEntries = session?.entries.isEmpty == false
+            if hasEntries, behavior == .keep { return }
+            if let lastRelease, hasEntries || now >= lastRelease + 0.20 {
+                close()
             }
             return
         }
@@ -261,7 +330,7 @@ final class FileDropShelf {
             tracking = true
             shake = DragShake(anchor: point)
         }
-        guard panel == nil, shake.sample(point, now: now) else { return }
+        guard !history.isDraggingFromShelf, panel == nil, shake.sample(point, now: now) else { return }
         // Some sources only expose the drag data to the destination window.
         let dragTypesReadable = pasteboard.changeCount != dragChangeCount && pasteboard.types?.isEmpty == false
         guard !dragTypesReadable || FileDropView.canShowShelf(for: pasteboard) else { return }
@@ -270,12 +339,13 @@ final class FileDropShelf {
 
     private func show(near point: NSPoint) {
         guard let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) ?? NSScreen.main else { return }
-        let size = NSSize(width: 180, height: 154)
+        let size = FloatingShelfSession.mascotSize
         let bounds = screen.visibleFrame.insetBy(dx: 10, dy: 10)
         let preferredX = point.x + 34 + size.width <= bounds.maxX ? point.x + 34 : point.x - size.width - 34
         let origin = NSPoint(x: min(max(preferredX, bounds.minX), bounds.maxX - size.width),
                              y: min(max(point.y - size.height / 2, bounds.minY), bounds.maxY - size.height))
-        let panel = NSPanel(contentRect: NSRect(origin: origin, size: size),
+        let mascotFrame = NSRect(origin: origin, size: size)
+        let panel = ShelfPanel(contentRect: mascotFrame,
                             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.title = "우키 서랍"
         panel.level = .floating
@@ -284,10 +354,73 @@ final class FileDropShelf {
         panel.hidesOnDeactivate = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
-        panel.hasShadow = true
-        panel.contentView = FileDropView(history: history, floating: true)
+        panel.hasShadow = false
+        panel.acceptsMouseMovedEvents = true
+        let session = FloatingShelfSession(mascotFrame: mascotFrame)
+        self.session = session
+        panel.contentView = FileDropView(
+            history: history, shelf: session,
+            onToggle: { [weak self] in self?.toggleExpanded() },
+            onClose: { [weak self] in self?.close() },
+            onSaved: { [weak self, weak session] entries in
+                guard let self, let session, self.session === session else { return }
+                session.entries.append(contentsOf: entries)
+                if session.isExpanded { self.resize() }
+            }
+        )
         self.panel = panel
         panel.orderFrontRegardless()
+    }
+
+    private func takeFile(_ id: UUID) {
+        guard let session, session.entries.contains(where: { $0.id == id }) else { return }
+        session.entries.removeAll { $0.id == id }
+        if session.entries.isEmpty, (panel?.contentView as? FileDropView)?.isImporting != true {
+            close()
+        } else if session.isExpanded {
+            resize()
+        }
+    }
+
+    private func toggleExpanded() {
+        guard let session, !session.entries.isEmpty else { return }
+        session.isExpanded.toggle()
+        resize()
+    }
+
+    private func resize() {
+        guard let panel, let session, let screen = panel.screen ?? NSScreen.main else { return }
+        let anchor = session.mascotFrame
+        guard session.isExpanded else {
+            session.mascotTopInset = 0
+            panel.setFrame(anchor, display: true)
+            return
+        }
+
+        let bounds = screen.visibleFrame.insetBy(dx: 10, dy: 10)
+        let leftRoom = anchor.minX - bounds.minX
+        let rightRoom = bounds.maxX - anchor.maxX
+        session.bubbleOnLeft = rightRoom < FloatingShelfSession.preferredBubbleWidth && leftRoom > rightRoom
+        let available = session.bubbleOnLeft ? leftRoom : rightRoom
+        session.bubbleWidth = max(0, min(available, FloatingShelfSession.preferredBubbleWidth))
+        let rows = min(3, max(1, (session.entries.count + session.columnCount - 1) / session.columnCount))
+        let gridHeight = CGFloat(rows) * FloatingShelfSession.cardHeight + CGFloat(rows - 1) * FloatingShelfSession.cardSpacing
+        let height = min(bounds.height, max(anchor.height, gridHeight + 2 * FloatingShelfSession.bubblePadding))
+        let y = min(max(anchor.midY - height / 2, bounds.minY), bounds.maxY - height)
+        let x = session.bubbleOnLeft ? anchor.minX - session.bubbleWidth : anchor.minX
+        session.mascotTopInset = max(0, y + height - anchor.maxY)
+        panel.setFrame(NSRect(x: x, y: y, width: anchor.width + session.bubbleWidth, height: height), display: true)
+    }
+
+    private func close() {
+        panel?.orderOut(nil)
+        panel = nil
+        session = nil
+        lastRelease = nil
+    }
+
+    private final class ShelfPanel: NSPanel {
+        override var canBecomeKey: Bool { true }
     }
 }
 

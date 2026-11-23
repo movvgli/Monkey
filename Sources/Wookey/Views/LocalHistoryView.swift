@@ -7,12 +7,48 @@ struct LocalHistoryView: View {
     @Environment(LocalHistoryStore.self) private var history
     @State private var showsImporter = false
     @State private var isImporting = false
-    let kind: HistoryKind
+    @State private var kind: HistoryKind
+
+    init(initialKind: HistoryKind = .files) {
+        _kind = State(initialValue: initialKind)
+    }
 
     var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                header
+                WookeyFilterPicker(
+                    title: "파일 보관함", selection: $kind, options: [.files, .clipboard], icon: { $0.symbol }
+                ) { $0 == .files ? "서랍" : "클립보드" }
+            }
+            .padding(WookeyPageMetrics.padding)
+            .frame(maxWidth: WookeyPageMetrics.maximumWidth, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Divider()
+            historyList.id(kind)
+        }
+        .navigationTitle("파일")
+        .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
+            switch result {
+            case .success(let urls):
+                isImporting = true
+                Task {
+                    var failed = false
+                    for url in urls {
+                        if await history.importFile(at: url) == nil { failed = true }
+                    }
+                    if failed { history.showFileImportError() }
+                    isImporting = false
+                }
+            case .failure:
+                history.showFileImportError()
+            }
+        }
+    }
+
+    private var historyList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
-                header
                 if kind == .files {
                     FileDropTarget(history: history)
                         .frame(height: 146)
@@ -53,23 +89,6 @@ struct LocalHistoryView: View {
             .frame(maxWidth: WookeyPageMetrics.maximumWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .navigationTitle(kind.title)
-        .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
-            switch result {
-            case .success(let urls):
-                isImporting = true
-                Task {
-                    var failed = false
-                    for url in urls {
-                        if await history.importFile(at: url) == nil { failed = true }
-                    }
-                    if failed { history.showFileImportError() }
-                    isImporting = false
-                }
-            case .failure:
-                history.showFileImportError()
-            }
-        }
     }
 
     private var emptyDescription: String {
@@ -83,7 +102,7 @@ struct LocalHistoryView: View {
         let subtitle = kind == .clipboard
             ? "최근 복사한 내용을 찾아 다시 복사합니다."
             : "우키 서랍에 담은 파일과 웹 링크를 열 수 있습니다."
-        return WookeyPageHeader(title: kind.title, subtitle: subtitle) {
+        return WookeyPageHeader(title: "파일", subtitle: subtitle) {
             if kind == .files {
                 Button(isImporting ? "가져오는 중…" : "파일 추가", wookeyIcon: "plus") { showsImporter = true }
                     .buttonStyle(WookeyGlossyButtonStyle())
@@ -95,9 +114,7 @@ struct LocalHistoryView: View {
 
     private func clipboardRow(_ entry: LocalHistoryStore.Entry) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: entry.symbol)
-                .foregroundStyle(.secondary)
-                .frame(width: 20)
+            WookeyActionIcon(symbol: entry.symbol, tint: WookeyActionTint(symbol: entry.symbol), size: 20)
             VStack(alignment: .leading, spacing: 3) {
                 Text(entry.name).lineLimit(2)
                 Text(entry.date, format: .dateTime.month().day().hour().minute())
@@ -105,7 +122,7 @@ struct LocalHistoryView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("다시 복사", systemImage: "doc.on.doc") { history.restoreClipboard(entry) }
+            Button("다시 복사", wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
             removeButton(entry)
         }
         .padding(.vertical, 8)
@@ -124,6 +141,12 @@ struct LocalHistoryView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("\(entry.name) 열기")
+                .overlay {
+                    let file = history.fileURL(for: entry, kind: .files)
+                    ShelfDragSource(entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path))
+                    .accessibilityHidden(true)
+                }
+                .help("클릭해서 열거나 다른 앱으로 드래그")
                 HStack(spacing: 5) {
                     Text(entry.name)
                         .lineLimit(1)
@@ -169,6 +192,71 @@ struct LocalHistoryView: View {
     }
 }
 
+struct ShelfDragSource: NSViewRepresentable {
+    let entry: LocalHistoryStore.Entry
+    let file: URL
+    let history: LocalHistoryStore
+    let icon: NSImage
+
+    func makeNSView(context: Context) -> DragView { DragView() }
+
+    func updateNSView(_ view: DragView, context: Context) {
+        view.url = entry.webURL ?? file
+        view.icon = icon
+        view.open = { history.openFile(entry) }
+        view.startDrag = { history.beginFileDrag(entry.id) }
+        view.endDrag = { history.endFileDrag(entry.id, delivered: $0) }
+    }
+
+    final class DragView: NSView, NSDraggingSource {
+        var url: URL?
+        var icon: NSImage?
+        var open: (() -> Void)?
+        var startDrag: (() -> Void)?
+        var endDrag: ((Bool) -> Void)?
+        private var mouseDownLocation: NSPoint?
+        private var finishActiveDrag: ((Bool) -> Void)?
+
+        override func mouseDown(with event: NSEvent) {
+            mouseDownLocation = event.locationInWindow
+        }
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+        override func mouseUp(with event: NSEvent) {
+            defer { mouseDownLocation = nil }
+            if mouseDownLocation != nil, bounds.contains(convert(event.locationInWindow, from: nil)) {
+                open?()
+            }
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let start = mouseDownLocation, let url, let icon else { return }
+            let point = event.locationInWindow
+            guard hypot(point.x - start.x, point.y - start.y) >= 4 else { return }
+            mouseDownLocation = nil
+            guard url.isFileURL ? FileManager.default.fileExists(atPath: url.path) : LocalHistoryStore.isWebURL(url) else { return }
+
+            let item = NSDraggingItem(pasteboardWriter: url as NSURL)
+            let location = convert(point, from: nil)
+            item.setDraggingFrame(NSRect(x: location.x - 20, y: location.y - 20, width: 40, height: 40), contents: icon)
+            finishActiveDrag = endDrag
+            startDrag?()
+            beginDraggingSession(with: [item], event: event, source: self)
+        }
+
+        func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+            guard context == .outsideApplication else { return [] }
+            return url?.isFileURL == true ? .copy : [.copy, .link]
+        }
+
+        func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+            finishActiveDrag?(!operation.intersection([.copy, .link]).isEmpty)
+            finishActiveDrag = nil
+        }
+    }
+}
+
 private struct HistoryImageThumbnail: View {
     let url: URL
     @State private var thumbnail: CGImage?
@@ -180,7 +268,7 @@ private struct HistoryImageThumbnail: View {
                     .resizable()
                     .scaledToFit()
             } else {
-                Image(systemName: "photo").foregroundStyle(.secondary)
+                WookeyActionIcon(symbol: "photo", tint: .neutral, size: 20)
             }
         }
         .task(id: url) {
@@ -201,6 +289,143 @@ func historyImageThumbnail(at url: URL, maxPixelSize: Int) -> CGImage? {
     return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
 }
 
+struct FloatingShelfView: View {
+    @Environment(\.wookeyTheme) private var theme
+    let history: LocalHistoryStore
+    let session: FloatingShelfSession
+    let feedback: FileDropFeedback
+    let onToggle: () -> Void
+    let onClose: () -> Void
+    @State private var isHovered = false
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 0) {
+            if session.isExpanded, session.bubbleOnLeft { speechBubble }
+            mascotControl
+                .padding(.top, session.mascotTopInset)
+            if session.isExpanded, !session.bubbleOnLeft { speechBubble }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onHover { isHovered = $0 }
+    }
+
+    private var mascotControl: some View {
+        Group {
+            if session.entries.isEmpty {
+                mascot
+                    .accessibilityLabel(feedback.isReceiving ? "가져오는 중" : "파일이나 링크를 놓으세요")
+            } else {
+                Button(action: onToggle) { mascot }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(session.isExpanded ? "서랍 목록 접기" : "서랍 목록 열기")
+                    .accessibilityValue("\(session.entries.count)개 항목")
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            Button("서랍 닫기", wookeyIcon: "xmark", action: onClose)
+                .labelStyle(.iconOnly)
+                .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
+                .controlSize(.small)
+                .accessibilityLabel("서랍 닫기")
+                .help("서랍 닫기")
+                .padding(8)
+                .opacity(isHovered ? 1 : 0)
+                .allowsHitTesting(isHovered)
+                .keyboardShortcut(.cancelAction)
+        }
+    }
+
+    private var mascot: some View {
+        FileDropSurface(feedback: feedback, floating: true)
+            .frame(width: FloatingShelfSession.mascotSize.width, height: FloatingShelfSession.mascotSize.height)
+            .contentShape(Rectangle())
+    }
+
+    private var speechBubble: some View {
+        let spacing = FloatingShelfSession.cardSpacing
+        let columns = Array(repeating: GridItem(.flexible(minimum: 0), spacing: spacing), count: session.columnCount)
+        let edge: Edge.Set = session.bubbleOnLeft ? .trailing : .leading
+        return ScrollView {
+            LazyVGrid(columns: columns, spacing: spacing) {
+                ForEach(session.entries) { entry in
+                    entryCard(entry)
+                }
+            }
+            .padding(FloatingShelfSession.bubblePadding)
+        }
+        .background(theme.panel, in: RoundedRectangle(cornerRadius: 18))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .padding(edge, FloatingShelfSession.tailWidth - 1)
+        .overlay(alignment: session.bubbleOnLeft ? .topTrailing : .topLeading) {
+            ShelfBubbleTail(pointsLeft: !session.bubbleOnLeft)
+                .fill(theme.panel)
+                .frame(width: FloatingShelfSession.tailWidth, height: 20)
+                .offset(y: session.mascotTopInset + FloatingShelfSession.mascotSize.height / 2 - 10)
+                .allowsHitTesting(false)
+        }
+        .shadow(color: .black.opacity(0.16), radius: 8, y: 2)
+        .frame(width: session.bubbleWidth)
+        .accessibilityLabel("서랍에 담은 항목")
+    }
+
+    private func entryCard(_ entry: LocalHistoryStore.Entry) -> some View {
+        let file = history.fileURL(for: entry, kind: .files)
+        let icon = NSWorkspace.shared.icon(forFile: file.path)
+        return Button {
+            history.openFile(entry)
+        } label: {
+            VStack(spacing: 5) {
+                Group {
+                    if entry.webURL != nil {
+                        WookeyActionIcon(symbol: "link", tint: .graphite, size: 30)
+                    } else if entry.symbol == "photo" {
+                        HistoryImageThumbnail(url: file)
+                    } else {
+                        Image(nsImage: icon).resizable().scaledToFit()
+                    }
+                }
+                .frame(width: 36, height: 36)
+                Text(entry.name)
+                    .font(.caption.weight(.medium))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: FloatingShelfSession.cardHeight)
+            .background(theme.canvas, in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(Color.primary.opacity(0.09))
+                    .allowsHitTesting(false)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(WookeyHoverButtonStyle())
+        .accessibilityLabel("\(entry.name) 열기")
+        .overlay {
+            ShelfDragSource(entry: entry, file: file, history: history, icon: icon)
+                .accessibilityHidden(true)
+        }
+        .help("클릭해서 열거나 다른 앱으로 드래그")
+    }
+}
+
+private struct ShelfBubbleTail: Shape {
+    let pointsLeft: Bool
+
+    func path(in rect: CGRect) -> Path {
+        let base = pointsLeft ? rect.maxX : rect.minX
+        let tip = pointsLeft ? rect.minX : rect.maxX
+        var path = Path()
+        path.move(to: CGPoint(x: base, y: rect.minY))
+        path.addLine(to: CGPoint(x: tip, y: rect.midY))
+        path.addLine(to: CGPoint(x: base, y: rect.maxY))
+        path.closeSubpath()
+        return path
+    }
+}
+
 struct FileDropSurface: View {
     @Environment(\.wookeyTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -210,8 +435,8 @@ struct FileDropSurface: View {
 
     private enum BiteStage { case idle, offered, swallowed, saved }
 
-    private let wookeySize: CGFloat = 100
-    private let mouthOffset = CGSize(width: -10, height: -9)
+    private var wookeySize: CGFloat { floating ? 118 : 100 }
+    private var mouthOffset: CGSize { CGSize(width: wookeySize * -0.06, height: wookeySize * -0.08) }
 
     private var mouthIsOpen: Bool { feedback.isTargeted || biteStage == .offered }
     private var isSaved: Bool { biteStage == .saved }
@@ -219,8 +444,8 @@ struct FileDropSurface: View {
     var body: some View {
         VStack(spacing: 4) {
             character
-            message
             if !floating {
+                message
                 Text("파일이나 링크를 끌다가 두 번 흔들면 우키 서랍이 열려요.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -229,10 +454,15 @@ struct FileDropSurface: View {
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(WookeyGlossyPanel(radius: 18))
+        .background {
+            if !floating { WookeyGlossyPanel(radius: 18) }
+        }
         .overlay {
-            RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(feedback.isTargeted ? WookeyTheme.banana : .clear, lineWidth: 2)
+            if !floating {
+                RoundedRectangle(cornerRadius: 18)
+                    .strokeBorder(feedback.isTargeted ? WookeyTheme.banana : .clear, lineWidth: 2)
+                    .allowsHitTesting(false)
+            }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: feedback.isTargeted)
         .task(id: feedback.receipt?.id) {
@@ -243,12 +473,14 @@ struct FileDropSurface: View {
 
     private var character: some View {
         ZStack {
-            Circle()
-                .fill(WookeyTheme.banana.opacity(feedback.isTargeted ? 0.5 : 0.22))
-                .frame(width: 72, height: 72)
-                .blur(radius: 6)
+            if !floating || feedback.isTargeted {
+                Circle()
+                    .fill(WookeyTheme.banana.opacity(feedback.isTargeted ? 0.5 : 0.22))
+                    .frame(width: 72, height: 72)
+                    .blur(radius: 6)
+            }
             ZStack {
-                Image("ImageShelfPhotoWookey", bundle: wookeyAssetBundle)
+                Image("FileShelfFolderWookey", bundle: wookeyAssetBundle)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
@@ -289,7 +521,7 @@ struct FileDropSurface: View {
             if isSaved { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
             Text(title)
         }
-        .font(.system(size: floating ? 12 : 15, weight: .semibold, design: .rounded))
+        .font(.system(size: 15, weight: .semibold, design: .rounded))
         .foregroundStyle(theme.accent)
         .lineLimit(1)
     }

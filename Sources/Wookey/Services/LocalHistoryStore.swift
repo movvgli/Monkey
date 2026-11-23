@@ -8,7 +8,7 @@ enum HistoryKind: String, CaseIterable {
     case files = "images" // Retain the on-disk directory name for existing shelves.
 
     var title: String { self == .clipboard ? "클립보드" : "파일" }
-    var symbol: String { self == .clipboard ? "doc.on.clipboard" : "doc" }
+    var symbol: String { self == .clipboard ? "doc.on.clipboard" : "folder" }
 }
 
 struct HistoryRetention: Codable, Equatable {
@@ -76,6 +76,8 @@ final class LocalHistoryStore {
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var pasteboardChangeCount = 0
     @ObservationIgnored private var nextPrune = Date.distantPast
+    @ObservationIgnored private var outgoingFileDrags = Set<UUID>()
+    @ObservationIgnored var onFileTakenFromShelf: ((UUID) -> Void)?
 
     init(root: URL, clipboard: NSPasteboard = .general) {
         self.root = root.appendingPathComponent("LocalHistory", isDirectory: true)
@@ -83,6 +85,13 @@ final class LocalHistoryStore {
     }
 
     var recordsClipboard: Bool { settings.recordsClipboard }
+    var isDraggingFromShelf: Bool { !outgoingFileDrags.isEmpty }
+
+    func beginFileDrag(_ id: UUID) { outgoingFileDrags.insert(id) }
+    func endFileDrag(_ id: UUID, delivered: Bool) {
+        outgoingFileDrags.remove(id)
+        if delivered { onFileTakenFromShelf?(id) }
+    }
 
     func entries(_ kind: HistoryKind) -> [Entry] { history[kind] ?? [] }
 
@@ -226,6 +235,7 @@ final class LocalHistoryStore {
             let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
             if files.fileExists(atPath: folder.path) { try files.removeItem(at: folder) }
             history[kind]?.removeAll { $0.id == entry.id }
+            if kind == .files { onFileTakenFromShelf?(entry.id) }
             errors[kind] = nil
         } catch {
             report(error, kind: kind, message: "기록을 삭제하지 못했습니다")
@@ -344,7 +354,7 @@ final class LocalHistoryStore {
         for kind in HistoryKind.allCases {
             guard let seconds = retention(kind).seconds else { continue }
             let cutoff = now.addingTimeInterval(-seconds)
-            for entry in entries(kind).reversed() where entry.date <= cutoff {
+            for entry in entries(kind).reversed() where entry.date <= cutoff && !outgoingFileDrags.contains(entry.id) {
                 remove(entry, kind: kind)
             }
         }

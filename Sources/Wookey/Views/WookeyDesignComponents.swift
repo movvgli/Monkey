@@ -94,7 +94,6 @@ var wookeyAssetBundle: Bundle {
 }
 
 struct WookeyMascot: View {
-    @Environment(\.colorScheme) private var colorScheme
     var size: CGFloat
 
     var body: some View {
@@ -103,9 +102,6 @@ struct WookeyMascot: View {
             .interpolation(.high)
             .scaledToFit()
             .frame(width: size, height: size)
-            .shadow(color: colorScheme == .dark ? .white.opacity(0.26) : .black.opacity(0.16),
-                    radius: colorScheme == .dark ? 1 : 3,
-                    y: colorScheme == .dark ? -1 : 2)
             .accessibilityHidden(true)
     }
 }
@@ -276,8 +272,7 @@ struct WookeySearchField: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
+            WookeyActionIcon(symbol: "magnifyingglass", tint: .neutral, size: 16)
             TextField(prompt, text: $text)
                 .textFieldStyle(.plain)
                 .accessibilityLabel(prompt)
@@ -491,7 +486,7 @@ enum WookeyActionTint {
         case "link": self = .graphite
         case "rectangle.3.group": self = .blue
         case "app", "arrow.left.arrow.right": self = .teal
-        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip": self = .amber
+        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder": self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
         default: self = .accent
         }
@@ -550,6 +545,7 @@ struct WookeyActionIcon: View {
         case "doc.on.clipboard": "WorkflowActionTemplate"
         case "app", "macwindow", "dock.rectangle": "WorkflowActionApplication"
         case "doc": "WorkflowActionDocument"
+        case "folder": "WookeyShelfFolder"
         case "rectangle.3.group": "WorkflowActionLayout"
         case "keyboard": "WorkflowActionKeyboard"
         case "clock": "WorkflowActionWait"
@@ -572,7 +568,7 @@ struct WookeyActionIcon: View {
         case "bold": "WookeyCommandBold"
         case "italic": "WookeyCommandItalic"
         case "underline": "WookeyCommandUnderline"
-        case "lock.shield": "WookeySettingsPermissions"
+        case "lock.shield", "lock.shield.fill": "WookeySettingsPermissions"
         case "icloud": "WookeySettingsSync"
         case "stethoscope": "WookeySettingsDiagnostics"
         case "paintpalette": "WookeySettingsPalette"
@@ -597,39 +593,19 @@ struct WookeyActionIcon: View {
         }
     }
 
-    private func artworkTint(_ artwork: String) -> Color {
-        switch artwork {
-        case "WookeyCommandAdd":
-            colorScheme == .dark
-                ? Color(red: 0.97, green: 0.72, blue: 0.44)
-                : Color(red: 0.51, green: 0.29, blue: 0.14)
-        case "WookeyCommandClose":
-            colorScheme == .dark
-                ? Color(red: 1, green: 0.39, blue: 0.38)
-                : Color(red: 0.91, green: 0.23, blue: 0.23)
-        default: .white
-        }
-    }
-
     var body: some View {
         Group {
             if let artwork {
-                let isSilverChain = symbol == "link"
-                let darkModeLift = colorScheme == .dark && (isSilverChain || artwork.hasPrefix("WookeyCommand"))
-                let highlight = isSilverChain ? 0.095 : artwork == "WookeyCommandClose" ? 0.25 : 0
-                let darkLift = darkModeLift ? 0.19 : 0
                 Image(artwork, bundle: wookeyAssetBundle)
+                    .renderingMode(.original)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
-                    .saturation(isSilverChain || artwork == "WookeyCommandDelete" ? 0 : 0.78)
-                    .brightness(highlight + darkLift)
-                    .colorMultiply(artworkTint(artwork))
                     .rotationEffect(rotation)
             } else {
                 Image(systemName: symbol)
-                    .font(.system(size: min(size, 15), weight: .regular))
-                    .foregroundStyle(tint.ink(in: colorScheme).gradient)
+                    .font(.system(size: size * 0.80, weight: .medium))
+                    .foregroundStyle(tint.ink(in: colorScheme))
             }
         }
         .frame(width: size, height: size)

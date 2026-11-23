@@ -100,13 +100,9 @@ struct OnboardingView: View {
 
             HStack(spacing: 10) {
                 OnboardingStepLabel(number: 1, title: "워크플로 만들기")
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                WookeyActionIcon(symbol: "chevron.right", tint: .neutral, size: 12)
                 OnboardingStepLabel(number: 2, title: "동작 추가")
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
+                WookeyActionIcon(symbol: "chevron.right", tint: .neutral, size: 12)
                 OnboardingStepLabel(number: 3, title: "단축키로 실행")
             }
             .frame(maxWidth: .infinity)
@@ -154,8 +150,7 @@ struct OnboardingView: View {
 
             if runtime.permissions.inputMonitoringRestartRecommended {
                 HStack(spacing: 10) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .foregroundStyle(Color.wookeyInk(in: colorScheme))
+                    WookeyActionIcon(symbol: "arrow.clockwise", tint: .accent, size: 16)
                     Text("입력 모니터링을 켠 뒤에는 Wookey를 다시 열어야 적용됩니다.")
                         .font(.subheadline)
                     Spacer()
@@ -235,9 +230,7 @@ private struct OnboardingFeatureCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: systemImage)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.wookeyInk(in: colorScheme))
+            WookeyActionIcon(symbol: systemImage, tint: WookeyActionTint(symbol: systemImage), size: 22)
                 .frame(width: 40, height: 40)
                 .background(Color.wookeyInk(in: colorScheme).opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
@@ -292,9 +285,7 @@ private struct OnboardingPermissionRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: granted ? "checkmark.circle.fill" : systemImage)
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(granted ? Color.green : Color.wookeyInk(in: colorScheme))
+            WookeyActionIcon(symbol: granted ? "checkmark.circle.fill" : systemImage, tint: .accent, size: 20)
                 .frame(width: 32, height: 32)
                 .background(
                     (granted ? Color.green : Color.wookeyInk(in: colorScheme)).opacity(0.08),

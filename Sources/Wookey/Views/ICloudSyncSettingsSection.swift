@@ -61,7 +61,7 @@ struct ICloudSyncSettingsSection: View {
                     }
                     DisclosureGroup("백업 및 복원 (\(sync.versions.count))", isExpanded: $showHistory) {
                         VStack(alignment: .leading, spacing: 10) {
-                            Text("설정 변경·복원 전 사본을 보관합니다. 백업은 자동 삭제하지 않으며 저장 공간을 사용합니다. 동기화를 꺼도 복원할 수 있습니다.")
+                            Text("이 Mac의 복원용 백업은 30일 동안 보관합니다. 동기화를 꺼도 이 기간에는 복원할 수 있습니다.")
                                 .font(.caption).foregroundStyle(.secondary)
                             if sync.versions.isEmpty { Text("아직 백업이 없습니다.").foregroundStyle(.secondary) }
                             ForEach(sync.versions.prefix(historyLimit)) { backup in backupRow(backup, action: "복원…") }

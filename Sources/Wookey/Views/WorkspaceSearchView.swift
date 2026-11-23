@@ -162,7 +162,8 @@ struct WorkspaceSearchView: View {
                    detail: $0.shortcut.steps.isEmpty ? "레이아웃" : "레이아웃 · \($0.shortcut.displayName)",
                    symbol: "rectangle.3.group")
         }
-        return sections + workflows + apps + templates + layouts
+        let clipboard = Result(id: .library(.clipboard), name: "클립보드", detail: "파일 보관함", symbol: HistoryKind.clipboard.symbol)
+        return sections + [clipboard] + workflows + apps + templates + layouts
     }
 
     var body: some View {

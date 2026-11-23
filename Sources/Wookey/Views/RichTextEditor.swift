@@ -141,6 +141,18 @@ final class RichTextEditorController {
 }
 
 final class TemplateTextView: NSTextView {
+    var focusesWhenAttached = false
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        guard focusesWhenAttached, window != nil else { return }
+        focusesWhenAttached = false
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.window?.makeFirstResponder(self)
+        }
+    }
+
     override func viewDidChangeEffectiveAppearance() {
         super.viewDidChangeEffectiveAppearance()
         refreshPreviewContrast()
@@ -190,6 +202,7 @@ final class TemplateTextView: NSTextView {
 struct RichTextEditor: NSViewRepresentable {
     @Environment(\.wookeyTheme) private var theme
     var controller: RichTextEditorController
+    var focusesOnAppear = false
 
     func makeCoordinator() -> Coordinator { Coordinator(controller: controller) }
 
@@ -202,6 +215,7 @@ struct RichTextEditor: NSViewRepresentable {
         scroll.backgroundColor = NSColor(theme.panel)
 
         let textView = TemplateTextView(usingTextLayoutManager: false)
+        textView.focusesWhenAttached = focusesOnAppear
         textView.isRichText = true
         textView.importsGraphics = true
         textView.allowsUndo = true

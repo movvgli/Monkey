@@ -21,6 +21,7 @@ public final class ICloudSyncService {
     @ObservationIgnored private var folder: URL?
     @ObservationIgnored private var scopedAccess = false
     @ObservationIgnored private var timer: Task<Void, Never>?
+    @ObservationIgnored private var nextBackupMaintenance = Date.distantPast
     @ObservationIgnored private var generation = 0
     @ObservationIgnored private var observedHeads: [UUID] = []
     @ObservationIgnored private var editingSessions: Set<UUID> = []
@@ -28,6 +29,7 @@ public final class ICloudSyncService {
     @ObservationIgnored private var metadata = Metadata()
     private var metadataURL: URL { store.storageURL.appendingPathComponent("sync-device.json") }
     private var backupsURL: URL { store.storageURL.appendingPathComponent("Backups", isDirectory: true) }
+    private var backupCutoff: Date { Date().addingTimeInterval(-30 * 24 * 60 * 60) }
 
     private struct Metadata: Codable {
         var bookmark: Data?
@@ -70,6 +72,7 @@ public final class ICloudSyncService {
 
     public func start() {
         guard timer == nil else { return }
+        nextBackupMaintenance = .distantPast
         do {
             if FileManager.default.fileExists(atPath: metadataURL.path) {
                 metadata = try JSONDecoder().decode(Metadata.self, from: Data(contentsOf: metadataURL))
@@ -84,11 +87,11 @@ public final class ICloudSyncService {
         } catch { errorMessage = "동기화 폴더를 다시 연결해 주세요. \(error.localizedDescription)" }
         timer = Task { [weak self] in
             while !Task.isCancelled {
+                await self?.maintainBackupsIfDue()
                 await self?.synchronize()
                 try? await Task.sleep(for: .seconds(15))
             }
         }
-        Task { await refreshBackups() }
     }
 
     /// Call only after an explicit opt-in and a native folder-picker grant.
@@ -166,7 +169,8 @@ public final class ICloudSyncService {
             }
             let heads = SyncBackup.heads(in: remote)
             try SyncBackup.validateGraph(remote)
-            for head in heads { try await io.write(head, folder: backupsURL) }
+            let cutoff = backupCutoff
+            for head in heads where head.createdAt > cutoff { try await io.write(head, folder: backupsURL) }
             observedHeads = heads.map(\.id)
             conflicts = heads.count > 1 ? heads : []
             pendingVersion = nil
@@ -217,7 +221,7 @@ public final class ICloudSyncService {
         let current = try await io.capture(store.state, root: store.storageURL)
         let fingerprint = try await io.fingerprint(backup.payload)
         try await io.write(SyncBackup(payload: current, device: metadata.device), folder: backupsURL)
-        try await io.write(backup, folder: backupsURL)
+        if backup.createdAt > backupCutoff { try await io.write(backup, folder: backupsURL) }
         let imported = try await io.prepare(backup.payload, root: store.storageURL)
         guard canApply(), capturedGeneration == generation,
               try SyncPayload.encoder().encode(store.state) == original else { throw SyncError.busy }
@@ -241,11 +245,16 @@ public final class ICloudSyncService {
     }
 
     public func refreshBackups() async {
+        nextBackupMaintenance = Date().addingTimeInterval(60 * 60)
         do {
-            if FileManager.default.fileExists(atPath: backupsURL.path) {
-                versions = try await io.read(backupsURL).sorted { $0.createdAt > $1.createdAt }
-            }
-        } catch { errorMessage = "백업 목록을 읽지 못했습니다: \(error.localizedDescription)" }
+            let remaining = try await io.pruneLocalBackups(in: backupsURL, expiringThrough: backupCutoff)
+            versions = remaining.sorted { $0.createdAt > $1.createdAt }
+        } catch { errorMessage = "백업 목록을 읽거나 정리하지 못했습니다: \(error.localizedDescription)" }
+    }
+
+    private func maintainBackupsIfDue() async {
+        guard !isBusy, Date() >= nextBackupMaintenance else { return }
+        await refreshBackups()
     }
 
     private func saveMetadata(_ value: Metadata) throws {

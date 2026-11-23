@@ -24,12 +24,13 @@ enum SidebarSelection: Hashable {
         case .application: .applications
         case .template: .templateCollection
         case .newLayout, .layout: .layoutCollection
+        case .clipboard: .files
         default: self
         }
     }
 
     static let sections: [Self] = [
-        .workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection, .clipboard, .files
+        .workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection, .files
     ]
 
     var title: String {
@@ -39,7 +40,6 @@ enum SidebarSelection: Hashable {
         case .applications: "앱"
         case .templateCollection: "템플릿"
         case .layoutCollection: "레이아웃"
-        case .clipboard: "클립보드"
         case .files: HistoryKind.files.title
         default: ""
         }
@@ -52,7 +52,6 @@ enum SidebarSelection: Hashable {
         case .applications: "app"
         case .templateCollection: wookeyTemplateSymbol
         case .layoutCollection: "rectangle.3.group"
-        case .clipboard: HistoryKind.clipboard.symbol
         case .files: HistoryKind.files.symbol
         default: ""
         }
@@ -137,6 +136,7 @@ struct ContentView: View {
     @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
     @State private var quickCreate: QuickCreate?
+    @State private var showsNewTemplate = false
     @State private var showsSearch = false
     @State private var editingSession = UUID()
 
@@ -209,11 +209,11 @@ struct ContentView: View {
         }
         .focusedSceneValue(\.workspaceActions, WorkspaceActions(
             createWorkflow: {
-                guard !showOnboarding, !showsSearch, quickCreate == nil else { return }
+                guard !showOnboarding, !showsSearch, !showsNewTemplate, quickCreate == nil else { return }
                 addWorkflow()
             },
             search: {
-                guard !showOnboarding, quickCreate == nil else { return }
+                guard !showOnboarding, !showsNewTemplate, quickCreate == nil else { return }
                 showsSearch = true
             }
         ))
@@ -255,6 +255,13 @@ struct ContentView: View {
             })
             .presentationBackground(theme.canvas)
         }
+        .sheet(isPresented: $showsNewTemplate) {
+            NewTemplateView { id in
+                selection = .template(id)
+                showsNewTemplate = false
+            }
+            .presentationBackground(theme.canvas)
+        }
     }
 
     @ViewBuilder
@@ -284,12 +291,9 @@ struct ContentView: View {
         case .application(let bundleID):
             ApplicationsView(initialSearch: bundleID)
                 .id(bundleID)
-        case .clipboard:
-            LocalHistoryView(kind: .clipboard)
-                .id(HistoryKind.clipboard)
-        case .files:
-            LocalHistoryView(kind: .files)
-                .id(HistoryKind.files)
+        case .clipboard, .files:
+            LocalHistoryView(initialKind: selection == .clipboard ? .clipboard : .files)
+                .id(selection)
         case .templateCollection:
             TemplateLibraryView(
                 templates: runtime.store.templates,
@@ -385,7 +389,7 @@ struct ContentView: View {
     }
 
     private func addTemplate() {
-        selection = .template(runtime.store.addTemplate())
+        showsNewTemplate = true
     }
 
     private func addLayout() {

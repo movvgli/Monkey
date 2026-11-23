@@ -74,7 +74,7 @@ struct WorkflowActionPicker: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("동작 추가").font(.title2.weight(.semibold))
                 HStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                    WookeyActionIcon(symbol: "magnifyingglass", tint: .neutral, size: 16)
                     TextField("동작 검색", text: $query)
                         .textFieldStyle(.roundedBorder)
                         .focused($searchFocused)

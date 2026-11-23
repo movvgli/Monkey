@@ -9,6 +9,7 @@ struct WookeySettingsView: View {
     @AppStorage(WookeyMenuBarIcon.visibilityKey) private var showsMenuBarIcon = true
     @AppStorage(WookeyMenuBarIcon.styleKey) private var menuBarIcon = WookeyMenuBarIcon.wookey
     @AppStorage(WookeyTheme.storageKey) private var selectedTheme = WookeyTheme.defaultTheme
+    @AppStorage(ShelfAfterDrop.storageKey) private var shelfAfterDrop = ShelfAfterDrop.defaultValue
 
     private enum Page: String, CaseIterable {
         case general = "일반"
@@ -140,6 +141,14 @@ struct WookeySettingsView: View {
                 PlainPanel {
                     GeneralSettingRow(symbol: "paintpalette", title: "테마") {
                         WookeyFilterPicker(title: "테마", selection: $selectedTheme, options: WookeyTheme.allCases) {
+                            $0.title
+                        }
+                    }
+                }
+
+                PlainPanel {
+                    GeneralSettingRow(symbol: HistoryKind.files.symbol, title: "파일을 담은 뒤 우키 서랍") {
+                        WookeyFilterPicker(title: "파일을 담은 뒤 우키 서랍", selection: $shelfAfterDrop, options: ShelfAfterDrop.allCases) {
                             $0.title
                         }
                     }

@@ -29,7 +29,7 @@ enum WookeyMenuBarIcon: String, CaseIterable, Identifiable {
         guard let activity,
               let base = wookeyAssetBundle.image(forResource: NSImage.Name(assetName)),
               let badge = NSImage(systemSymbolName: activity.symbol, accessibilityDescription: nil) else {
-            return Image(assetName, bundle: wookeyAssetBundle, label: Text(label))
+            return Image(assetName, bundle: wookeyAssetBundle, label: Text(label)).renderingMode(.original)
         }
 
         let statusImage = NSImage(size: base.size, flipped: false) { bounds in
@@ -44,9 +44,9 @@ enum WookeyMenuBarIcon: String, CaseIterable, Identifiable {
             badge.draw(in: badgeRect)
             return true
         }
-        statusImage.isTemplate = true
+        statusImage.isTemplate = false
         statusImage.accessibilityDescription = label
-        return Image(nsImage: statusImage)
+        return Image(nsImage: statusImage).renderingMode(.original)
     }
 
     enum Activity {
