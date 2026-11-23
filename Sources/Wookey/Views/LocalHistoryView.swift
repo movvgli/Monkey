@@ -442,7 +442,7 @@ struct FileDropSurface: View {
         switch selectedCharacter {
         case .wookey where iconTheme == .fluffy:
             CGSize(width: characterSize * -0.05, height: characterSize * -0.07)
-        case .wookey: CGSize(width: characterSize * -0.09, height: characterSize * -0.06)
+        case .wookey: CGSize(width: characterSize * -0.054, height: characterSize * -0.078)
         case .sharkey: CGSize(width: characterSize * -0.28, height: characterSize * 0.048)
         }
     }
@@ -469,7 +469,7 @@ struct FileDropSurface: View {
         .overlay {
             if !floating {
                 RoundedRectangle(cornerRadius: 18)
-                    .strokeBorder(feedback.isTargeted ? WookeyTheme.banana : .clear, lineWidth: 2)
+                    .strokeBorder(feedback.isTargeted ? theme.selectionTint : .clear, lineWidth: 2)
                     .allowsHitTesting(false)
             }
         }
@@ -484,7 +484,7 @@ struct FileDropSurface: View {
         ZStack {
             if !floating || feedback.isTargeted {
                 Circle()
-                    .fill(WookeyTheme.banana.opacity(feedback.isTargeted ? 0.5 : 0.22))
+                    .fill(theme.selectionTint.opacity(feedback.isTargeted ? 0.5 : 0.22))
                     .frame(width: 72, height: 72)
                     .blur(radius: 6)
             }
@@ -573,6 +573,7 @@ struct FileDropSurface: View {
 }
 
 struct HistorySettingsView: View {
+    @Environment(\.wookeyTheme) private var theme
     @Environment(LocalHistoryStore.self) private var history
 
     var body: some View {
@@ -619,7 +620,7 @@ struct HistorySettingsView: View {
                 ))
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .tint(WookeyTheme.banana)
+                .tint(theme.selectionTint)
             }
         }
     }

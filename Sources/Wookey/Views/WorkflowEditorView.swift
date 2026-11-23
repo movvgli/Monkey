@@ -245,7 +245,7 @@ struct WorkflowEditorView: View {
                 Spacer()
                 Toggle("단축키 활성", isOn: $workflow.isEnabled)
                     .toggleStyle(.switch)
-                    .tint(WookeyTheme.banana)
+                    .tint(theme.selectionTint)
                     .controlSize(.small)
                     .help("끄면 이 워크플로의 전역 단축키를 해제합니다.")
                 Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", wookeyIcon: "keyboard") {
@@ -533,6 +533,7 @@ private struct EmptyActionsView: View {
 }
 
 private struct FlowActionRow: View {
+    @Environment(\.wookeyTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
     var number: Int
     var isLast: Bool
@@ -589,7 +590,7 @@ private struct FlowActionRow: View {
                 .labelStyle(.iconOnly)
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
-                .tint(WookeyTheme.banana)
+                .tint(theme.selectionTint)
                 .frame(width: 36, height: 36)
                 .background(Color.wookeyInk(in: colorScheme).opacity(0.075), in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityLabel("동작 메뉴")

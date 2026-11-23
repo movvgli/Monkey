@@ -165,7 +165,7 @@ struct OnboardingView: View {
             VStack(alignment: .leading, spacing: 5) {
                 Toggle("Mac 로그인 시 Wookey 실행", isOn: $launchAtLogin)
                     .toggleStyle(.switch)
-                    .tint(WookeyTheme.banana)
+                    .tint(theme.selectionTint)
                 Text("메인 창은 띄우지 않고 메뉴 막대와 단축키만 준비합니다.")
                     .font(.caption)
                     .foregroundStyle(.secondary)

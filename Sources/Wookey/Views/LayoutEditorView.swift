@@ -484,7 +484,7 @@ private struct DisplayPreview: View {
                         select(placement.id)
                     } label: {
                         RoundedRectangle(cornerRadius: 6)
-                            .fill(isSelected ? WookeyTheme.banana.opacity(0.62) : theme.panel)
+                            .fill(isSelected ? theme.selectionTint.opacity(0.62) : theme.panel)
                             .overlay {
                                 RoundedRectangle(cornerRadius: 6)
                                     .strokeBorder(theme.accent.opacity(isSelected ? 0.65 : 0.25))
@@ -492,7 +492,7 @@ private struct DisplayPreview: View {
                             .overlay {
                                 Text(placement.appName)
                                     .font(.caption.weight(isSelected ? .semibold : .medium))
-                                    .foregroundStyle(isSelected ? WookeyTheme.cocoa : .primary)
+                                    .foregroundStyle(isSelected ? theme.selectionInk : .primary)
                                     .lineLimit(1)
                                     .padding(5)
                             }

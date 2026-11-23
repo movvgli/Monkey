@@ -319,7 +319,7 @@ struct WookeySettingsView: View {
         Toggle(title, isOn: isOn)
             .labelsHidden()
             .toggleStyle(.switch)
-            .tint(WookeyTheme.banana)
+            .tint(theme.selectionTint)
     }
 
     private var generalDivider: some View {
@@ -504,6 +504,7 @@ private struct GeneralSettingRow<Control: View>: View {
 }
 
 private struct UpdateSettingRow: View {
+    @Environment(\.wookeyTheme) private var theme
     var symbol: String
     var title: String
     var detail: String
@@ -524,7 +525,7 @@ private struct UpdateSettingRow: View {
             Toggle(title, isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .tint(WookeyTheme.banana)
+                .tint(theme.selectionTint)
                 .disabled(!isEnabled)
         }
         .padding(.vertical, 12)
