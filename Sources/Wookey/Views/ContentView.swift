@@ -189,12 +189,13 @@ struct ContentView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("새 워크플로", wookeyIcon: "bolt", action: addWorkflow)
-                    Button("새 링크", wookeyIcon: "link", action: addLink)
-                    Button("새 템플릿", wookeyIcon: wookeyTemplateSymbol, action: addTemplate)
-                    Button("새 레이아웃", wookeyIcon: "rectangle.3.group", action: addLayout)
+                    Button("새 워크플로", systemImage: "bolt", action: addWorkflow)
+                    Button("새 링크", systemImage: "link", action: addLink)
+                    Button("새 템플릿", systemImage: wookeyTemplateSymbol, action: addTemplate)
+                    Button("새 레이아웃", systemImage: "rectangle.3.group", action: addLayout)
                 } label: {
-                    WookeyControlLabel(title: "새로 만들기", symbol: "plus")
+                    // A native toolbar menu can use a raster image's intrinsic size.
+                    Label("새로 만들기", systemImage: "plus")
                         .labelStyle(.iconOnly)
                 }
                 .help("새로 만들기")
