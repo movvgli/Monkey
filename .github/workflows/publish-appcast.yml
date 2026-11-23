@@ -45,10 +45,16 @@ jobs:
         run: |
           mkdir -p feed
           release_assets="$(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
-          if grep -Fxq "Monkey-$VERSION.dmg" <<< "$release_assets"; then
-            release_stem="Monkey-$VERSION"
-          else
-            release_stem="Wikey-$VERSION"
+          release_stem=""
+          for app_name in Wookey Monkey Wikey; do
+            if grep -Fxq "$app_name-$VERSION.dmg" <<< "$release_assets"; then
+              release_stem="$app_name-$VERSION"
+              break
+            fi
+          done
+          if [[ -z "$release_stem" ]]; then
+            echo "No versioned DMG was found for v$VERSION." >&2
+            exit 1
           fi
           printf '%s\n' "RELEASE_STEM=$release_stem" >> "$GITHUB_ENV"
           gh release download "v$VERSION" \

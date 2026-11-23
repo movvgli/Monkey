@@ -2,8 +2,8 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-APP_NAME="Monkey"
-APP_EXECUTABLE="Monkey"
+APP_NAME="Wookey"
+APP_EXECUTABLE="Wookey"
 BUNDLE_ID="com.wikey.app"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,14 +19,19 @@ esac
 VERSION="${WIKEY_VERSION:-$(sed -n 's/.*MARKETING_VERSION: "\([^"]*\)"/\1/p' "$ROOT_DIR/project.yml" | head -n 1)}"
 BUILD_NUMBER="${WIKEY_BUILD_NUMBER:-$(sed -n 's/.*CURRENT_PROJECT_VERSION: "\([^"]*\)"/\1/p' "$ROOT_DIR/project.yml" | head -n 1)}"
 if [[ -z "$VERSION" || -z "$BUILD_NUMBER" ]]; then
-  echo "Could not resolve Monkey version from project.yml." >&2
+  echo "Could not resolve Wookey version from project.yml." >&2
   exit 1
 fi
 
 # Reuse the installed app's developer identity to preserve privacy authorization.
 INSTALLED_APP="/Applications/$APP_NAME.app"
-if [[ ! -d "$INSTALLED_APP" && -d "/Applications/Wikey.app" ]]; then
-  INSTALLED_APP="/Applications/Wikey.app"
+if [[ ! -d "$INSTALLED_APP" ]]; then
+  for previous_app in /Applications/Monkey.app /Applications/Wikey.app; do
+    if [[ -d "$previous_app" ]]; then
+      INSTALLED_APP="$previous_app"
+      break
+    fi
+  done
 fi
 if [[ -d "$INSTALLED_APP" && -z "${WIKEY_CODESIGN_IDENTITY:-}" ]]; then
   INSTALLED_TEAM="$(codesign -dv "$INSTALLED_APP" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
@@ -43,9 +48,11 @@ fi
 "$ROOT_DIR/script/build_bundle.sh" "$VERSION" "$BUILD_NUMBER"
 
 pkill -x "$APP_EXECUTABLE" >/dev/null 2>&1 || true
+pkill -x "Monkey" >/dev/null 2>&1 || true
+pkill -x "MonkeyLoginHelper" >/dev/null 2>&1 || true
 pkill -x "Wikey" >/dev/null 2>&1 || true
 pkill -x "WikeyLoginHelper" >/dev/null 2>&1 || true
-pkill -x "MonkeyLoginHelper" >/dev/null 2>&1 || true
+pkill -x "WookeyLoginHelper" >/dev/null 2>&1 || true
 
 if [[ -d "$INSTALLED_APP" && "${WIKEY_CODESIGN_IDENTITY:--}" != "-" ]]; then
   BACKUP_DIR="$(mktemp -d /tmp/wikey-app-backup.XXXXXX)"

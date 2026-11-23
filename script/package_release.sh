@@ -3,7 +3,7 @@ set -euo pipefail
 
 VERSION="${1:-1.0.0}"
 BUILD_NUMBER="${2:-1}"
-APP_NAME="Monkey"
+APP_NAME="Wookey"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="$ROOT_DIR/dist"

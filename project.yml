@@ -1,4 +1,4 @@
-name: Monkey
+name: Wookey
 options:
   bundleIdPrefix: com.wikey
   developmentLanguage: ko
@@ -21,25 +21,25 @@ packages:
     exactVersion: 2.9.6
 
 targets:
-  MonkeyCore:
+  WookeyCore:
     type: framework
     platform: macOS
     sources:
-      - Sources/MonkeyCore
+      - Sources/WookeyCore
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wikey.core
         GENERATE_INFOPLIST_FILE: YES
 
-  MonkeyLoginHelper:
+  WookeyLoginHelper:
     type: application
     platform: macOS
     sources:
-      - Sources/MonkeyLoginHelper
+      - Sources/WookeyLoginHelper
     info:
-      path: Resources/MonkeyLoginHelper-Info.plist
+      path: Resources/WookeyLoginHelper-Info.plist
       properties:
-        CFBundleDisplayName: Monkey 로그인 도우미
+        CFBundleDisplayName: Wookey 로그인 도우미
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSMinimumSystemVersion: "14.0"
@@ -47,20 +47,20 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wikey.login-helper
-        PRODUCT_NAME: MonkeyLoginHelper
+        PRODUCT_NAME: WookeyLoginHelper
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
 
-  Monkey:
+  Wookey:
     type: application
     platform: macOS
     sources:
-      - Sources/Monkey
+      - Sources/Wookey
     info:
-      path: Resources/Monkey-Info.plist
+      path: Resources/Wookey-Info.plist
       properties:
         CFBundleDevelopmentRegion: ko
-        CFBundleDisplayName: Monkey
+        CFBundleDisplayName: Wookey
         CFBundleLocalizations:
           - ko
         CFBundleShortVersionString: $(MARKETING_VERSION)
@@ -70,20 +70,20 @@ targets:
         LSUIElement: true
         SUEnableAutomaticChecks: true
         SUAutomaticallyUpdate: false
-        SUFeedURL: https://raw.githubusercontent.com/movvgli/Monkey/update-feed/appcast.xml
+        SUFeedURL: https://raw.githubusercontent.com/movvgli/Wookey/update-feed/appcast.xml
         SUPublicEDKey: KYMCwU1bB70rz+f0DguhjotRDSs/5nrJqSRul09YeZE=
         SUScheduledCheckInterval: 86400
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.wikey.app
-        PRODUCT_NAME: Monkey
+        PRODUCT_NAME: Wookey
         PRODUCT_MODULE_NAME: Wikey
-        EXECUTABLE_NAME: Monkey
+        EXECUTABLE_NAME: Wookey
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES
     dependencies:
-      - target: MonkeyCore
-      - target: MonkeyLoginHelper
+      - target: WookeyCore
+      - target: WookeyLoginHelper
         embed: false
       - package: Sparkle
         product: Sparkle
@@ -94,16 +94,16 @@ targets:
           set -e
           destination="${TARGET_BUILD_DIR}/${WRAPPER_NAME}/Contents/Library/LoginItems"
           mkdir -p "${destination}"
-          rm -rf "${destination}/MonkeyLoginHelper.app"
-          cp -R "${BUILT_PRODUCTS_DIR}/MonkeyLoginHelper.app" "${destination}/"
+          rm -rf "${destination}/WookeyLoginHelper.app"
+          cp -R "${BUILT_PRODUCTS_DIR}/WookeyLoginHelper.app" "${destination}/"
     scheme:
       testTargets:
-        - MonkeyCoreTests
+        - WookeyCoreTests
 
-  MonkeyCoreTests:
+  WookeyCoreTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - Tests/MonkeyCoreTests
+      - Tests/WookeyCoreTests
     dependencies:
-      - target: MonkeyCore
+      - target: WookeyCore

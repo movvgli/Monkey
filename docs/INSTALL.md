@@ -4,26 +4,26 @@
 
 Wikey 1.2.6부터 macOS 14 이상을 대상으로 Apple Silicon과 Intel용으로 빌드합니다. 실제 macOS 14·Intel 기기의 실행 검증은 아직 남아 있습니다.
 
-1. 최신 릴리스의 `Monkey-버전.dmg`를 내려받습니다.
-2. DMG를 열고 Monkey를 Applications 폴더로 드래그합니다.
-3. 응용 프로그램 폴더의 Monkey를 엽니다.
+1. 최신 릴리스의 DMG를 내려받습니다.
+2. DMG를 열고 Wookey를 Applications 폴더로 드래그합니다.
+3. 응용 프로그램 폴더의 Wookey를 엽니다.
 
-GitHub Releases의 정식 DMG는 Developer ID로 서명되고 Apple 공증을 완료했습니다. 처음 실행하면 Monkey가 할 수 있는 일과 기본 사용 순서를 소개한 뒤, 필요한 기능의 권한을 선택할 수 있습니다.
+GitHub Releases의 정식 DMG는 Developer ID로 서명되고 Apple 공증을 완료했습니다. 처음 실행하면 Wookey가 할 수 있는 일과 기본 사용 순서를 소개한 뒤, 필요한 기능의 권한을 선택할 수 있습니다.
 
 ## 권한 켜기
 
-Monkey의 **설정 → 권한**에서 필요한 기능만 켭니다.
+Wookey의 **설정 → 권한**에서 필요한 기능만 켭니다.
 
 - **손쉬운 사용:** 앱 창 배치와 자동 붙여넣기
 - **입력 모니터링:** 두 단계 단축키
 
-시스템 설정에서 권한을 바꾼 뒤 Monkey로 돌아오면 상태가 자동 갱신됩니다. 계속 꺼짐으로 보이면 Monkey를 완전히 종료한 뒤 다시 실행하세요.
+시스템 설정에서 권한을 바꾼 뒤 Wookey로 돌아오면 상태가 자동 갱신됩니다. 계속 꺼짐으로 보이면 Wookey를 완전히 종료한 뒤 다시 실행하세요.
 
 앱을 다시 빌드하거나 교체하면 macOS가 새 앱으로 인식해 권한을 다시 요청할 수 있습니다.
 
 ## 자동 업데이트
 
-Wikey 1.2.24부터 앱 이름과 아이콘이 Monkey로 바뀝니다. 기존 앱에서 업데이트하면 저장된 워크플로, 템플릿, 단축키를 계속 사용할 수 있습니다. 새 설치 파일에는 `Monkey.app`이 들어 있습니다.
+기존 앱에서 업데이트하면 저장된 워크플로, 템플릿, 단축키를 계속 사용할 수 있습니다. Wookey 이름으로 빌드한 설치 파일에는 `Wookey.app`이 들어 있습니다.
 
 Wikey 1.1.0부터 앱을 실행하는 동안 하루에 한 번 새 버전을 확인합니다. 새 버전이 있으면 앱 안에서 다운로드하고 설치한 뒤 다시 실행할 수 있습니다.
 
@@ -36,9 +36,9 @@ Wikey 1.0.0에는 업데이트 기능이 없기 때문에 1.1.0 DMG를 한 번 �
 ## 소스에서 실행
 
 ```sh
-git clone https://github.com/movvgli/Monkey.git
-cd Monkey
+git clone https://github.com/movvgli/Wookey.git
+cd Wookey
 ./script/build_and_run.sh
 ```
 
-빌드된 앱은 `dist/Monkey.app`에 생성됩니다.
+빌드된 앱은 `dist/Wookey.app`에 생성됩니다.

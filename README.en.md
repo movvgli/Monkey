@@ -1,34 +1,34 @@
 <p align="center">
-  <img src="Sources/Monkey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Monkey app icon">
+  <img src="Sources/Wookey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Wookey app icon">
 </p>
 
-<h1 align="center">Monkey</h1>
+<h1 align="center">Wookey</h1>
 
 <p align="center">
   Finish repetitive work with one shortcut on macOS
 </p>
 
 <p align="center">
-  <a href="https://github.com/movvgli/Monkey/releases/latest"><strong>Download the latest release</strong></a>
-  · <a href="https://movvgli.github.io/Monkey/">Website</a>
+  <a href="https://github.com/movvgli/Wookey/releases/latest"><strong>Download the latest release</strong></a>
+  · <a href="https://movvgli.github.io/Wookey/">Website</a>
   · <a href="README.md">한국어</a>
   · <a href="docs/INSTALL.md">Installation</a>
   · <a href="docs/PRIVACY.md">Privacy</a>
 </p>
 
-Monkey (formerly Wikey) connects app launches, websites, text, image and file pasting, and window layouts into ordered macOS workflows. Assign shortcuts to a workflow, an individual app, or a saved layout.
+Wookey (formerly Wikey) connects app launches, websites, text, image and file pasting, and window layouts into ordered macOS workflows. Assign shortcuts to a workflow, an individual app, or a saved layout.
 
 Workflows and templates stay on your Mac by default. Version 1.2.7 includes experimental, opt-in iCloud sync that copies settings and referenced attachments to a user-selected iCloud Drive folder. Actual transfers between two Macs have not yet been verified. Back up your settings before enabling sync; see the [release notes](docs/RELEASE-1.2.7.md).
 
 ## Quick start
 
-1. Download `Monkey-version.dmg` from the [latest release](https://github.com/movvgli/Monkey/releases/latest).
-2. Move Monkey to **Applications** and launch it.
+1. Download the DMG from the [latest release](https://github.com/movvgli/Wookey/releases/latest).
+2. Move Wookey to **Applications** and launch it.
 3. Use the first-run introduction to review the core features and enable only the permissions you need.
 4. Assign a shortcut in **Apps**, or create a workflow to connect several actions.
 5. Try new workflows in a disposable document first to check their order and input destination.
 
-Starting with 1.2.6, Monkey targets macOS 14 or later. Apple Silicon and Intel builds and minimum-OS validation pass; execution on actual macOS 14 and Intel hardware remains unverified. Production distribution uses DMGs verified for Developer ID signing and Apple notarization; see the [release notes](https://github.com/movvgli/Monkey/releases) for each version's distribution status.
+Starting with 1.2.6, Wookey targets macOS 14 or later. Apple Silicon and Intel builds and minimum-OS validation pass; execution on actual macOS 14 and Intel hardware remains unverified. Production distribution uses DMGs verified for Developer ID signing and Apple notarization; see the [release notes](https://github.com/movvgli/Wookey/releases) for each version's distribution status.
 
 ## Features
 
@@ -43,16 +43,16 @@ Starting with 1.2.6, Monkey targets macOS 14 or later. Apple Silicon and Intel b
 | Key input and waits | Add Enter, Shift + Enter, and waits of 0.1–30 seconds between actions. |
 | Window layouts | Arrange windows on connected displays in full, half, third, two-thirds, and quadrant zones. Assign a shortcut directly to a layout. |
 | Execution controls | See the current action and queued runs, or stop execution and clear the queue. |
-| Quick access | Run workflows from the menu bar and prepare Monkey at login. You can optionally show its Dock icon in Settings. |
+| Quick access | Run workflows from the menu bar and prepare Wookey at login. You can optionally show its Dock icon in Settings. |
 | Updates | Check, download, and install new versions inside the app. |
 
-If an action fails, Monkey stops the remaining actions in that workflow and identifies the failing step. For example, a failed app launch will not be followed by a paste or Enter action. Actions that have already completed are not undone.
+If an action fails, Wookey stops the remaining actions in that workflow and identifies the failing step. For example, a failed app launch will not be followed by a paste or Enter action. Actions that have already completed are not undone.
 
 Pasting and window resizing depend on the destination app's support. Add a **Wait** action before Enter when an app needs time to prepare an attachment. A fixed wait does not detect upload completion, so check message-sending workflows on a non-sending test surface first.
 
 ## Permissions and privacy
 
-Monkey asks only for the macOS permissions required by the features you use.
+Wookey asks only for the macOS permissions required by the features you use.
 
 | Permission | Used for |
 | --- | --- |
@@ -63,7 +63,7 @@ Opening an app or website with a single-chord shortcut, and copying to the clipb
 
 ## Updates
 
-Monkey checks for a new version once per day while it is running. You can also use **Monkey → Check for Updates…** or **Settings → Updates**. Automatic downloads remain under your control.
+Wookey checks for a new version once per day while it is running. You can also use **Wookey → Check for Updates…** or **Settings → Updates**. Automatic downloads remain under your control.
 
 ## Development
 

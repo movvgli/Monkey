@@ -38,7 +38,7 @@ jobs:
       - name: Verify checksum
         run: |
           cd dist
-          shasum -a 256 -c "Monkey-$WIKEY_VERSION.dmg.sha256"
+          shasum -a 256 -c "Wookey-$WIKEY_VERSION.dmg.sha256"
 
       - name: Generate signed update feed
         env:
@@ -56,12 +56,12 @@ jobs:
           fi
 
           feed_dir="$(mktemp -d)"
-          cp "dist/Monkey-$WIKEY_VERSION.dmg" "$feed_dir/"
-          printf '%s\n' "Monkey $WIKEY_VERSION" > "$feed_dir/release-notes.txt"
+          cp "dist/Wookey-$WIKEY_VERSION.dmg" "$feed_dir/"
+          printf '%s\n' "Wookey $WIKEY_VERSION" > "$feed_dir/release-notes.txt"
           printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$appcast_tool" \
             --ed-key-file - \
-            --download-url-prefix "https://github.com/movvgli/Monkey/releases/download/$GITHUB_REF_NAME/" \
-            --link "https://github.com/movvgli/Monkey" \
+            --download-url-prefix "https://github.com/movvgli/Wookey/releases/download/$GITHUB_REF_NAME/" \
+            --link "https://github.com/movvgli/Wookey" \
             -o "$GITHUB_WORKSPACE/dist/appcast.xml" \
             "$feed_dir"
 
@@ -76,16 +76,16 @@ jobs:
 
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" \
-              "dist/Monkey-$WIKEY_VERSION.dmg" \
-              "dist/Monkey-$WIKEY_VERSION.dmg.sha256" \
+              "dist/Wookey-$WIKEY_VERSION.dmg" \
+              "dist/Wookey-$WIKEY_VERSION.dmg.sha256" \
               "dist/appcast.xml" \
               --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
-              "dist/Monkey-$WIKEY_VERSION.dmg" \
-              "dist/Monkey-$WIKEY_VERSION.dmg.sha256" \
+              "dist/Wookey-$WIKEY_VERSION.dmg" \
+              "dist/Wookey-$WIKEY_VERSION.dmg.sha256" \
               "dist/appcast.xml" \
-              --title "Monkey $WIKEY_VERSION" \
+              --title "Wookey $WIKEY_VERSION" \
               --notes-file "$notes" \
               --generate-notes \
               --prerelease \
