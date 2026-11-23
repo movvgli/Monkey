@@ -74,7 +74,7 @@ struct TemplateEditorView: View {
             if let copyError {
                 Label(copyError, systemImage: "exclamationmark.triangle.fill")
                     .font(.subheadline)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(16)
             }
@@ -119,11 +119,8 @@ struct TemplateEditorView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(tint.ink(in: colorScheme))
-                .frame(width: 36, height: 36)
-                .background(tint.ink(in: colorScheme).opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
         }
-        .buttonStyle(WikeyHoverButtonStyle(cornerRadius: 10))
+        .buttonStyle(WikeyPastelButtonStyle(tint: tint, iconOnly: true))
         .accessibilityLabel(title)
         .help(title)
     }

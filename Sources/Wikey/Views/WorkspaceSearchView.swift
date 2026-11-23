@@ -58,7 +58,7 @@ struct WorkspaceSearchView: View {
                 .frame(height: 28)
                 Button("닫기", systemImage: "xmark") { dismiss() }
                     .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
+                    .buttonStyle(WikeyPastelButtonStyle(tint: .neutral, iconOnly: true))
                     .keyboardShortcut(.cancelAction)
             }
             .padding(18)
@@ -73,8 +73,8 @@ struct WorkspaceSearchView: View {
 
             Divider()
             HStack {
-                Text("↑ ↓ 이동")
-                Text("↵ 열기")
+                Text("↑ ↓ 이동").foregroundStyle(.secondary)
+                Text("↵ 열기").foregroundStyle(.secondary)
                 Spacer()
                 Button("열기", action: openSelected)
                     .buttonStyle(.borderedProminent)
@@ -82,7 +82,6 @@ struct WorkspaceSearchView: View {
                     .disabled(selected == nil)
             }
             .font(.caption)
-            .foregroundStyle(.secondary)
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
         }
@@ -108,11 +107,8 @@ struct WorkspaceSearchView: View {
                             }
                             .padding(.horizontal, 10)
                             .frame(height: 34)
-                            .background(selected == entry.id ? Color.accentColor.opacity(0.13) : .clear,
-                                        in: RoundedRectangle(cornerRadius: 6))
-                            .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(WikeyHoverButtonStyle(selected: selected == entry.id))
                         .accessibilityAddTraits(selected == entry.id ? .isSelected : [])
                         .id(entry.id)
                     }

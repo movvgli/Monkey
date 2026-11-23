@@ -235,6 +235,7 @@ struct LayoutEditorView: View {
 }
 
 private struct DisplayPreview: View {
+    @Environment(\.colorScheme) private var colorScheme
     var placements: [AppWindowPlacement]
 
     var body: some View {
@@ -252,7 +253,7 @@ private struct DisplayPreview: View {
                         Text("이 모니터에 배치된 앱이 없습니다")
                             .font(.caption)
                     }
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 }
 
                 ForEach(placements) { placement in
@@ -262,8 +263,8 @@ private struct DisplayPreview: View {
                     let x = geometry.size.width * rect.minX
                     let y = geometry.size.height * (1 - rect.maxY)
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(Color.accentColor.opacity(0.16))
-                        .stroke(Color.accentColor.opacity(0.8), lineWidth: 1)
+                        .fill(Color.wikeyInk(in: colorScheme).opacity(0.16))
+                        .stroke(Color.wikeyInk(in: colorScheme).opacity(0.82), lineWidth: 1)
                         .frame(width: max(0, width - 2), height: max(0, height - 2))
                         .overlay {
                             Text(placement.appName)
@@ -287,11 +288,7 @@ private struct PlacementRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "app.fill")
-                .font(.title3)
-                .foregroundStyle(.tint)
-                .frame(width: 28, height: 28)
-                .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 7))
+            WikeyActionIcon(symbol: "app", tint: .mint)
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
@@ -300,15 +297,11 @@ private struct PlacementRow: View {
                             .font(.headline)
                         Text(placement.bundleIdentifier)
                             .font(.caption2)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                     Spacer()
-                    Button(role: .destructive, action: delete) {
-                        Image(systemName: "trash")
-                    }
-                    .buttonStyle(.borderless)
-                    .help("배치에서 제거")
+                    WikeyDeleteButton(title: "배치에서 제거", action: delete)
                 }
 
                 Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 8) {

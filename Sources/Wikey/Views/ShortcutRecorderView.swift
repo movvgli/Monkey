@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct ShortcutRecorderView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var shortcut: ShortcutGesture
     @State private var stepCount: Int
 
@@ -33,7 +34,7 @@ struct ShortcutRecorderView: View {
 
             Text(visibleValidationMessage ?? helperText)
                 .font(.caption)
-                .foregroundStyle(visibleValidationMessage == nil ? Color.secondary : Color.red)
+                .foregroundStyle(visibleValidationMessage == nil ? Color.secondary : WikeyActionTint.rose.ink(in: colorScheme))
         }
         .onChange(of: stepCount) { _, count in
             if shortcut.steps.count > count {
@@ -57,6 +58,7 @@ struct ShortcutRecorderView: View {
 }
 
 struct CompactShortcutRecorderView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var shortcut: ShortcutGesture
     @State private var recordingRequest = 0
 
@@ -78,7 +80,7 @@ struct CompactShortcutRecorderView: View {
             } label: {
                 Image(systemName: shortcut.steps.isEmpty ? "plus.circle" : "xmark.circle.fill")
                     .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(shortcut.steps.isEmpty ? Color.secondary : Color.wikeyAccent)
+                    .foregroundStyle(shortcut.steps.isEmpty ? Color.secondary : Color.wikeyInk(in: colorScheme))
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
@@ -255,9 +257,11 @@ private final class KeyRecorderControl: NSControl {
 
     override func draw(_ dirtyRect: NSRect) {
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 0.5, dy: 0.5), xRadius: 7, yRadius: 7)
-        (isRecording ? NSColor.controlAccentColor.withAlphaComponent(0.12) : NSColor.controlBackgroundColor).setFill()
+        let dark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let ink = NSColor(Color.wikeyInk(in: dark ? .dark : .light))
+        (isRecording ? ink.withAlphaComponent(0.15) : NSColor.controlBackgroundColor).setFill()
         path.fill()
-        (isRecording ? NSColor.controlAccentColor : NSColor.separatorColor).setStroke()
+        (isRecording ? ink : NSColor.separatorColor).setStroke()
         path.lineWidth = isRecording ? 2 : 1
         path.stroke()
 

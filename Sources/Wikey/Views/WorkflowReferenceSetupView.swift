@@ -2,6 +2,7 @@ import SwiftUI
 import WikeyCore
 
 struct WorkflowReferenceSetupView: View {
+    @Environment(\.colorScheme) private var colorScheme
     var workflows: [Workflow]
     @Binding var selectedWorkflowID: UUID?
     var onCancel: () -> Void
@@ -62,9 +63,9 @@ struct WorkflowReferenceSetupView: View {
             HStack(spacing: 14) {
                 Image(systemName: "bolt.fill")
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(Color.wikeyAccent)
+                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
                     .frame(width: 38, height: 38)
-                    .background(Color.wikeyAccent.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
+                    .background(Color.wikeyInk(in: colorScheme).opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(workflow.name)
@@ -83,19 +84,19 @@ struct WorkflowReferenceSetupView: View {
 
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 19))
-                    .foregroundStyle(isSelected ? Color.wikeyAccent : Color.secondary.opacity(0.5))
+                    .foregroundStyle(isSelected ? Color.wikeyInk(in: colorScheme) : Color.secondary)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 11)
             .contentShape(Rectangle())
             .background(
-                isSelected ? Color.wikeyAccent.opacity(0.08) : Color(nsColor: .controlBackgroundColor),
+                isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.08) : Color(nsColor: .controlBackgroundColor),
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(
-                        isSelected ? Color.wikeyAccent.opacity(0.7) : Color(nsColor: .separatorColor).opacity(0.35),
+                        isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.7) : Color(nsColor: .separatorColor).opacity(0.35),
                         lineWidth: isSelected ? 1.5 : 1
                     )
             }

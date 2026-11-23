@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct OnboardingView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Environment(WikeyRuntime.self) private var runtime
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
     @Binding var isPresented: Bool
@@ -57,7 +58,7 @@ struct OnboardingView: View {
             HStack(spacing: 7) {
                 ForEach(0..<2, id: \.self) { index in
                     Capsule()
-                        .fill(index == page ? Color.wikeyAccent : Color.secondary.opacity(0.18))
+                        .fill(index == page ? Color.wikeyInk(in: colorScheme) : Color.secondary.opacity(0.18))
                         .frame(width: index == page ? 24 : 8, height: 8)
                 }
             }
@@ -103,11 +104,11 @@ struct OnboardingView: View {
                 OnboardingStepLabel(number: 1, title: "워크플로 만들기")
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 OnboardingStepLabel(number: 2, title: "동작 추가")
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                 OnboardingStepLabel(number: 3, title: "단축키로 실행")
             }
             .frame(maxWidth: .infinity)
@@ -156,7 +157,7 @@ struct OnboardingView: View {
             if runtime.permissions.inputMonitoringRestartRecommended {
                 HStack(spacing: 10) {
                     Image(systemName: "arrow.clockwise.circle.fill")
-                        .foregroundStyle(Color.wikeyAccent)
+                        .foregroundStyle(Color.wikeyInk(in: colorScheme))
                     Text("입력 모니터링을 켠 뒤에는 Wikey를 다시 열어야 적용됩니다.")
                         .font(.subheadline)
                     Spacer()
@@ -165,7 +166,7 @@ struct OnboardingView: View {
                     }
                 }
                 .padding(12)
-                .background(Color.wikeyAccent.opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.wikeyInk(in: colorScheme).opacity(0.07), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
 
             VStack(alignment: .leading, spacing: 5) {
@@ -190,6 +191,7 @@ struct OnboardingView: View {
             if page == 0 {
                 Button("건너뛰기") { complete(enableLoginItem: false) }
                     .buttonStyle(.borderless)
+                    .tint(Color.wikeyInk(in: colorScheme))
                 Spacer()
                 Button("다음") {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 1 }
@@ -202,9 +204,11 @@ struct OnboardingView: View {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 0 }
                 }
                 .buttonStyle(.borderless)
+                .tint(Color.wikeyInk(in: colorScheme))
                 Spacer()
                 Button("나중에 설정") { complete(enableLoginItem: false) }
                     .buttonStyle(.borderless)
+                    .tint(Color.wikeyInk(in: colorScheme))
                 Button("Wikey 시작") { complete(enableLoginItem: launchAtLogin) }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
@@ -224,6 +228,7 @@ struct OnboardingView: View {
 }
 
 private struct OnboardingFeatureCard: View {
+    @Environment(\.colorScheme) private var colorScheme
     var systemImage: String
     var title: String
     var detail: String
@@ -232,9 +237,9 @@ private struct OnboardingFeatureCard: View {
         HStack(spacing: 14) {
             Image(systemName: systemImage)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(Color.wikeyAccent)
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
                 .frame(width: 40, height: 40)
-                .background(Color.wikeyAccent.opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(Color.wikeyInk(in: colorScheme).opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
                     .font(.headline)
@@ -259,6 +264,7 @@ private struct OnboardingFeatureCard: View {
 }
 
 private struct OnboardingStepLabel: View {
+    @Environment(\.colorScheme) private var colorScheme
     var number: Int
     var title: String
 
@@ -266,9 +272,9 @@ private struct OnboardingStepLabel: View {
         HStack(spacing: 6) {
             Text("\(number)")
                 .font(.caption2.weight(.bold))
-                .foregroundStyle(Color.wikeyAccent)
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
                 .frame(width: 20, height: 20)
-                .background(Color.wikeyAccent.opacity(0.1), in: Circle())
+                .background(Color.wikeyInk(in: colorScheme).opacity(0.1), in: Circle())
             Text(title)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
@@ -277,6 +283,7 @@ private struct OnboardingStepLabel: View {
 }
 
 private struct OnboardingPermissionRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     var systemImage: String
     var title: String
     var detail: String
@@ -287,10 +294,10 @@ private struct OnboardingPermissionRow: View {
         HStack(spacing: 12) {
             Image(systemName: granted ? "checkmark.circle.fill" : systemImage)
                 .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(granted ? Color.green : Color.wikeyAccent)
+                .foregroundStyle(granted ? Color.green : Color.wikeyInk(in: colorScheme))
                 .frame(width: 32, height: 32)
                 .background(
-                    (granted ? Color.green : Color.wikeyAccent).opacity(0.08),
+                    (granted ? Color.green : Color.wikeyInk(in: colorScheme)).opacity(0.08),
                     in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                 )
             VStack(alignment: .leading, spacing: 3) {

@@ -224,6 +224,7 @@ struct ApplicationsView: View {
 }
 
 private struct ApplicationShortcutRow: View {
+    @Environment(\.colorScheme) private var colorScheme
     var application: InstalledApplication
     @Binding var shortcut: ShortcutGesture
     var conflictMessage: String?
@@ -268,14 +269,14 @@ private struct ApplicationShortcutRow: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(isRunning)
-                .foregroundStyle(Color.wikeyAccent)
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
                 .help("\(application.displayName) 열기")
                 .accessibilityLabel("\(application.displayName) 열기")
             }
             if let launchError {
                 Label(launchError, systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                     .padding(.leading, 48)
             }
 

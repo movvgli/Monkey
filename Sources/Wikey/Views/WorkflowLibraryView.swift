@@ -187,18 +187,7 @@ private struct WorkflowLibraryRow: View {
 
     private var icon: (symbol: String, tint: WikeyActionTint) {
         guard workflow.actions.count == 1, let action = workflow.actions.first else { return ("bolt", .lavender) }
-        switch action {
-        case .copyTemplate: return ("doc.on.clipboard", .lavender)
-        case .openURL: return ("link", .periwinkle)
-        case .launchApplication: return ("app", .mint)
-        case .openFile: return ("doc", .peach)
-        case .applyLayout: return ("rectangle.3.group", .lavender)
-        case .pressKey: return ("keyboard", .neutral)
-        case .runWorkflow: return ("bolt", .lavender)
-        case .pasteImages: return ("photo", .peach)
-        case .pasteFiles: return ("paperclip", .peach)
-        case .wait: return ("clock", .neutral)
-        }
+        return action.wikeyIcon
     }
 
     var body: some View {
@@ -259,7 +248,7 @@ private struct WorkflowLibraryRow: View {
             if workflow.shortcut.steps.isEmpty {
                 Text("—")
                     .font(.caption)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
                     .accessibilityLabel("단축키 미지정")
             } else {
                 ShortcutBadge(text: workflow.shortcut.displayName, isMuted: !workflow.isEnabled)
