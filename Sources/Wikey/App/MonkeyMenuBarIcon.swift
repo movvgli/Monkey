@@ -24,11 +24,12 @@ enum MonkeyMenuBarIcon: String, CaseIterable, Identifiable {
         }
     }
 
-    func image(activity: Activity? = nil) -> Image {
+    func image(activity: Activity? = nil, accessibilityLabel: String? = nil) -> Image {
+        let label = accessibilityLabel ?? title
         guard let activity,
               let base = wikeyAssetBundle.image(forResource: NSImage.Name(assetName)),
               let badge = NSImage(systemSymbolName: activity.symbol, accessibilityDescription: nil) else {
-            return Image(assetName, bundle: wikeyAssetBundle)
+            return Image(assetName, bundle: wikeyAssetBundle, label: Text(label))
         }
 
         let statusImage = NSImage(size: base.size, flipped: false) { bounds in
@@ -44,6 +45,7 @@ enum MonkeyMenuBarIcon: String, CaseIterable, Identifiable {
             return true
         }
         statusImage.isTemplate = true
+        statusImage.accessibilityDescription = label
         return Image(nsImage: statusImage)
     }
 

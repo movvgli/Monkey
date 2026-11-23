@@ -59,7 +59,10 @@ struct WikeyApp: App {
             Label {
                 Text(menuBarActivity?.label ?? "Monkey")
             } icon: {
-                menuBarIcon.image(activity: menuBarActivity)
+                menuBarIcon.image(
+                    activity: menuBarActivity,
+                    accessibilityLabel: menuBarActivity?.label ?? "Monkey"
+                )
             }
         }
         .menuBarExtraStyle(.window)
