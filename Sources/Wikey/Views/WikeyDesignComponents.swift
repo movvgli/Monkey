@@ -3,7 +3,7 @@ import SwiftUI
 import WikeyCore
 
 enum WikeyPageMetrics {
-    static let padding: CGFloat = 32
+    static let padding: CGFloat = 26
     static let maximumWidth: CGFloat = 1000
 }
 
@@ -16,7 +16,7 @@ struct WikeyPageHeader<Actions: View>: View {
         HStack(alignment: .center, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 30, weight: .semibold))
+                    .font(.system(size: 28, weight: .semibold))
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -101,45 +101,42 @@ struct WikeyEditorHeader<Actions: View>: View {
     @ViewBuilder var actions: Actions
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 10) {
             if let onBack {
-                HStack {
-                    Button(action: onBack) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 14, weight: .semibold))
-                            .frame(width: 38, height: 38)
-                            .contentShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                    .background(Color(nsColor: .controlBackgroundColor), in: Circle())
-                    .overlay {
-                        Circle().stroke(Color(nsColor: .separatorColor).opacity(0.4), lineWidth: 1)
-                    }
-                    .help("뒤로가기")
-                    .accessibilityLabel("목록으로 돌아가기")
-                    .keyboardShortcut("[", modifiers: [.command])
-                    Spacer()
+                Button(action: onBack) {
+                    Label("목록", systemImage: "chevron.left")
+                        .font(.subheadline.weight(.medium))
                 }
+                .buttonStyle(.borderless)
+                .help("목록으로 돌아가기 (⌘[)")
+                .accessibilityLabel("목록으로 돌아가기")
+                .keyboardShortcut("[", modifiers: [.command])
             }
 
-            HStack(alignment: .center, spacing: 20) {
+            HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 5) {
-                    TextField("이름", text: $title)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 30, weight: .semibold))
-                        .accessibilityLabel("이름")
+                    HStack(spacing: 7) {
+                        Image(systemName: "pencil")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        TextField("이름", text: $title)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 25, weight: .semibold))
+                            .accessibilityLabel("이름")
+                            .help("이름 편집")
+                    }
                     Text(subtitle)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
-                Spacer(minLength: 16)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 actions
             }
         }
         .padding(.horizontal, WikeyPageMetrics.padding)
-        .padding(.vertical, 24)
-        .background(.bar)
+        .padding(.vertical, 16)
     }
 }
 

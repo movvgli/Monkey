@@ -43,6 +43,8 @@ struct WikeyApp: App {
                 .disabled(!updates.canCheckForUpdates)
             }
 
+            WorkspaceCommands()
+
             CommandMenu("워크플로") {
                 ForEach(runtime.store.workflows.filter(\.isEnabled)) { workflow in
                     Button(shortMenuTitle(workflow.name)) {
@@ -71,6 +73,39 @@ struct WikeyApp: App {
         if runtime.lastRun?.failures.isEmpty == false { return "bolt.trianglebadge.exclamationmark" }
         if runtime.runner.runningWorkflowID != nil { return "bolt.badge.clock" }
         return "bolt.circle"
+    }
+}
+
+struct WorkspaceActions {
+    var createWorkflow: () -> Void
+    var search: () -> Void
+}
+
+private struct WorkspaceActionsKey: FocusedValueKey {
+    typealias Value = WorkspaceActions
+}
+
+extension FocusedValues {
+    var workspaceActions: WorkspaceActions? {
+        get { self[WorkspaceActionsKey.self] }
+        set { self[WorkspaceActionsKey.self] = newValue }
+    }
+}
+
+private struct WorkspaceCommands: Commands {
+    @FocusedValue(\.workspaceActions) private var actions
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("새 워크플로") { actions?.createWorkflow() }
+                .keyboardShortcut("n", modifiers: .command)
+                .disabled(actions == nil)
+        }
+        CommandGroup(after: .textEditing) {
+            Button("Wikey 검색…") { actions?.search() }
+                .keyboardShortcut("k", modifiers: .command)
+                .disabled(actions == nil)
+        }
     }
 }
 

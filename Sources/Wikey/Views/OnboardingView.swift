@@ -7,7 +7,7 @@ struct OnboardingView: View {
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
     @Binding var isPresented: Bool
     @State private var page = 0
-    @State private var launchAtLogin = true
+    @State private var launchAtLogin = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -138,7 +138,7 @@ struct OnboardingView: View {
                 OnboardingPermissionRow(
                     systemImage: "keyboard",
                     title: "두 단계 단축키",
-                    detail: "입력 모니터링 권한을 사용합니다.",
+                    detail: "손쉬운 사용과 입력 모니터링 권한을 사용합니다.",
                     granted: runtime.permissions.inputMonitoringGranted,
                     request: runtime.permissions.requestInputMonitoring
                 )
@@ -176,7 +176,7 @@ struct OnboardingView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text("권한을 켜지 않아도 앱 실행, 웹사이트 열기와 템플릿 붙여넣기는 사용할 수 있습니다.")
+            Text("권한을 켜지 않아도 앱 실행, 웹사이트 열기와 템플릿 클립보드 복사는 사용할 수 있습니다.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
