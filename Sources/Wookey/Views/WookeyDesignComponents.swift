@@ -622,7 +622,7 @@ struct WookeyActionIcon: View {
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
-                    .saturation(isSilverChain ? 0 : 0.78)
+                    .saturation(isSilverChain || artwork == "WookeyCommandDelete" ? 0 : 0.78)
                     .brightness(highlight + darkLift)
                     .colorMultiply(artworkTint(artwork))
                     .rotationEffect(rotation)

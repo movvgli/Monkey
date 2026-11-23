@@ -135,9 +135,9 @@ struct LocalHistoryView: View {
     }
 
     private func removeButton(_ entry: LocalHistoryStore.Entry) -> some View {
-        Button("삭제", systemImage: "trash") { history.remove(entry, kind: kind) }
+        Button("삭제", wookeyIcon: "trash") { history.remove(entry, kind: kind) }
             .labelStyle(.iconOnly)
-            .buttonStyle(WookeyGlossyButtonStyle(tint: .rose, iconOnly: true))
+            .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
             .controlSize(.small)
     }
 }
