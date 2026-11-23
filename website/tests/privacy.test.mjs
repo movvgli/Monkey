@@ -4,7 +4,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { examples } from "../src/examples.js";
+import { searchResults } from "../src/examples.js";
 
 const require = createRequire(import.meta.url);
 const React = require("react");
@@ -17,36 +17,30 @@ compiled.paths = require.resolve.paths("react");
 compiled._compile(output.outputFiles[0].text, compiled.filename);
 const { App, Demo } = compiled.exports;
 
-test("all three examples render fictional content and a clear disclosure", () => {
-  assert.equal(Object.keys(examples).length, 3);
-  for (const [key, example] of Object.entries(examples)) {
-    const html = renderToStaticMarkup(React.createElement(Demo, { initialSelected: key }));
-    assert.ok(html.includes(example.title));
-    assert.ok(html.includes("실제 개인 설정이 아닙니다"));
-    assert.equal((html.match(/aria-pressed="true"/g) || []).length, 1);
-    assert.ok(html.includes(example.result));
-  }
+test("search renders only fictional examples and labels them", () => {
+  const html = renderToStaticMarkup(React.createElement(Demo));
+  for (const { title } of searchResults) assert.ok(html.includes(title));
+  assert.ok(html.includes("실제 개인 설정이 아닙니다"));
+  assert.ok(html.includes('aria-label="기능 예시 검색"'));
 });
 
-test("site renders installation, privacy and download information without storage", () => {
+test("site renders distinct release channels and privacy details without storage", () => {
   const prior = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", { configurable: true, get() { throw new Error("Storage disabled"); } });
   try {
     const html = renderToStaticMarkup(React.createElement(App));
-    for (const text of ["macOS 14 이상", "가상 예시", "손쉬운 사용", "입력 모니터링", "releases/latest"]) assert.ok(html.includes(text));
+    for (const text of ["macOS 14 이상", "가상 예시", "손쉬운 사용", "입력 모니터링", "Apple 공증 전 빌드", "Pre-release"]) {
+      assert.ok(html.includes(text), text);
+    }
+    assert.ok(html.includes('href="https://github.com/movvgli/Wookey/releases"'));
+    assert.ok(html.includes('href="https://github.com/movvgli/Wookey/releases/latest"'));
     assert.ok(!html.includes("<form"));
     assert.ok(html.includes('src="./assets/wookey-icon.png"'));
-    assert.ok(html.includes("최신 버전 1.2.8"));
-    const privacy = html.match(/<section class="privacy-section"[\s\S]*?<\/section>/)?.[0];
+    const privacy = html.match(/<section id="privacy"[\s\S]*?<\/section>/)?.[0];
     assert.ok(privacy);
-    for (const removed of ["사이트에는 가상 예시만", "실제 두 Mac 간 전송은 아직 미검증", "iCloud 사용에는 Apple 계정이 필요합니다", "화면 속 내용은 모두 설명용 예시예요"]) {
-      assert.ok(!privacy.includes(removed));
-    }
     assert.ok(privacy.includes("개인 iCloud Drive 폴더"));
-    assert.ok(html.includes("기본값은 꺼짐"));
-    assert.ok(!html.includes("클라우드에 업로드하지 않습니다"));
-    assert.ok(!html.includes("공개 준비 중"));
-    assert.ok(!html.includes("현재 공개: 1.2.4"));
+    assert.ok(privacy.includes("기본값은 꺼짐"));
+    assert.ok(!privacy.includes("가상 예시"));
   } finally {
     if (prior) Object.defineProperty(globalThis, "localStorage", prior);
     else delete globalThis.localStorage;
@@ -60,9 +54,13 @@ test("built entry uses relative assets for GitHub Pages project paths", async ()
   assert.ok(/href="\.\/assets\/[^\"]+\.css"/.test(html));
 });
 
-test("only the approved brand icon is copied from public assets", async () => {
+test("only the app icon and public mascot artwork are copied from public assets", async () => {
   const files = await readdir(new URL("../public/assets/", import.meta.url));
-  assert.deepEqual(files, ["wookey-icon.png"]);
+  const approvedFiles = [
+    "banana-3d.webp", "banana-fluffy.webp", "coral-3d.webp", "coral-fluffy.webp",
+    "sharkey-3d.webp", "sharkey-fluffy.webp", "wookey-3d.webp", "wookey-fluffy.webp", "wookey-icon.png",
+  ];
+  assert.deepEqual(files.sort(), approvedFiles);
   const publicFiles = await readdir(new URL("../public/", import.meta.url));
   assert.deepEqual(publicFiles, ["assets"]);
 });

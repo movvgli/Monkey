@@ -1,4 +1,4 @@
-# Contributing to Wikey
+# Contributing to Wookey
 
 작고 확인 가능한 변경을 선호합니다. 기능 제안은 구현 전에 이슈로 사용 사례와 기대 동작을 먼저 공유해주세요.
 
@@ -13,7 +13,7 @@
 
 ```sh
 git clone https://github.com/movvgli/Wookey.git
-cd Wikey
+cd Wookey
 swift test
 ./script/build_and_run.sh
 ```

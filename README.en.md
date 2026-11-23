@@ -1,90 +1,48 @@
 <p align="center">
-  <img src="Sources/Wookey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="128" alt="Wookey app icon">
+  <img src="Sources/Wookey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="112" alt="Wookey app icon">
 </p>
 
-<h1 align="center">Wookey</h1>
+# Wookey
 
-<p align="center">
-  Finish repetitive work with one shortcut on macOS
-</p>
+**Find apps and links, retrieve clipboard items and files, and run recurring tasks with a shortcut.** Wookey is a free, open-source macOS app for Apple Silicon and Intel Macs running macOS 14 or later. You can get started without a Wookey account.
 
-<p align="center">
-  <a href="https://github.com/movvgli/Wookey/releases/latest"><strong>Download the latest release</strong></a>
-  · <a href="https://movvgli.github.io/Wookey/">Website</a>
-  · <a href="README.md">한국어</a>
-  · <a href="docs/INSTALL.md">Installation</a>
-  · <a href="docs/PRIVACY.md">Privacy</a>
-</p>
+[Preview releases](https://github.com/movvgli/Wookey/releases) · [Stable release](https://github.com/movvgli/Wookey/releases/latest) · [Website](https://movvgli.github.io/Wookey/) · [한국어](README.md)
 
-Wookey (formerly Wikey) connects app launches, websites, text, image and file pasting, and window layouts into ordered macOS workflows. Assign shortcuts to a workflow, an individual app, or a saved layout.
+## What you can do
 
-Workflows and templates stay on your Mac by default. Version 1.2.7 includes experimental, opt-in iCloud sync that copies settings and referenced attachments to a user-selected iCloud Drive folder. Actual transfers between two Macs have not yet been verified. Back up your settings before enabling sync; see the [release notes](docs/RELEASE-1.2.7.md).
-
-## Quick start
-
-1. Download the DMG from the [latest release](https://github.com/movvgli/Wookey/releases/latest).
-2. Move Wookey to **Applications** and launch it.
-3. Use the first-run introduction to review the core features and enable only the permissions you need.
-4. Assign a shortcut in **Apps**, or create a workflow to connect several actions.
-5. Try new workflows in a disposable document first to check their order and input destination.
-
-Starting with 1.2.6, Wookey targets macOS 14 or later. Apple Silicon and Intel builds and minimum-OS validation pass; execution on actual macOS 14 and Intel hardware remains unverified. Production distribution uses DMGs verified for Developer ID signing and Apple notarization; see the [release notes](https://github.com/movvgli/Wookey/releases) for each version's distribution status.
-
-## Features
-
-| Feature | What it does |
+| Feature | How it works |
 | --- | --- |
-| Workflows | Run actions in order and reuse another saved workflow as an action. |
-| Global shortcuts | Use one or two chords, with conflict feedback across workflows, apps, and layouts. |
-| Apps | Search installed apps, launch them directly, and assign or clear shortcuts in the list. |
-| Websites | Open URLs in the default browser. |
-| Rich templates | Save formatted text, links, lists, and inline images; choose a template while configuring a paste action. Templates can also be deleted. |
-| Images and files | Select multiple images or files to paste into the destination app. |
-| Key input and waits | Add Enter, Shift + Enter, and waits of 0.1–30 seconds between actions. |
-| Window layouts | Arrange windows on connected displays in full, half, third, two-thirds, and quadrant zones. Assign a shortcut directly to a layout. |
-| Execution controls | See the current action and queued runs, or stop execution and clear the queue. |
-| Quick access | Run workflows from the menu bar and prepare Wookey at login. You can optionally show its Dock icon in Settings. |
-| Updates | Check, download, and install new versions inside the app. |
+| Quick search | Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press Return to open or run the selection, or **Command–Return** to search Google in your default browser. You can also enter web addresses, calculate, and convert currencies. |
+| Apps and links | Assign shortcuts to your favorite apps and links. Give links and workflows multiple comma-separated search keywords. |
+| Clipboard and drawer | Copy an earlier item from clipboard history. While dragging a file, image, or web link, shake the pointer twice to open the drawer. Open saved items later or drag them into another app. |
+| Templates | Save phrases with formatting, links, lists, and inline images. Copy them from search or paste them as part of a workflow. |
+| Workflows | Combine apps, links, files, template pastes, Return keystrokes, delays, and window layouts in a sequence. Run workflows with a global shortcut, from the menu bar, or from Apple Shortcuts. |
+| Window layouts | Save the monitor and screen region for each app window. Restore layouts directly with a shortcut or include them in a workflow. |
+| Appearance | Choose white, yellow, sky blue, brown, or dark. Pick Wookey and Banana or Sharkey and Coral, then choose 3D or Fluffy icons independently. |
 
-If an action fails, Wookey stops the remaining actions in that workflow and identifies the failing step. For example, a failed app launch will not be followed by a paste or Enter action. Actions that have already completed are not undone.
+## Download and get started
 
-Pasting and window resizing depend on the destination app's support. Add a **Wait** action before Enter when an app needs time to prepare an attachment. A fixed wait does not detect upload completion, so check message-sending workflows on a non-sending test surface first.
+The [stable release](https://github.com/movvgli/Wookey/releases/latest) is Developer ID–signed and notarized by Apple. Older releases use the names **Monkey** and **Wikey**.
 
-## Permissions and privacy
+The features above describe the [preview releases](https://github.com/movvgli/Wookey/releases). To try them, download a Wookey DMG marked **Pre-release** near the top of the list. Preview builds are not notarized by Apple and are distributed separately from stable in-app updates.
 
-Wookey asks only for the macOS permissions required by the features you use.
+1. Open the DMG and move the app to **Applications**.
+2. Launch the app and press **Option–Space** to find a familiar app.
+3. To chain multiple actions, create a new workflow and choose the option to combine actions.
 
-| Permission | Used for |
-| --- | --- |
-| Accessibility | Window movement and resizing, paste and Enter input, and preventing the second shortcut key from typing into another app |
-| Input Monitoring | Reading the second chord in a two-step shortcut |
+Automated pasting, keystrokes, and window placement require **Accessibility** permission. Two-step shortcuts also require **Input Monitoring**. [Installation, permissions, and updates](docs/INSTALL.md)
 
-Opening an app or website with a single-chord shortcut, and copying to the clipboard, work without these permissions. Paste, key input, and window placement need Accessibility; two-step shortcuts need both permissions. See the [privacy guide](docs/PRIVACY.md) for details.
+## Data storage
 
-## Updates
+Settings, templates, clipboard history, and drawer items are stored on your Mac by default. Optional iCloud sync can store workflows, templates, shortcuts, window layouts, and copies of workflow attachments in a private iCloud Drive folder. Clipboard history and drawer items stay on your Mac. [Privacy and sync details](docs/PRIVACY.md)
 
-Wookey checks for a new version once per day while it is running. You can also use **Wookey → Check for Updates…** or **Settings → Updates**. Automatic downloads remain under your control.
+## Development and contributing
 
-## Development
-
-Requirements:
-
-- A macOS version supported by your Xcode (the app deployment target is macOS 14)
-- Xcode and a Swift 6 toolchain
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) when regenerating the Xcode project
+Use Xcode and a Swift 6 toolchain. Regenerating the Xcode project requires XcodeGen.
 
 ```sh
-./script/build_and_run.sh
 swift test
-xcodegen generate
+./script/build_and_run.sh
 ```
 
-See [Distribution](docs/DISTRIBUTION.md) for packaging and notarization steps.
-
-## Contributing
-
-Bug reports and focused improvements are welcome. Read [Contributing](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Please report security issues through [Security](SECURITY.md), not a public issue.
-
-## License
-
-[MIT License](LICENSE)
+[Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Distribution](docs/DISTRIBUTION.md) · [MIT license](LICENSE)

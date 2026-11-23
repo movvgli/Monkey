@@ -1,5 +1,5 @@
 name: 버그 제보
-description: 재현 가능한 Wikey 문제를 알려주세요.
+description: 재현 가능한 Wookey 문제를 알려주세요.
 title: "[Bug] "
 labels: [bug]
 body:
@@ -9,7 +9,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Wikey 버전
+      label: Wookey 버전
       placeholder: 1.0.0
     validations:
       required: true
