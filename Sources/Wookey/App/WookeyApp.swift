@@ -145,11 +145,11 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
         ProcessInfo.processInfo.disableAutomaticTermination("Wookey menu bar runtime")
         let storedTheme = UserDefaults.standard.string(forKey: WookeyIconTheme.storageKey)
         let iconTheme = storedTheme.flatMap(WookeyIconTheme.init(rawValue:)) ?? .threeDimensional
-        iconTheme.applyDockIcon()
         let activationPolicy = DockIconService.activationPolicy(for: DockIconService.savedVisibility())
         if NSApp.activationPolicy() != activationPolicy {
             NSApp.setActivationPolicy(activationPolicy)
         }
+        iconTheme.applyDockIcon()
         let runtime = WookeyAppRuntime.shared
         runtime.hotkeys.onSearch = { [weak self] in self?.toggleSearch() }
         runtime.start()

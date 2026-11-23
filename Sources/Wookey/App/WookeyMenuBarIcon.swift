@@ -41,9 +41,15 @@ enum WookeyIconTheme: String, CaseIterable {
 
     @MainActor
     func applyDockIcon() {
-        NSApp.applicationIconImage = self == .fluffy
-            ? wookeyAssetBundle.image(forResource: "FluffyAppIcon")
-            : nil
+        let name = self == .fluffy ? "FluffyAppIcon" : "AppIcon"
+        var canvas = NSRect(x: 0, y: 0, width: 512, height: 512)
+        guard let artwork = wookeyAssetBundle.image(forResource: NSImage.Name(name)),
+              let bitmap = artwork.cgImage(forProposedRect: &canvas, context: nil, hints: nil) else {
+            NSApp.applicationIconImage = nil
+            return
+        }
+        // Use the same canvas and Dock rendering path for both icon themes.
+        NSApp.applicationIconImage = NSImage(cgImage: bitmap, size: canvas.size)
     }
 }
 

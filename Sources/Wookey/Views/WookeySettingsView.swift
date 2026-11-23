@@ -62,6 +62,9 @@ struct WookeySettingsView: View {
         .frame(width: 620, height: 490)
         .background(theme.canvas)
         .onChange(of: iconTheme) { _, theme in theme.applyDockIcon() }
+        .onChange(of: runtime.dockIcon.isVisible) { _, isVisible in
+            if isVisible { iconTheme.applyDockIcon() }
+        }
         .task { updates.refresh() }
     }
 
