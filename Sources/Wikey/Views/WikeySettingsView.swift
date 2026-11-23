@@ -139,145 +139,142 @@ struct WikeySettingsView: View {
 
     private var general: some View {
         WikeySection(title: "일반") {
-            PlainPanel {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "dock.rectangle")
-                            .foregroundStyle(.secondary)
-                            .font(.title3)
-                            .frame(width: 30)
-                        Text("Dock에 Monkey 표시")
-                            .font(.headline)
-                        Spacer()
-                        Toggle(
-                            "Dock에 Monkey 표시",
-                            isOn: Binding(
-                                get: { runtime.dockIcon.isVisible },
-                                set: { runtime.setDockIconVisible($0) }
-                            )
-                        )
-                        .labelsHidden()
-                        .toggleStyle(.switch)
-                    }
-                    .padding(.vertical, 12)
-
-                    Divider()
-
-                    menuBarSettings
-
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("로그인 시 Monkey 실행")
-                                    .font(.headline)
-                                Text("메인 창은 열지 않고 단축키를 준비합니다.")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Toggle(
-                                "로그인 시 실행",
+            VStack(spacing: 12) {
+                PlainPanel {
+                    VStack(alignment: .leading, spacing: 0) {
+                        GeneralSettingRow(symbol: "dock.rectangle", title: "Dock에 Monkey 표시") {
+                            generalSwitch(
+                                "Dock에 Monkey 표시",
                                 isOn: Binding(
-                                    get: { runtime.loginItem.isEnabled },
-                                    set: { runtime.loginItem.setEnabled($0) }
+                                    get: { runtime.dockIcon.isVisible },
+                                    set: { runtime.setDockIconVisible($0) }
                                 )
                             )
-                            .labelsHidden()
-                            .toggleStyle(.switch)
                         }
-
-                        if runtime.loginItem.status == .requiresApproval {
-                            Label("macOS 설정에서 로그인 항목을 허용해 주세요.", systemImage: "info.circle")
+                        generalDivider
+                        GeneralSettingRow(symbol: "menubar.rectangle", title: "메뉴 막대에 Monkey 표시") {
+                            HStack(spacing: 12) {
+                                menuBarIconPicker
+                                generalSwitch("메뉴 막대에 Monkey 표시", isOn: $showsMenuBarIcon)
+                            }
+                        }
+                        if !showsMenuBarIcon && !runtime.dockIcon.isVisible {
+                            Text("Finder의 응용 프로그램에서 Monkey를 다시 열 수 있습니다.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
-                            Button("로그인 항목 설정 열기") { runtime.loginItem.openSystemSettings() }
-                        }
-                        if let error = runtime.loginItem.lastError {
-                            Label(error, systemImage: "exclamationmark.triangle")
-                                .font(.caption)
-                                .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
+                                .padding(.leading, GeneralSettingsLayout.titleInset)
+                                .padding(.bottom, 6)
                         }
                     }
-                    .padding(.vertical, 12)
+                }
 
-                    Divider()
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("검색창 단축키").font(.headline)
-                        Text("다른 앱을 사용 중에도 Monkey 검색창을 엽니다.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                        HStack {
-                            CompactShortcutRecorderView(shortcut: Binding(
-                                get: { runtime.store.searchShortcut },
-                                set: {
-                                    runtime.store.searchShortcut = $0
-                                    runtime.saveAndReloadHotkeys()
-                                }
-                            ))
-                            Button("기본값") {
-                                runtime.store.searchShortcut = .defaultSearch
-                                runtime.saveAndReloadHotkeys()
-                            }
-                            .disabled(runtime.store.searchShortcut == .defaultSearch)
-                        }
-                        if let error = runtime.hotkeys.searchRegistrationError {
-                            Label(error, systemImage: "exclamationmark.triangle.fill")
-                                .font(.caption)
-                                .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
-                        }
+                PlainPanel {
+                    VStack(alignment: .leading, spacing: 0) {
+                        loginSetting
+                        generalDivider
+                        searchShortcutSetting
                     }
-                    .padding(.vertical, 12)
                 }
             }
         }
     }
 
-    private var menuBarSettings: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            HStack(spacing: 12) {
-                Image(systemName: "menubar.rectangle")
-                    .foregroundStyle(.secondary)
-                    .font(.title3)
-                    .frame(width: 30)
-                Text("메뉴 막대에 Monkey 표시")
-                    .font(.headline)
-                Spacer()
-                Toggle("메뉴 막대에 Monkey 표시", isOn: $showsMenuBarIcon)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
+    private var menuBarIconPicker: some View {
+        Menu {
+            Picker("메뉴 막대 아이콘", selection: $menuBarIcon) {
+                ForEach(MonkeyMenuBarIcon.allCases) { icon in
+                    Label { Text(icon.title) } icon: { icon.image() }
+                        .tag(icon)
+                }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            Label { Text(menuBarIcon.title) } icon: { menuBarIcon.image() }
+        }
+        .menuStyle(.borderlessButton)
+        .accessibilityLabel("메뉴 막대 아이콘")
+        .accessibilityValue(menuBarIcon.title)
+        .help("메뉴 막대 아이콘")
+    }
+
+    private var loginSetting: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeneralSettingRow(
+                symbol: "rectangle.portrait.and.arrow.right",
+                title: "로그인 시 Monkey 실행",
+                detail: "로그인할 때 단축키를 준비합니다."
+            ) {
+                generalSwitch(
+                    "로그인 시 Monkey 실행",
+                    isOn: Binding(
+                        get: { runtime.loginItem.isEnabled },
+                        set: { runtime.loginItem.setEnabled($0) }
+                    )
+                )
             }
 
-            HStack(spacing: 12) {
-                Text("메뉴 막대 아이콘")
-                    .font(.subheadline)
-                Spacer()
-                Picker("메뉴 막대 아이콘", selection: $menuBarIcon) {
-                    ForEach(MonkeyMenuBarIcon.allCases) { icon in
-                        Label {
-                            Text(icon.title)
-                        } icon: {
-                            icon.image()
-                        }
-                        .tag(icon)
+            if runtime.loginItem.status == .requiresApproval || runtime.loginItem.lastError != nil {
+                VStack(alignment: .leading, spacing: 8) {
+                    if runtime.loginItem.status == .requiresApproval {
+                        Label("macOS 설정에서 로그인 항목을 허용해 주세요.", systemImage: "info.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Button("로그인 항목 설정 열기") { runtime.loginItem.openSystemSettings() }
+                    }
+                    if let error = runtime.loginItem.lastError {
+                        Label(error, systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
                     }
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .frame(width: 180)
-            }
-            .padding(.leading, 42)
-
-            if !showsMenuBarIcon && !runtime.dockIcon.isVisible {
-                Text("Finder의 응용 프로그램에서 Monkey를 다시 열 수 있습니다.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 42)
+                .padding(.leading, GeneralSettingsLayout.titleInset)
+                .padding(.bottom, 8)
             }
         }
-        .padding(.vertical, 12)
+    }
+
+    private var searchShortcutSetting: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeneralSettingRow(
+                symbol: "magnifyingglass",
+                title: "검색창 단축키",
+                detail: "다른 앱에서도 검색창을 엽니다."
+            ) {
+                HStack(spacing: 8) {
+                    CompactShortcutRecorderView(shortcut: Binding(
+                        get: { runtime.store.searchShortcut },
+                        set: {
+                            runtime.store.searchShortcut = $0
+                            runtime.saveAndReloadHotkeys()
+                        }
+                    ))
+                    Button("기본값") {
+                        runtime.store.searchShortcut = .defaultSearch
+                        runtime.saveAndReloadHotkeys()
+                    }
+                    .controlSize(.small)
+                    .disabled(runtime.store.searchShortcut == .defaultSearch)
+                }
+            }
+            if let error = runtime.hotkeys.searchRegistrationError {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
+                    .padding(.leading, GeneralSettingsLayout.titleInset)
+                    .padding(.bottom, 8)
+            }
+        }
+    }
+
+    private func generalSwitch(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(title, isOn: isOn)
+            .labelsHidden()
+            .toggleStyle(.switch)
+    }
+
+    private var generalDivider: some View {
+        Divider().padding(.leading, GeneralSettingsLayout.titleInset)
     }
 
     private var updateSettings: some View {
@@ -417,6 +414,44 @@ struct WikeySettingsView: View {
             return "아직 업데이트를 확인하지 않았습니다."
         }
         return "마지막 확인: \(date.formatted(date: .abbreviated, time: .shortened))"
+    }
+}
+
+private enum GeneralSettingsLayout {
+    static let iconWidth: CGFloat = 26
+    static let columnSpacing: CGFloat = 12
+    static let titleInset = iconWidth + columnSpacing
+}
+
+private struct GeneralSettingRow<Control: View>: View {
+    var symbol: String
+    var title: String
+    var detail: String? = nil
+    @ViewBuilder var control: Control
+
+    var body: some View {
+        HStack(spacing: GeneralSettingsLayout.columnSpacing) {
+            Image(systemName: symbol)
+                .font(.system(size: 16))
+                .foregroundStyle(.secondary)
+                .frame(width: GeneralSettingsLayout.iconWidth)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.headline)
+                if let detail {
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            control.fixedSize()
+        }
+        .padding(.vertical, 7)
+        .frame(minHeight: 54)
     }
 }
 
