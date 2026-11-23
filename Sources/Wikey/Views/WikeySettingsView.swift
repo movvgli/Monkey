@@ -131,7 +131,7 @@ struct WikeySettingsView: View {
             Button("권한 상태 새로고침", systemImage: "arrow.clockwise") {
                 runtime.permissions.refresh()
             }
-            .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
+            .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
         }
     }
 

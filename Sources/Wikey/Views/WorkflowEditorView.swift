@@ -89,7 +89,7 @@ struct WorkflowEditorView: View {
 
                             if !workflow.actions.isEmpty {
                                 Button("다음 동작 추가", systemImage: "plus") { showsActionPicker = true }
-                                    .buttonStyle(WikeyPastelButtonStyle())
+                                    .buttonStyle(WikeyGlossyButtonStyle())
                                     .padding(.leading, 48)
                                     .padding(.top, 5)
                             }
@@ -132,7 +132,7 @@ struct WorkflowEditorView: View {
                         Label("워크플로 실행", systemImage: "play.fill")
                     }
                 }
-                .buttonStyle(WikeyPastelButtonStyle(tint: .mint))
+                .buttonStyle(WikeyGlossyButtonStyle(tint: .accent))
                 .disabled(workflow.actions.isEmpty || isRunning || runtime.runner.queuedWorkflowIDs.contains(workflow.id))
                 .keyboardShortcut(.return, modifiers: [.command])
             }
@@ -218,7 +218,7 @@ struct WorkflowEditorView: View {
             onBack: onBack
         ) {
             Button("동작 추가", systemImage: "plus") { showsActionPicker = true }
-                .buttonStyle(WikeyPastelButtonStyle())
+                .buttonStyle(WikeyGlossyButtonStyle())
                 .keyboardShortcut("d", modifiers: [.command, .shift])
                 .help("동작 추가 (⇧⌘D)")
             WikeyDeleteButton(title: "워크플로 삭제…") {
@@ -244,7 +244,7 @@ struct WorkflowEditorView: View {
                 Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", systemImage: "keyboard") {
                     showsShortcutEditor.toggle()
                 }
-                .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
+                .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
                 .popover(isPresented: $showsShortcutEditor, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("단축키 변경")
@@ -276,7 +276,7 @@ struct WorkflowEditorView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(WikeyLavenderPanel(radius: 16))
+        .background(WikeyGlossyPanel(radius: 16))
     }
 
     private var validWebURL: String? {
@@ -430,7 +430,7 @@ private struct TemplateActionSetupView: View {
                 Button("취소", action: onCancel)
                     .keyboardShortcut(.cancelAction)
                 Button("동작 추가", action: onAdd)
-                    .buttonStyle(.borderedProminent)
+                    .wikeyPrimaryButtonStyle()
                     .keyboardShortcut(.defaultAction)
                     .disabled(selectedTemplateID == nil)
             }
@@ -526,7 +526,7 @@ private struct EmptyActionsView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(WikeyLavenderPanel(radius: 17))
+        .background(WikeyGlossyPanel(radius: 17))
     }
 }
 
@@ -565,7 +565,7 @@ private struct FlowActionRow: View {
                                 .lineLimit(1)
                         }
                         Spacer(minLength: 16)
-                        WikeyActionIcon(symbol: "slider.horizontal.3", tint: .lavender, size: 36)
+                        WikeyActionIcon(symbol: "slider.horizontal.3", tint: .accent, size: 36)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .frame(minHeight: 42)
@@ -602,20 +602,20 @@ private struct FlowActionRow: View {
                                 showsEditor = false
                                 moveUp()
                             }
-                            .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
+                            .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
                             .disabled(!canMoveUp)
                             Button("아래로 이동", systemImage: "arrow.down") {
                                 showsEditor = false
                                 moveDown()
                             }
-                            .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle))
+                            .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite))
                             .disabled(!canMoveDown)
                             Spacer()
                             Button("삭제", systemImage: "trash", role: .destructive) {
                                 showsEditor = false
                                 delete()
                             }
-                            .buttonStyle(WikeyPastelButtonStyle(tint: .rose))
+                            .buttonStyle(WikeyGlossyButtonStyle(tint: .rose))
                         }
                     }
                     .padding(20)
