@@ -43,6 +43,7 @@ struct OnboardingView: View {
             Image(nsImage: NSApplication.shared.applicationIconImage)
                 .resizable()
                 .scaledToFit()
+                .saturation(0)
                 .frame(width: 46, height: 46)
 
             VStack(alignment: .leading, spacing: 3) {
@@ -196,7 +197,7 @@ struct OnboardingView: View {
                 Button("다음") {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 1 }
                 }
-                .buttonStyle(.borderedProminent)
+                .wikeyPrimaryButtonStyle()
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
             } else {
@@ -210,7 +211,7 @@ struct OnboardingView: View {
                     .buttonStyle(.borderless)
                     .tint(Color.wikeyInk(in: colorScheme))
                 Button("Wikey 시작") { complete(enableLoginItem: launchAtLogin) }
-                    .buttonStyle(.borderedProminent)
+                    .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
                     .keyboardShortcut(.defaultAction)
             }

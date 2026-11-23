@@ -161,7 +161,7 @@ struct WorkspaceSearchView: View {
                 .frame(height: 28)
                 Button("닫기", systemImage: "xmark", action: close)
                     .labelStyle(.iconOnly)
-                    .buttonStyle(WikeyPastelButtonStyle(tint: .neutral, iconOnly: true))
+                    .buttonStyle(WikeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
                     .keyboardShortcut(.cancelAction)
             }
             .padding(18)
@@ -199,7 +199,7 @@ struct WorkspaceSearchView: View {
                 Text("↵ \(actionTitle)").foregroundStyle(.secondary)
                 Spacer()
                 Button(actionTitle, action: openSelected)
-                    .buttonStyle(WikeyPastelButtonStyle())
+                    .buttonStyle(WikeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selected == nil)
             }
@@ -387,6 +387,9 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
         panel.title = "Wikey 검색창"
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
+        panel.isOpaque = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
         panel.isMovableByWindowBackground = true
         panel.isReleasedWhenClosed = false
         panel.becomesKeyOnlyIfNeeded = false
@@ -402,6 +405,7 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
             WorkspaceSearchView(mode: .launcher(close: { [weak self] in self?.close() }))
                 .environment(runtime)
                 .tint(.wikeyAccent)
+                .background { Color.clear.wikeyLauncherGlass().allowsHitTesting(false) }
         )
         panel.delegate = self
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main {
@@ -500,6 +504,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
             guard window != nil else { return }
             DispatchQueue.main.async { [weak self] in
                 guard let self, let window else { return }
+                if window is NSPanel { window.initialFirstResponder = self }
                 window.makeFirstResponder(self)
             }
         }

@@ -112,7 +112,7 @@ struct WorkflowLibraryView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Button("새 워크플로", systemImage: "plus", action: createWorkflow)
-                    .buttonStyle(.borderedProminent)
+                    .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
                     .padding(.top, 3)
             }
@@ -123,7 +123,7 @@ struct WorkflowLibraryView: View {
         .padding(.horizontal, 22)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(WikeyLavenderPanel(radius: 24))
+        .background(WikeyGlossyPanel(radius: 24))
     }
 
     private func latestRun(_ summary: RunSummary) -> some View {
@@ -186,7 +186,7 @@ private struct WorkflowLibraryRow: View {
     }
 
     private var icon: (symbol: String, tint: WikeyActionTint) {
-        guard workflow.actions.count == 1, let action = workflow.actions.first else { return ("bolt", .lavender) }
+        guard workflow.actions.count == 1, let action = workflow.actions.first else { return ("bolt", .accent) }
         return action.wikeyIcon
     }
 

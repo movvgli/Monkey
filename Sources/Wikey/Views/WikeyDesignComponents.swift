@@ -14,6 +14,7 @@ struct WikeyMascot: View {
         Image("LightningMascot", bundle: assetBundle)
             .resizable()
             .scaledToFit()
+            .saturation(0)
             .frame(width: size, height: size)
             .accessibilityHidden(true)
     }
@@ -27,7 +28,7 @@ struct WikeyMascot: View {
     }
 }
 
-struct WikeyLavenderPanel: View {
+struct WikeyGlossyPanel: View {
     @Environment(\.colorScheme) private var colorScheme
     var radius: CGFloat = 20
 
@@ -37,15 +38,47 @@ struct WikeyLavenderPanel: View {
         shape.fill(
             LinearGradient(
                 colors: isDark
-                    ? [Color(red: 0.20, green: 0.15, blue: 0.29), Color(red: 0.26, green: 0.18, blue: 0.32)]
-                    : [Color(red: 0.94, green: 0.91, blue: 1), Color(red: 0.99, green: 0.94, blue: 0.98)],
-                startPoint: .leading,
-                endPoint: .trailing
+                    ? [Color(white: 0.29), Color(white: 0.18), Color(white: 0.11)]
+                    : [Color(white: 0.99), Color(white: 0.94), Color(white: 0.86)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
         )
         .overlay {
-            shape.strokeBorder(isDark ? Color.white.opacity(0.10) : Color.wikeyAccent.opacity(0.13))
+            shape.strokeBorder(LinearGradient(
+                colors: [Color.white.opacity(isDark ? 0.24 : 0.95), Color.black.opacity(isDark ? 0.28 : 0.12)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            ))
         }
+    }
+}
+
+extension View {
+    @ViewBuilder
+    func wikeyPrimaryButtonStyle() -> some View {
+        #if compiler(>=6.2)
+        if #available(macOS 26.0, *) {
+            buttonStyle(.glassProminent)
+        } else {
+            buttonStyle(.borderedProminent)
+        }
+        #else
+        buttonStyle(.borderedProminent)
+        #endif
+    }
+
+    @ViewBuilder
+    func wikeyLauncherGlass() -> some View {
+        let shape = RoundedRectangle(cornerRadius: 24)
+        #if compiler(>=6.2)
+        if #available(macOS 26.0, *) {
+            glassEffect(.regular, in: shape)
+        } else {
+            background(.thickMaterial, in: shape)
+        }
+        #else
+        background(.thickMaterial, in: shape)
+        #endif
     }
 }
 
@@ -127,7 +160,7 @@ struct WikeyDeleteButton: View {
             Image(systemName: "trash")
                 .font(.system(size: 14, weight: .medium))
         }
-        .buttonStyle(WikeyPastelButtonStyle(tint: .rose, iconOnly: true))
+        .buttonStyle(WikeyGlossyButtonStyle(tint: .rose, iconOnly: true))
         .help(title)
         .accessibilityLabel(title)
     }
@@ -161,7 +194,7 @@ struct WikeyEditorHeader<Actions: View>: View {
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 9) {
                         Button { isEditingName = true } label: {
-                            WikeyActionIcon(symbol: "pencil", tint: .lavender)
+                            WikeyActionIcon(symbol: "pencil", tint: .accent)
                         }
                         .buttonStyle(WikeyHoverButtonStyle())
                         .accessibilityLabel("이름 수정")
@@ -280,24 +313,18 @@ struct PlainPanel<Content: View>: View {
 }
 
 enum WikeyActionTint {
-    case lavender
-    case periwinkle
-    case mint
-    case peach
+    case accent
+    case graphite
     case rose
     case neutral
 
     func ink(in colorScheme: ColorScheme) -> Color {
         let isDark = colorScheme == .dark
         switch self {
-        case .lavender:
+        case .accent:
             return .wikeyInk(in: colorScheme)
-        case .periwinkle:
-            return isDark ? Color(red: 0.72, green: 0.77, blue: 1) : Color(red: 0.30, green: 0.36, blue: 0.67)
-        case .mint:
-            return isDark ? Color(red: 0.64, green: 0.88, blue: 0.80) : Color(red: 0.23, green: 0.42, blue: 0.37)
-        case .peach:
-            return isDark ? Color(red: 1, green: 0.76, blue: 0.66) : Color(red: 0.65, green: 0.32, blue: 0.25)
+        case .graphite:
+            return Color(white: isDark ? 0.77 : 0.35)
         case .rose:
             return isDark ? Color(red: 1, green: 0.57, blue: 0.59) : Color(red: 0.68, green: 0.14, blue: 0.24)
         case .neutral:
@@ -309,15 +336,15 @@ enum WikeyActionTint {
 extension WorkflowAction {
     var wikeyIcon: (symbol: String, tint: WikeyActionTint) {
         switch self {
-        case .copyTemplate: ("doc.on.clipboard", .lavender)
-        case .openURL: ("link", .periwinkle)
-        case .launchApplication: ("app", .mint)
-        case .openFile: ("doc", .peach)
-        case .applyLayout: ("rectangle.3.group", .lavender)
+        case .copyTemplate: ("doc.on.clipboard", .accent)
+        case .openURL: ("link", .graphite)
+        case .launchApplication: ("app", .accent)
+        case .openFile: ("doc", .graphite)
+        case .applyLayout: ("rectangle.3.group", .accent)
         case .pressKey: ("keyboard", .neutral)
-        case .runWorkflow: ("bolt", .lavender)
-        case .pasteImages: ("photo", .peach)
-        case .pasteFiles: ("paperclip", .peach)
+        case .runWorkflow: ("bolt", .accent)
+        case .pasteImages: ("photo", .graphite)
+        case .pasteFiles: ("paperclip", .graphite)
         case .wait: ("clock", .neutral)
         }
     }
@@ -360,10 +387,10 @@ struct WikeyHoverButtonStyle: ButtonStyle {
     }
 }
 
-struct WikeyPastelButtonStyle: ButtonStyle {
+struct WikeyGlossyButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.isEnabled) private var isEnabled
-    var tint: WikeyActionTint = .lavender
+    var tint: WikeyActionTint = .accent
     var iconOnly = false
 
     func makeBody(configuration: Configuration) -> some View {
@@ -379,12 +406,14 @@ struct WikeyPastelButtonStyle: ButtonStyle {
             filled: true,
             cornerRadius: 10,
             isPressed: configuration.isPressed,
-            isEnabled: isEnabled
+            isEnabled: isEnabled,
+            glossy: true
         )
     }
 }
 
 private struct WikeyHoverSurface<Label: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isHovering = false
     var label: Label
     var ink: Color
@@ -393,6 +422,7 @@ private struct WikeyHoverSurface<Label: View>: View {
     var cornerRadius: CGFloat
     var isPressed: Bool
     var isEnabled: Bool
+    var glossy = false
 
     private var fillOpacity: Double {
         if isPressed { return 0.24 }
@@ -404,7 +434,21 @@ private struct WikeyHoverSurface<Label: View>: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius)
         label
-            .background(ink.opacity(fillOpacity), in: shape)
+            .background {
+                shape.fill(ink.opacity(fillOpacity))
+                    .overlay {
+                        if glossy {
+                            shape.fill(LinearGradient(
+                                colors: [Color.white.opacity(colorScheme == .dark ? 0.13 : 0.65), .clear],
+                                startPoint: .top, endPoint: .bottom
+                            ))
+                            shape.strokeBorder(LinearGradient(
+                                colors: [Color.white.opacity(colorScheme == .dark ? 0.18 : 0.8), Color.black.opacity(0.11)],
+                                startPoint: .top, endPoint: .bottom
+                            ))
+                        }
+                    }
+            }
             .contentShape(shape)
             .opacity(isEnabled ? 1 : 0.5)
             .onHover { isHovering = $0 }

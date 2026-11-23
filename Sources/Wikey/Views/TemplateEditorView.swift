@@ -38,7 +38,7 @@ struct TemplateEditorView: View {
                     showsDeleteConfirmation = true
                 }
                 Button("클립보드에 복사", systemImage: "doc.on.doc", action: copyTemplate)
-                    .buttonStyle(.borderedProminent)
+                    .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
             }
 
@@ -56,9 +56,9 @@ struct TemplateEditorView: View {
                 Divider().frame(height: 22)
 
                 HStack(spacing: 5) {
-                    toolButton("링크 추가", symbol: "link", tint: .periwinkle, action: editor.addLink)
-                    toolButton("목록 항목 추가", symbol: "list.bullet", tint: .mint, action: editor.insertBullet)
-                    toolButton("이미지 넣기", symbol: "photo", tint: .peach, action: editor.insertImage)
+                    toolButton("링크 추가", symbol: "link", tint: .graphite, action: editor.addLink)
+                    toolButton("목록 항목 추가", symbol: "list.bullet", tint: .accent, action: editor.insertBullet)
+                    toolButton("이미지 넣기", symbol: "photo", tint: .graphite, action: editor.insertImage)
                 }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel("삽입")
@@ -113,14 +113,14 @@ struct TemplateEditorView: View {
     private func toolButton(
         _ title: String,
         symbol: String,
-        tint: WikeyActionTint = .lavender,
+        tint: WikeyActionTint = .accent,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .semibold))
         }
-        .buttonStyle(WikeyPastelButtonStyle(tint: tint, iconOnly: true))
+        .buttonStyle(WikeyGlossyButtonStyle(tint: tint, iconOnly: true))
         .accessibilityLabel(title)
         .help(title)
     }

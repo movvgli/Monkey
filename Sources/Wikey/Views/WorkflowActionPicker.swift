@@ -30,14 +30,14 @@ struct WorkflowActionPicker: View {
 
         var icon: (symbol: String, tint: WikeyActionTint) {
             switch self {
-            case .app: ("app", .mint)
-            case .website: ("link", .periwinkle)
-            case .file: ("doc", .peach)
-            case .layout: ("rectangle.3.group", .lavender)
-            case .workflow: ("bolt", .lavender)
-            case .template: ("doc.on.clipboard", .lavender)
-            case .images: ("photo", .peach)
-            case .files: ("paperclip", .peach)
+            case .app: ("app", .accent)
+            case .website: ("link", .graphite)
+            case .file: ("doc", .graphite)
+            case .layout: ("rectangle.3.group", .accent)
+            case .workflow: ("bolt", .accent)
+            case .template: ("doc.on.clipboard", .accent)
+            case .images: ("photo", .graphite)
+            case .files: ("paperclip", .graphite)
             case .enter: ("return", .neutral)
             case .shiftEnter: ("arrow.turn.down.left", .neutral)
             case .wait: ("clock", .neutral)
@@ -117,10 +117,10 @@ struct WorkflowActionPicker: View {
             HStack {
                 Spacer()
                 Button("취소") { dismiss() }
-                    .buttonStyle(WikeyPastelButtonStyle(tint: .neutral))
+                    .buttonStyle(WikeyGlossyButtonStyle(tint: .neutral))
                     .keyboardShortcut(.cancelAction)
                 Button("선택", action: addSelection)
-                    .buttonStyle(WikeyPastelButtonStyle())
+                    .buttonStyle(WikeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selected == nil || selected.flatMap(unavailableReason) != nil)
             }
@@ -159,11 +159,11 @@ struct WorkflowActionSetupSheet<Content: View>: View {
             HStack {
                 Spacer()
                 Button("취소", action: cancel)
-                    .buttonStyle(WikeyPastelButtonStyle(tint: .neutral))
+                    .buttonStyle(WikeyGlossyButtonStyle(tint: .neutral))
                     .keyboardShortcut(.cancelAction)
                 Button("동작 추가", action: add)
                     .keyboardShortcut(.defaultAction)
-                    .buttonStyle(WikeyPastelButtonStyle())
+                    .buttonStyle(WikeyGlossyButtonStyle())
                     .disabled(!canAdd)
             }
         }

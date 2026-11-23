@@ -27,7 +27,7 @@ struct LayoutEditorView: View {
                     showsDeleteConfirmation = true
                 }
                 Button("앱 추가", systemImage: "plus", action: addApplication)
-                    .buttonStyle(.borderedProminent)
+                    .wikeyPrimaryButtonStyle()
                     .controlSize(.large)
                     .disabled(displays.isEmpty)
             }
@@ -100,7 +100,7 @@ struct LayoutEditorView: View {
                 Button("레이아웃 적용", systemImage: "play.fill") {
                     runtime.run(layoutID: layout.id)
                 }
-                .buttonStyle(.borderedProminent)
+                .wikeyPrimaryButtonStyle()
                 .controlSize(.large)
                 .disabled(layout.placements.isEmpty || displays.isEmpty
                           || runtime.runner.runningWorkflowID == layout.id
@@ -288,7 +288,7 @@ private struct PlacementRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            WikeyActionIcon(symbol: "app", tint: .mint)
+            WikeyActionIcon(symbol: "app", tint: .accent)
 
             VStack(alignment: .leading, spacing: 10) {
                 HStack {

@@ -23,10 +23,10 @@ struct QuickWorkflowView: View {
 
         var tint: WikeyActionTint {
             switch self {
-            case .template: .lavender
-            case .link: .periwinkle
-            case .app: .mint
-            case .file: .peach
+            case .template: .accent
+            case .link: .graphite
+            case .app: .accent
+            case .file: .graphite
             }
         }
     }
@@ -99,7 +99,7 @@ struct QuickWorkflowView: View {
                 Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
                 if let kind {
                     Button("저장") { save(kind) }
-                        .buttonStyle(.borderedProminent)
+                        .wikeyPrimaryButtonStyle()
                         .keyboardShortcut(.defaultAction)
                         .disabled(action(kind) == nil || keywordError != nil || (!shortcut.steps.isEmpty && shortcut.validationMessage != nil))
                 }

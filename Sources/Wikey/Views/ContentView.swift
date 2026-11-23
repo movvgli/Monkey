@@ -73,7 +73,6 @@ private struct WikeySidebar: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
         }
-        .background(Color.wikeyAccent.opacity(colorScheme == .dark ? 0.07 : 0.035))
         .accessibilityLabel("사이드바")
     }
 
@@ -468,7 +467,7 @@ private struct LinkLibraryView: View {
                     } label: {
                         Image(systemName: "arrow.up.right")
                     }
-                    .buttonStyle(WikeyPastelButtonStyle(tint: .periwinkle, iconOnly: true))
+                    .buttonStyle(WikeyGlossyButtonStyle(tint: .graphite, iconOnly: true))
                     .accessibilityLabel("\(link.workflow.name) 링크 열기")
                     .help("링크 열기")
                     .disabled(runtime.runner.runningWorkflowID == link.id || runtime.runner.queuedWorkflowIDs.contains(link.id))
@@ -574,7 +573,7 @@ private struct LibraryLandingView<Content: View>: View {
             VStack(alignment: .leading, spacing: 28) {
                 WikeyPageHeader(title: title, subtitle: subtitle) {
                     Button(addTitle, systemImage: "plus", action: add)
-                        .buttonStyle(.borderedProminent)
+                        .wikeyPrimaryButtonStyle()
                         .controlSize(.large)
                 }
                 WikeySearchField(prompt: "\(title) 검색", text: $searchText)
@@ -585,7 +584,7 @@ private struct LibraryLandingView<Content: View>: View {
                         Text(emptyDescription)
                     } actions: {
                         Button(addTitle, action: add)
-                            .buttonStyle(.borderedProminent)
+                            .wikeyPrimaryButtonStyle()
                     }
                     .frame(maxWidth: .infinity, minHeight: 240)
                 } else if !hasSearchResults {
@@ -621,7 +620,7 @@ private struct LibraryItemButton: View {
             HStack(spacing: 16) {
                 WikeyActionIcon(
                     symbol: systemImage,
-                    tint: ["link", "rectangle.3.group"].contains(systemImage) ? .periwinkle : .lavender,
+                    tint: ["link", "rectangle.3.group"].contains(systemImage) ? .graphite : .accent,
                     size: 30
                 )
                 VStack(alignment: .leading, spacing: 4) {
