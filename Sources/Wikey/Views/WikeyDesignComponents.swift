@@ -327,7 +327,8 @@ enum WikeyActionTint {
 
     init(symbol: String) {
         switch symbol {
-        case "link", "rectangle.3.group": self = .blue
+        case "link": self = .graphite
+        case "rectangle.3.group": self = .blue
         case "app", "arrow.left.arrow.right": self = .teal
         case "doc", "doc.on.clipboard", "photo", "paperclip": self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
@@ -425,12 +426,15 @@ struct WikeyActionIcon: View {
     var body: some View {
         Group {
             if let artwork {
+                let isSilverChain = symbol == "link"
+                let darkModeLift = colorScheme == .dark && (isSilverChain || artwork.hasPrefix("WikeyCommand"))
+                let silverHighlight = isSilverChain ? 0.095 : 0
                 Image(artwork, bundle: wikeyAssetBundle)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
-                    .saturation(0.78)
-                    .brightness(colorScheme == .dark && artwork.hasPrefix("WikeyCommand") ? 0.19 : 0)
+                    .saturation(isSilverChain ? 0 : 0.78)
+                    .brightness(silverHighlight + (darkModeLift ? 0.19 : 0))
                     .rotationEffect(rotation)
             } else {
                 Image(systemName: symbol)
