@@ -75,7 +75,9 @@ public final class SequenceMonitor {
             return nil
         case .matched:
             timeoutWorkItem?.cancel()
-            let item = DispatchWorkItem { [weak self] in self?.stop(result: nil) }
+            // The second key already matched; if its release never arrives (key held
+            // past the timeout), still run the matched target instead of dropping it.
+            let item = DispatchWorkItem { [weak self] in self?.stop(result: chord) }
             timeoutWorkItem = item
             DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: item)
             return nil

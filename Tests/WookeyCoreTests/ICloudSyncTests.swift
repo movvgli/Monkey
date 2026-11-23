@@ -132,7 +132,7 @@ import Testing
 
     @Test func unresolvedPlaceholderDoesNotAppearAsEmptyCloud() async throws {
         let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
-        try Data().write(to: root.appendingPathComponent(".\(UUID()).wikeybackup.icloud"))
+        try Data().write(to: root.appendingPathComponent(".\(UUID()).wookeybackup.icloud"))
         await #expect(throws: (any Error).self) { try await SyncFolderIO().read(root) }
     }
 
@@ -244,5 +244,156 @@ import Testing
         _ = try WookeyStore.prepareBackup(old, rootURL: root)
         #expect(store.templates[0].fileName == before)
         #expect(store.templateDocument(id: id).string == "New unsynced content")
+    }
+
+    private func emptyPayload() -> SyncPayload {
+        SyncPayload(state: PersistedState(), templateDocuments: [:], assets: [:])
+    }
+
+    @Test func recoveryNeverPublishesEmptyStateButOffersRemoteVersion() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let folder = root.appendingPathComponent("shared")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let a = WookeyStore(rootURL: root.appendingPathComponent("A")); a.load()
+        a.workflows = [Workflow(name: "Keep me")]; a.save()
+        let sa = ICloudSyncService(store: a)
+        await sa.connect(to: folder, requireICloud: false)
+        let published = try await SyncFolderIO().read(folder)
+        #expect(published.count == 1)
+
+        // The same Mac relaunches with an unreadable config, then edits before noticing.
+        try Data("not-json".utf8).write(to: a.storageURL.appendingPathComponent("config.json"))
+        let broken = WookeyStore(rootURL: a.storageURL); broken.load()
+        #expect(broken.needsRecovery)
+        _ = broken.addWorkflow(Workflow(name: "Scratch"))
+        let sync = ICloudSyncService(store: broken)
+        await sync.connect(to: folder, requireICloud: false)
+        #expect(try await SyncFolderIO().read(folder).map(\.id) == published.map(\.id))
+        let offered = try #require(sync.pendingVersion)
+        #expect(broken.workflows.map(\.name) == ["Scratch"])
+        await sync.restore(offered)
+        #expect(!broken.needsRecovery)
+        #expect(broken.workflows.map(\.name) == ["Keep me"])
+    }
+
+    @Test func acknowledgedRecoveryPublishesAsConcurrentVersion() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let folder = root.appendingPathComponent("shared")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let store = WookeyStore(rootURL: root.appendingPathComponent("A")); store.load()
+        store.workflows = [Workflow(name: "Original")]; store.save()
+        let first = ICloudSyncService(store: store)
+        await first.connect(to: folder, requireICloud: false)
+        try Data("not-json".utf8).write(to: store.storageURL.appendingPathComponent("config.json"))
+        let broken = WookeyStore(rootURL: store.storageURL); broken.load()
+        let sync = ICloudSyncService(store: broken)
+        await sync.connect(to: folder, requireICloud: false)
+        broken.acknowledgeRecovery()
+        await sync.synchronize()
+        // The fresh state must not silently replace the original on other Macs.
+        #expect(SyncBackup.heads(in: try await SyncFolderIO().read(folder)).count == 2)
+        #expect(sync.conflicts.count == 2)
+    }
+
+    @Test func repeatedRestoresRemoveSupersededSyncFiles() throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let store = WookeyStore(rootURL: root); store.load()
+        let attachment = root.appendingPathComponent("a.txt")
+        try Data("a".utf8).write(to: attachment)
+        let templateID = store.addTemplate()
+        store.workflows = [Workflow(actions: [.openFile(path: attachment.path)])]; store.save()
+        let payload = try SyncPayload.capture(state: store.state, root: root)
+        // A user-created template file the synced state doesn't know about must survive cleanup.
+        let unrelated = root.appendingPathComponent("Templates/\(UUID().uuidString).rtfd")
+        try Data("keep".utf8).write(to: unrelated)
+        try store.installBackup(payload)
+        try store.installBackup(payload)
+        try store.installBackup(payload)
+        let attachments = try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("SyncedAttachments").path)
+        #expect(attachments.count == 1)
+        let templates = try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("Templates").path)
+        #expect(templates.filter(WookeyStore.isSyncTemplateName).count == 1)
+        #expect(FileManager.default.fileExists(atPath: unrelated.path))
+        #expect(store.templateDocument(id: templateID).string == "새 템플릿")
+        guard case .openFile(let path) = store.workflows[0].actions[0] else { Issue.record("Missing action"); return }
+        #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == Data("a".utf8))
+    }
+
+    @Test func pruningKeepsHeadsRecentVersionsAndTheirParents() throws {
+        let old = Date().addingTimeInterval(-40 * 24 * 60 * 60)
+        let cutoff = Date().addingTimeInterval(-30 * 24 * 60 * 60)
+        var a = SyncBackup(payload: emptyPayload(), device: "A"); a.createdAt = old
+        var b = SyncBackup(payload: emptyPayload(), parents: [a.id], device: "A"); b.createdAt = old
+        var c = SyncBackup(payload: emptyPayload(), parents: [b.id], device: "A"); c.createdAt = old
+        let d = SyncBackup(payload: emptyPayload(), parents: [c.id], device: "A")
+        var lonely = SyncBackup(payload: emptyPayload(), device: "B"); lonely.createdAt = old
+        let pruned = Set(SyncBackup.prunable(in: [a, b, c, d, lonely], olderThan: cutoff).map(\.id))
+        // c stays as d's parent and lonely as a head; a and b are old ancestors.
+        #expect(pruned == [a.id, b.id])
+    }
+
+    @Test func synchronizePrunesOldSharedHistory() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let folder = root.appendingPathComponent("shared")
+        let io = SyncFolderIO()
+        let old = Date().addingTimeInterval(-40 * 24 * 60 * 60)
+        var a = SyncBackup(payload: emptyPayload(), device: "Other"); a.createdAt = old
+        var b = SyncBackup(payload: emptyPayload(), parents: [a.id], device: "Other"); b.createdAt = old
+        var c = SyncBackup(payload: emptyPayload(), parents: [b.id], device: "Other"); c.createdAt = old
+        for backup in [a, b, c] { try await io.write(backup, folder: folder) }
+        let store = WookeyStore(rootURL: root.appendingPathComponent("A")); store.load()
+        let sync = ICloudSyncService(store: store)
+        sync.canApply = { false }
+        await sync.connect(to: folder, requireICloud: false)
+        let remaining = Set(try await io.read(folder).map(\.id))
+        #expect(!remaining.contains(a.id))
+        #expect(remaining.contains(c.id))
+        #expect(sync.errorMessage == nil)
+    }
+
+    @Test func badAndNewerFilesAreSkippedIndividually() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let io = SyncFolderIO()
+        let good = SyncBackup(payload: emptyPayload(), device: "A")
+        try await io.write(good, folder: root)
+        try Data("garbage".utf8).write(to: root.appendingPathComponent("\(UUID().uuidString).wookeybackup"))
+        var scan = try await io.scan(root)
+        #expect(scan.backups.map(\.id) == [good.id])
+        #expect(scan.skipped == 1)
+        #expect(!scan.requiresUpdate)
+        try Data(#"{"schemaVersion":2,"somethingNew":true}"#.utf8)
+            .write(to: root.appendingPathComponent("\(UUID().uuidString).wookeybackup"))
+        scan = try await io.scan(root)
+        #expect(scan.requiresUpdate)
+        #expect(scan.backups.map(\.id) == [good.id])
+    }
+
+    @Test func newerSchemaInCloudShowsUpdateStatusWithoutPublishing() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let folder = root.appendingPathComponent("shared")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        try Data(#"{"schemaVersion":2}"#.utf8).write(to: folder.appendingPathComponent("\(UUID().uuidString).wookeybackup"))
+        let store = WookeyStore(rootURL: root.appendingPathComponent("A")); store.load(); _ = store.addWorkflow()
+        let sync = ICloudSyncService(store: store)
+        await sync.connect(to: folder, requireICloud: false)
+        #expect(sync.errorMessage == SyncError.requiresUpdate.localizedDescription)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: folder.path).count == 1)
+    }
+
+    @Test func missingParentIsTreatedAsDeletedAfterGracePeriod() async throws {
+        let root = try fixture(); defer { try? FileManager.default.removeItem(at: root) }
+        let folder = root.appendingPathComponent("shared")
+        let io = SyncFolderIO()
+        var payload = emptyPayload(); payload.state.workflows = [Workflow(name: "Remote")]
+        let orphan = SyncBackup(payload: payload, parents: [UUID()], device: "Other")
+        try await io.write(orphan, folder: folder)
+        let store = WookeyStore(rootURL: root.appendingPathComponent("A")); store.load(); _ = store.addWorkflow()
+        let sync = ICloudSyncService(store: store)
+        await sync.connect(to: folder, requireICloud: false)
+        #expect(sync.status.contains("기다리는"))
+        sync.missingParentGracePeriod = 0
+        await sync.synchronize()
+        #expect(!sync.status.contains("기다리는"))
+        #expect(sync.conflicts.contains { $0.id == orphan.id })
     }
 }

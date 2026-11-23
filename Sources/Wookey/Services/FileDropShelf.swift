@@ -66,6 +66,8 @@ final class FileDropView: NSView {
     private var activeImports = 0
     private var pendingPromises = 0
     private var promiseDeadline: TimeInterval = 0
+    /// Promise callbacks still expected per temporary destination folder.
+    private var promiseFolders: [URL: Int] = [:]
     var isImporting: Bool { activeImports > 0 || pendingPromises > 0 }
     private static let imageTypes: [NSPasteboard.PasteboardType] = [.png, .tiff, .init(UTType.jpeg.identifier)]
     private static let promiseTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
@@ -223,6 +225,7 @@ final class FileDropView: NSView {
                 Task { @MainActor in
                     defer {
                         if error == nil, url.deletingLastPathComponent() == folder { try? files.removeItem(at: url) }
+                        self?.finishPromise(in: folder)
                     }
                     self?.beginImport()
                     self?.completePromise()
@@ -237,7 +240,12 @@ final class FileDropView: NSView {
             }
             count += max(1, receiver.fileNames.isEmpty ? receiver.fileTypes.count : receiver.fileNames.count)
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 600) { try? files.removeItem(at: folder) }
+        promiseFolders[folder] = count
+        // Fallback for promises that never call back; large transfers can take a long time.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6 * 60 * 60) { [weak self] in
+            self?.promiseFolders[folder] = nil
+            try? files.removeItem(at: folder)
+        }
         if count > 0 {
             pendingPromises += count
             promiseDeadline = ProcessInfo.processInfo.systemUptime + 30
@@ -250,6 +258,18 @@ final class FileDropView: NSView {
             history.showFileImportError()
         }
         return count > 0
+    }
+
+    /// Remove the temporary folder after its last expected callback, once it holds no files.
+    /// An underestimated count leaves files behind; the long fallback then removes them.
+    private func finishPromise(in folder: URL) {
+        guard let remaining = promiseFolders[folder] else { return }
+        if remaining > 1 { promiseFolders[folder] = remaining - 1; return }
+        promiseFolders[folder] = nil
+        let files = FileManager.default
+        if (try? files.contentsOfDirectory(atPath: folder.path))?.isEmpty == true {
+            try? files.removeItem(at: folder)
+        }
     }
 
     private func completePromise() {

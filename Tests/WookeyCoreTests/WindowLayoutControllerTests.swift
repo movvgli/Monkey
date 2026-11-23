@@ -197,8 +197,7 @@ struct WindowLayoutControllerTests {
     }
 }
 
-@MainActor
-private final class FakeLayoutWindow: LayoutWindowAccess {
+private final class FakeLayoutWindow: LayoutWindowAccess, @unchecked Sendable {
     var isFullScreen = false
     var minimized = false
     var canRestore = true

@@ -65,8 +65,7 @@ enum WookeyMenuBarIcon: String, CaseIterable, Identifiable {
     static let visibilityKey = "showsMenuBarIcon"
     static let styleKey = "menuBarIconStyle"
 
-    // Keep the stored values so existing menu bar choices retain their role.
-    case character = "monkey"
+    case character = "wookey"
     case companion = "banana"
 
     var id: Self { self }

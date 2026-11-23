@@ -3,7 +3,7 @@ import CoreGraphics
 import Foundation
 import OSLog
 
-private let keyboardLogger = Logger(subsystem: "com.wikey.app", category: "keyboard")
+private let keyboardLogger = Logger(subsystem: "com.wookey.app", category: "keyboard")
 
 @MainActor
 struct KeyboardEventEnvironment {

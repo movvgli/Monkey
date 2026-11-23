@@ -5,6 +5,8 @@ import SwiftUI
 final class RichTextEditorController {
     weak var textView: NSTextView?
     var onDocumentChange: ((NSAttributedString) -> Void)?
+    /// Called on every edit, including uncommitted IME composition, with the visible text.
+    var onTextChange: ((String) -> Void)?
     private var pendingDocument: NSAttributedString?
 
     func load(_ document: NSAttributedString) {
@@ -33,9 +35,10 @@ final class RichTextEditorController {
             return
         }
         let current = storage.attribute(.underlineStyle, at: max(0, min(range.location, max(storage.length - 1, 0))), effectiveRange: nil) as? Int ?? 0
+        guard textView.shouldChangeText(in: range, replacementString: nil) else { return }
         if current == 0 { storage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range) }
         else { storage.removeAttribute(.underlineStyle, range: range) }
-        emitChange()
+        textView.didChangeText()
     }
 
     func addLink() {
@@ -50,14 +53,16 @@ final class RichTextEditorController {
         alert.addButton(withTitle: "취소")
         guard alert.runModal() == .alertFirstButtonReturn, let url = URL(string: field.stringValue),
               let storage = textView.textStorage else { return }
-        storage.addAttribute(.link, value: url, range: textView.selectedRange())
-        emitChange()
+        let range = textView.selectedRange()
+        guard textView.shouldChangeText(in: range, replacementString: nil) else { return }
+        storage.addAttribute(.link, value: url, range: range)
+        textView.didChangeText()
     }
 
     func insertBullet() {
         guard let textView else { return }
+        // insertText registers undo and posts textDidChange, which emits the change.
         textView.insertText("• ", replacementRange: textView.selectedRange())
-        emitChange()
     }
 
     func insertImage() {
@@ -89,13 +94,27 @@ final class RichTextEditorController {
         )
 
         let attributed = NSAttributedString(attachment: attachment)
-        textView.textStorage?.replaceCharacters(in: textView.selectedRange(), with: attributed)
+        let range = textView.selectedRange()
+        guard let storage = textView.textStorage,
+              textView.shouldChangeText(in: range, replacementString: attributed.string) else { return }
+        storage.replaceCharacters(in: range, with: attributed)
+        textView.didChangeText()
+    }
+
+    /// Commits any in-progress IME composition so it is included in the next emitted document.
+    func commitMarkedText() {
+        guard let textView, textView.hasMarkedText() else { return }
+        textView.unmarkText()
+        textView.inputContext?.discardMarkedText()
         emitChange()
     }
 
     func emitChange() {
         guard let textView, let storage = textView.textStorage else { return }
         (textView as? TemplateTextView)?.refreshPreviewContrast()
+        onTextChange?(storage.string)
+        // Marked text is an in-progress IME composition (e.g. Korean); emit once it is committed.
+        guard !textView.hasMarkedText() else { return }
         onDocumentChange?(NSAttributedString(attributedString: storage))
     }
 
@@ -111,6 +130,7 @@ final class RichTextEditorController {
                 : manager.convert(font, toHaveTrait: trait)
             return
         }
+        guard textView.shouldChangeText(in: range, replacementString: nil) else { return }
         storage.beginEditing()
         storage.enumerateAttribute(.font, in: range) { value, subrange, _ in
             let font = value as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
@@ -120,7 +140,7 @@ final class RichTextEditorController {
             storage.addAttribute(.font, value: converted, range: subrange)
         }
         storage.endEditing()
-        emitChange()
+        textView.didChangeText()
     }
 
     private func effectiveRange(in textView: NSTextView) -> NSRange {

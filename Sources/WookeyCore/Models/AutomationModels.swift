@@ -134,7 +134,7 @@ public enum WorkflowKeyPress: String, Codable, CaseIterable, Sendable {
     }
 }
 
-public enum WorkflowAction: Identifiable, Codable, Hashable, Sendable {
+public enum WorkflowAction: Codable, Hashable, Sendable {
     case launchApplication(bundleIdentifier: String, displayName: String)
     case copyTemplate(templateID: UUID, mode: TemplateDeliveryMode)
     case openURL(String)
@@ -145,21 +145,6 @@ public enum WorkflowAction: Identifiable, Codable, Hashable, Sendable {
     case pasteImages(filePaths: [String])
     case pasteFiles(filePaths: [String])
     case wait(seconds: Double)
-
-    public var id: String {
-        switch self {
-        case .launchApplication(let bundleID, _): "app:\(bundleID)"
-        case .copyTemplate(let id, _): "template:\(id)"
-        case .openFile(let path): "open-file:\(path)"
-        case .openURL(let url): "url:\(url)"
-        case .applyLayout(let id): "layout:\(id)"
-        case .pressKey(let key): "key:\(key.rawValue)"
-        case .runWorkflow(let id): "workflow:\(id)"
-        case .pasteImages(let paths): "images:\(paths.joined(separator: "|"))"
-        case .pasteFiles(let paths): "files:\(paths.joined(separator: "|"))"
-        case .wait(let seconds): "wait:\(seconds)"
-        }
-    }
 
     public var title: String {
         switch self {
@@ -223,10 +208,24 @@ public enum LayoutZone: String, Codable, CaseIterable, Identifiable, Sendable {
     case leftHalf, rightHalf
     case leftThird, centerThird, rightThird
     case leftTwoThirds, rightTwoThirds
-    case leftOneThird, rightOneThird
     case topLeft, topRight, bottomLeft, bottomRight
 
     public var id: String { rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        // Older versions also wrote duplicate "leftOneThird"/"rightOneThird" zones. Keep reading
+        // them for existing configurations and synced backups, normalized to the current cases.
+        switch raw {
+        case "leftOneThird": self = .leftThird
+        case "rightOneThird": self = .rightThird
+        default:
+            guard let zone = Self(rawValue: raw) else {
+                throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Unknown layout zone: \(raw)"))
+            }
+            self = zone
+        }
+    }
 
     public var title: String {
         switch self {
@@ -238,8 +237,6 @@ public enum LayoutZone: String, Codable, CaseIterable, Identifiable, Sendable {
         case .rightThird: "오른쪽 1/3"
         case .leftTwoThirds: "왼쪽 2/3"
         case .rightTwoThirds: "오른쪽 2/3"
-        case .leftOneThird: "왼쪽 1/3"
-        case .rightOneThird: "오른쪽 1/3"
         case .topLeft: "왼쪽 위 1/4"
         case .topRight: "오른쪽 위 1/4"
         case .bottomLeft: "왼쪽 아래 1/4"
@@ -252,9 +249,9 @@ public enum LayoutZone: String, Codable, CaseIterable, Identifiable, Sendable {
         case .full: CGRect(x: 0, y: 0, width: 1, height: 1)
         case .leftHalf: CGRect(x: 0, y: 0, width: 0.5, height: 1)
         case .rightHalf: CGRect(x: 0.5, y: 0, width: 0.5, height: 1)
-        case .leftThird, .leftOneThird: CGRect(x: 0, y: 0, width: 1.0 / 3.0, height: 1)
+        case .leftThird: CGRect(x: 0, y: 0, width: 1.0 / 3.0, height: 1)
         case .centerThird: CGRect(x: 1.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1)
-        case .rightThird, .rightOneThird: CGRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1)
+        case .rightThird: CGRect(x: 2.0 / 3.0, y: 0, width: 1.0 / 3.0, height: 1)
         case .leftTwoThirds: CGRect(x: 0, y: 0, width: 2.0 / 3.0, height: 1)
         case .rightTwoThirds: CGRect(x: 1.0 / 3.0, y: 0, width: 2.0 / 3.0, height: 1)
         case .topLeft: CGRect(x: 0, y: 0.5, width: 0.5, height: 0.5)

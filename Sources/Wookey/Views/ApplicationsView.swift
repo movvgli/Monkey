@@ -23,7 +23,7 @@ struct ApplicationsView: View {
             (searchQuery.isEmpty || shortcut.displayName.localizedCaseInsensitiveContains(searchQuery)
                 || shortcut.bundleIdentifier.localizedCaseInsensitiveContains(searchQuery))
                 && !applications.contains { $0.bundleIdentifier == shortcut.bundleIdentifier }
-                && NSWorkspace.shared.urlForApplication(withBundleIdentifier: shortcut.bundleIdentifier) == nil
+                && WookeyIconCache.applicationURL(forBundleIdentifier: shortcut.bundleIdentifier) == nil
         }
     }
 
@@ -47,6 +47,7 @@ struct ApplicationsView: View {
     }
 
     var body: some View {
+        let missingApplications = self.missingApplications
         VStack(spacing: 0) {
             header
                 .padding(WookeyPageMetrics.padding)
@@ -235,10 +236,7 @@ private struct ApplicationShortcutRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 16) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: application.path))
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
+                WookeyFileIcon(path: application.path, interpolation: .high)
                     .frame(width: 32, height: 32)
 
                 VStack(alignment: .leading, spacing: 2) {

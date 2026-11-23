@@ -144,12 +144,12 @@ function Appearance() {
 
 export function App() {
   const [dark, setDark] = useState(() => {
-    try { return localStorage.getItem("wikey-site-theme") === "dark"; }
+    try { return localStorage.getItem("wookey-site-theme") === "dark"; }
     catch { return false; }
   });
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
-    try { localStorage.setItem("wikey-site-theme", dark ? "dark" : "light"); }
+    try { localStorage.setItem("wookey-site-theme", dark ? "dark" : "light"); }
     catch { /* The site also works with storage disabled. */ }
   }, [dark]);
 
@@ -181,7 +181,7 @@ export function App() {
             <p>DMG를 열고 앱을 응용 프로그램 폴더로 옮긴 뒤 <b className="shortcut">⌥ Space</b>로 빠른 검색을 열어보세요.</p>
             <dl className="channels">
               <div><dt>프리뷰</dt><dd>이 페이지의 기능을 먼저 써 볼 수 있는 Apple 공증 전 빌드입니다. 릴리스 목록에서 <b>Pre-release</b>가 붙은 Wookey DMG를 받으세요.</dd></div>
-              <div><dt>정식 버전</dt><dd>Apple 공증을 마친 버전입니다. 파일에 이전 이름인 Monkey가 표시될 수 있습니다.</dd></div>
+              <div><dt>정식 버전</dt><dd>Apple 공증을 마친 버전입니다.</dd></div>
             </dl>
             <div className="detail-actions"><Download /><a className="text-link" href={stable}>정식 버전 <ArrowRight size={16} /></a></div>
             <p className="small-copy">자동 붙여넣기와 창 배치에는 손쉬운 사용, 두 단계 단축키에는 입력 모니터링도 필요합니다.</p>

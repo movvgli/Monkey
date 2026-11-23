@@ -5,10 +5,35 @@ import UniformTypeIdentifiers
 
 enum HistoryKind: String, CaseIterable {
     case clipboard
-    case files = "images" // Retain the on-disk directory name for existing shelves.
+    case files = "images" // Intentionally kept: existing shelves live in this on-disk directory.
 
     var title: String { self == .clipboard ? "클립보드" : "파일" }
     var symbol: String { self == .clipboard ? "doc.on.clipboard" : "folder" }
+}
+
+private enum HistoryLimits {
+    /// Dropped files larger than this are refused rather than copied into the shelf.
+    static let maxImportBytes = 2 * 1_024 * 1_024 * 1_024
+    /// The shelf as a whole stops accepting files past this size. Nothing is evicted
+    /// automatically, because these are files the user put there on purpose.
+    static let maxShelfBytes = 20 * 1_024 * 1_024 * 1_024
+    /// Leave at least this much free space on the volume after copying a drop.
+    static let minFreeBytesAfterImport = 1_024 * 1_024 * 1_024
+    /// Clipboard history keeps at most this many entries and bytes; the oldest are evicted first.
+    static let maxClipboardEntries = 500
+    static let maxClipboardBytes = 1_024 * 1_024 * 1_024
+}
+
+private struct FileTooLargeError: LocalizedError {
+    var errorDescription: String? { "2GB보다 큰 파일은 서랍에 담을 수 없습니다." }
+}
+
+private struct ShelfFullError: LocalizedError {
+    var errorDescription: String? { "서랍이 가득 찼습니다(20GB). 쓰지 않는 파일을 지운 뒤 다시 시도해 주세요." }
+}
+
+private struct DiskFullError: LocalizedError {
+    var errorDescription: String? { "디스크 공간이 부족해 파일을 서랍에 담을 수 없습니다." }
 }
 
 struct HistoryRetention: Codable, Equatable {
@@ -59,11 +84,11 @@ final class LocalHistoryStore {
 
         enum CodingKeys: String, CodingKey {
             case clipboard, recordsClipboard
-            case files = "images"
+            case files = "images" // Intentionally kept: existing settings files use this key.
         }
     }
 
-    private struct ClipboardPayload: Codable {
+    private struct ClipboardPayload: Codable, Sendable {
         let items: [[String: Data]]
     }
 
@@ -77,6 +102,7 @@ final class LocalHistoryStore {
     @ObservationIgnored private var pasteboardChangeCount = 0
     @ObservationIgnored private var nextPrune = Date.distantPast
     @ObservationIgnored private var outgoingFileDrags = Set<UUID>()
+    @ObservationIgnored private var clipboardBytes: [UUID: Int] = [:]
     @ObservationIgnored var onFileTakenFromShelf: ((UUID) -> Void)?
 
     init(root: URL, clipboard: NSPasteboard = .general) {
@@ -122,8 +148,13 @@ final class LocalHistoryStore {
                 return entry
             }.sorted { $0.date > $1.date }
         }
+        for entry in entries(.clipboard) {
+            let size = try? fileURL(for: entry, kind: .clipboard).resourceValues(forKeys: [.fileSizeKey]).fileSize
+            clipboardBytes[entry.id] = size ?? 0
+        }
         pasteboardChangeCount = clipboard.changeCount
         pruneExpired()
+        enforceClipboardLimits()
         let timer = Timer(timeInterval: 0.5, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
@@ -180,8 +211,16 @@ final class LocalHistoryStore {
                 let scoped = url.startAccessingSecurityScopedResource()
                 defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                 let source = url.resolvingSymlinksInPath()
-                let values = try source.resourceValues(forKeys: [.isRegularFileKey, .contentTypeKey])
+                let values = try source.resourceValues(forKeys: [.isRegularFileKey, .contentTypeKey, .fileSizeKey])
                 guard values.isRegularFile == true else { throw CocoaError(.fileReadUnsupportedScheme) }
+                let size = values.fileSize ?? 0
+                guard size <= HistoryLimits.maxImportBytes else { throw FileTooLargeError() }
+                guard Self.allocatedSize(of: directory) + size <= HistoryLimits.maxShelfBytes else { throw ShelfFullError() }
+                if let free = try? directory.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+                    .volumeAvailableCapacityForImportantUsage,
+                   free < Int64(size) + Int64(HistoryLimits.minFreeBytesAfterImport) {
+                    throw DiskFullError()
+                }
                 let name = url.lastPathComponent
                 let fileName = name.caseInsensitiveCompare("record.plist") == .orderedSame ? "file.plist" : name
                 let isImage = values.contentType?.conforms(to: .image) == true
@@ -195,6 +234,17 @@ final class LocalHistoryStore {
             report(error, kind: .files, message: "파일을 가져오지 못했습니다")
             return nil
         }
+    }
+
+    private nonisolated static func allocatedSize(of directory: URL) -> Int {
+        let keys: [URLResourceKey] = [.totalFileAllocatedSizeKey, .isRegularFileKey]
+        guard let enumerator = FileManager.default.enumerator(at: directory, includingPropertiesForKeys: keys) else { return 0 }
+        var total = 0
+        for case let url as URL in enumerator {
+            guard let values = try? url.resourceValues(forKeys: Set(keys)), values.isRegularFile == true else { continue }
+            total += values.totalFileAllocatedSize ?? 0
+        }
+        return total
     }
 
     func importImage(data: Data, type: UTType) -> Entry? {
@@ -235,6 +285,7 @@ final class LocalHistoryStore {
             let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
             if files.fileExists(atPath: folder.path) { try files.removeItem(at: folder) }
             history[kind]?.removeAll { $0.id == entry.id }
+            if kind == .clipboard { clipboardBytes[entry.id] = nil }
             if kind == .files { onFileTakenFromShelf?(entry.id) }
             errors[kind] = nil
         } catch {
@@ -296,8 +347,21 @@ final class LocalHistoryStore {
     }
 
     private func record(_ entry: Entry, kind: HistoryKind) {
-        history[kind, default: []].insert(entry, at: 0)
+        // Writes can finish out of order; keep newest first.
+        let index = history[kind, default: []].firstIndex { $0.date <= entry.date } ?? history[kind, default: []].count
+        history[kind, default: []].insert(entry, at: index)
         errors[kind] = nil
+    }
+
+    private func enforceClipboardLimits() {
+        var remaining = entries(.clipboard)
+        var total = remaining.reduce(0) { $0 + (clipboardBytes[$1.id] ?? 0) }
+        while let oldest = remaining.last,
+              remaining.count > HistoryLimits.maxClipboardEntries || total > HistoryLimits.maxClipboardBytes {
+            remaining.removeLast()
+            total -= clipboardBytes[oldest.id] ?? 0
+            remove(oldest, kind: .clipboard)
+        }
     }
 
     private func report(_ error: Error, kind: HistoryKind, message: String) {
@@ -321,10 +385,21 @@ final class LocalHistoryStore {
 
         var payload: [[String: Data]] = []
         var remainingBytes = 32 * 1024 * 1024
+        // AppKit pasteboard reads must stay on the main thread, so keep them small:
+        // an image usually arrives as several large equivalents (TIFF, PNG, …);
+        // read only one, preferring compact PNG.
+        let imagePreference: [NSPasteboard.PasteboardType] = [.png, .tiff]
         for item in items {
             var representations: [String: Data] = [:]
-            for type in item.types where Self.supportsClipboardType(type) {
+            var hasImageRepresentation = false
+            let ordered = item.types.sorted { lhs, rhs in
+                (imagePreference.firstIndex(of: lhs) ?? .max) < (imagePreference.firstIndex(of: rhs) ?? .max)
+            }
+            for type in ordered where Self.supportsClipboardType(type) {
+                let isImage = UTType(type.rawValue)?.conforms(to: .image) == true
+                if isImage && hasImageRepresentation { continue }
                 guard let data = item.data(forType: type) else { continue }
+                if isImage { hasImageRepresentation = true }
                 guard data.count <= remainingBytes else { return }
                 remainingBytes -= data.count
                 representations[type.rawValue] = data
@@ -344,8 +419,24 @@ final class LocalHistoryStore {
             hasImage ? "복사한 이미지" : "복사한 내용"
         }
         let symbol = !files.isEmpty ? "doc" : hasImage ? "photo" : "text.alignleft"
-        _ = insert(kind: .clipboard, name: String(name.prefix(250)), symbol: symbol, fileName: "contents.plist") {
-            try PropertyListEncoder().encode(ClipboardPayload(items: payload)).write(to: $0)
+        let entry = Entry(id: UUID(), date: Date(), name: String(name.prefix(250)), symbol: symbol, fileName: "contents.plist")
+        let directory = directory(.clipboard)
+        let bytes = payload.reduce(0) { $0 + $1.values.reduce(0) { $0 + $1.count } }
+        // The pasteboard is read here on the main thread; encoding and writing up to 32MB is not.
+        Task { [weak self] in
+            do {
+                try await Task.detached(priority: .utility) {
+                    try Self.write(entry, in: directory) {
+                        try PropertyListEncoder().encode(ClipboardPayload(items: payload)).write(to: $0)
+                    }
+                }.value
+                guard let self else { return }
+                clipboardBytes[entry.id] = bytes
+                record(entry, kind: .clipboard)
+                enforceClipboardLimits()
+            } catch {
+                self?.report(error, kind: .clipboard, message: "기록을 저장하지 못했습니다")
+            }
         }
     }
 

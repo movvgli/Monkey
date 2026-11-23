@@ -5,7 +5,22 @@ import Foundation
 import OSLog
 import Observation
 
-private let layoutLogger = Logger(subsystem: "com.wikey.app", category: "layout")
+private let layoutLogger = Logger(subsystem: "com.wookey.app", category: "layout")
+
+/// Bound every AX round-trip. AX calls for window discovery and placement run off
+/// the main actor, so a hung target app only delays the layout, never the UI.
+private let accessibilityMessagingTimeout: Float = 0.5
+
+private func accessibilityApplication(pid: pid_t) -> AXUIElement {
+    let application = AXUIElementCreateApplication(pid)
+    AXUIElementSetMessagingTimeout(application, accessibilityMessagingTimeout)
+    return application
+}
+
+private func screenDisplayID(of screen: NSScreen) -> CGDirectDisplayID? {
+    (screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)
+        .map { CGDirectDisplayID($0.uint32Value) }
+}
 
 public struct DisplayInfo: Identifiable, Hashable {
     public var id: String { target.uuid }
@@ -50,8 +65,8 @@ public final class WindowLayoutController {
 
     public var availableDisplays: [DisplayInfo] {
         NSScreen.screens.compactMap { screen in
-            guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
-                  let uuid = CGDisplayCreateUUIDFromDisplayID(CGDirectDisplayID(number.uint32Value))?.takeRetainedValue(),
+            guard let id = screenDisplayID(of: screen),
+                  let uuid = CGDisplayCreateUUIDFromDisplayID(id)?.takeRetainedValue(),
                   let uuidString = CFUUIDCreateString(nil, uuid) as String? else { return nil }
             return DisplayInfo(
                 target: DisplayTarget(uuid: uuidString, name: screen.localizedName),
@@ -91,87 +106,84 @@ public final class WindowLayoutController {
         }
 
         let app = try await applications.launch(bundleIdentifier: placement.bundleIdentifier, activates: true)
-        let window = try await waitForWindow(pid: app.processIdentifier, appName: placement.appName)
-        AXUIElementSetMessagingTimeout(window, 1)
-        let currentDisplayFrame = availableDisplays.first(where: { $0.target.uuid == displayID })?.visibleFrame
-        layoutLogger.info("Placement target bundle=\(placement.bundleIdentifier, privacy: .public) zone=\(placement.zone.rawValue, privacy: .public) visibleBeforeActivation=\(NSStringFromRect(display.visibleFrame), privacy: .public) visibleAfterActivation=\(currentDisplayFrame.map(NSStringFromRect) ?? "missing", privacy: .public)")
+        let pid = app.processIdentifier
+        let window = try await Self.waitForWindow(pid: pid, appName: placement.appName)
+        layoutLogger.info("Placement target bundle=\(placement.bundleIdentifier, privacy: .public) zone=\(placement.zone.rawValue, privacy: .public) visible=\(NSStringFromRect(display.visibleFrame), privacy: .public)")
         let cocoaFrame = placement.zone.frame(in: display.visibleFrame)
         // AX coordinates are relative to the primary display, not the display
         // containing the active window (NSScreen.main).
-        guard let primaryScreen = NSScreen.screens.first(where: {
-            ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value
-                == CGMainDisplayID()
-        }) ?? NSScreen.screens.first else {
+        guard let primaryScreen = NSScreen.screens.first(where: { screenDisplayID(of: $0) == CGMainDisplayID() })
+            ?? NSScreen.screens.first else {
             throw AutomationError.windowMoveFailed(placement.appName)
         }
         let frame = LayoutWindowPlacement.accessibilityFrame(cocoaFrame, primaryDisplayFrame: primaryScreen.frame)
+        // Nonisolated async: every AX call below runs on the global executor.
         try await LayoutWindowPlacement.apply(
             to: AccessibilityLayoutWindow(
                 element: window,
-                application: AXUIElementCreateApplication(app.processIdentifier)
+                application: accessibilityApplication(pid: pid)
             ),
             frame: frame,
             appName: placement.appName
         )
     }
 
-    private func waitForWindow(pid: pid_t, appName: String) async throws -> AXUIElement {
-        let application = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(application, 1)
+    /// Runs off the main actor: polling a slow or hung app must not freeze the UI.
+    private nonisolated static func waitForWindow(pid: pid_t, appName: String) async throws -> AXUIElement {
+        let application = accessibilityApplication(pid: pid)
         let clock = ContinuousClock()
         let deadline = clock.now + .seconds(10)
         while clock.now < deadline {
             try Task.checkCancellation()
-            if let window = firstStandardWindow(application) { return window }
+            if let window = firstStandardWindow(application) {
+                AXUIElementSetMessagingTimeout(window, accessibilityMessagingTimeout)
+                return window
+            }
             try await Task.sleep(for: .milliseconds(200))
         }
         throw AutomationError.windowNotFound(appName)
     }
 
-    private func firstStandardWindow(_ application: AXUIElement) -> AXUIElement? {
-        let windows = attribute(application, key: kAXWindowsAttribute as CFString) as? [AXUIElement] ?? []
-        let focused = windowAttribute(application, key: kAXFocusedWindowAttribute as CFString)
-        let main = windowAttribute(application, key: kAXMainWindowAttribute as CFString)
+    private nonisolated static func firstStandardWindow(_ application: AXUIElement) -> AXUIElement? {
+        let windows: [AXUIElement] = attribute(application, kAXWindowsAttribute) ?? []
+        let focused: AXUIElement? = attribute(application, kAXFocusedWindowAttribute)
+        let main: AXUIElement? = attribute(application, kAXMainWindowAttribute)
         // Some apps expose their focused window before AXWindows is populated.
         var candidates = windows
         for window in [focused, main].compactMap({ $0 }) where !candidates.contains(where: { CFEqual($0, window) }) {
             candidates.append(window)
         }
-        let standardWindows = candidates.filter { window in
-            stringAttribute(window, key: kAXSubroleAttribute as CFString) == (kAXStandardWindowSubrole as String)
-        }
-        let selection = standardWindows.map { window in
-            LayoutWindowSelection(
+        // Read each window's subrole and minimized state once, in a single AX
+        // round-trip, and stop at the first window that would win anyway.
+        var standardWindows: [AXUIElement] = []
+        var selection: [LayoutWindowSelection] = []
+        let keys = [kAXSubroleAttribute, kAXMinimizedAttribute] as CFArray
+        for window in candidates {
+            var values: CFArray?
+            guard AXUIElementCopyMultipleAttributeValues(window, keys, [], &values) == .success,
+                  let values = values as? [Any], values.count == 2,
+                  values[0] as? String == (kAXStandardWindowSubrole as String) else { continue }
+            let entry = LayoutWindowSelection(
                 isFocused: focused.map { CFEqual(window, $0) } ?? false,
                 isMain: main.map { CFEqual(window, $0) } ?? false,
-                isMinimized: boolAttribute(window, key: kAXMinimizedAttribute as CFString) == true
+                isMinimized: values[1] as? Bool == true
             )
+            if entry.isFocused && !entry.isMinimized { return window }
+            standardWindows.append(window)
+            selection.append(entry)
         }
         guard let index = LayoutWindowSelection.preferredIndex(in: selection) else { return nil }
         return standardWindows[index]
     }
 
-    private func attribute(_ element: AXUIElement, key: CFString) -> CFTypeRef? {
+    private nonisolated static func attribute<Value>(_ element: AXUIElement, _ key: String) -> Value? {
         var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, key, &value) == .success else { return nil }
-        return value
-    }
-
-    private func windowAttribute(_ element: AXUIElement, key: CFString) -> AXUIElement? {
-        guard let value = attribute(element, key: key), CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
-        return (value as! AXUIElement)
-    }
-
-    private func stringAttribute(_ element: AXUIElement, key: CFString) -> String? {
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, key, &value) == .success else { return nil }
-        return value as? String
-    }
-
-    private func boolAttribute(_ element: AXUIElement, key: CFString) -> Bool? {
-        var value: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(element, key, &value) == .success else { return nil }
-        return value as? Bool
+        guard AXUIElementCopyAttributeValue(element, key as CFString, &value) == .success, let value else { return nil }
+        if Value.self == AXUIElement.self {
+            guard CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
+            return (value as! Value)
+        }
+        return value as? Value
     }
 }
 
@@ -191,8 +203,8 @@ struct LayoutWindowSelection {
     }
 }
 
-@MainActor
-protocol LayoutWindowAccess {
+/// Not main-actor isolated: real implementations make blocking AX calls.
+protocol LayoutWindowAccess: AnyObject {
     var isFullScreen: Bool { get }
     var isMinimized: Bool { get }
     var frame: CGRect? { get }
@@ -228,7 +240,6 @@ enum LayoutWindowPlacement {
             && abs(actual.height - requested.height) <= 2
     }
 
-    @MainActor
     static func apply(
         to window: any LayoutWindowAccess,
         frame: CGRect,
@@ -282,8 +293,8 @@ enum LayoutWindowPlacement {
     }
 }
 
-@MainActor
-private final class AccessibilityLayoutWindow: LayoutWindowAccess {
+/// Used by a single placement task at a time; AX elements are thread-safe to message.
+private final class AccessibilityLayoutWindow: LayoutWindowAccess, @unchecked Sendable {
     let element: AXUIElement
     let application: AXUIElement
     private var positionStatus: AXError?

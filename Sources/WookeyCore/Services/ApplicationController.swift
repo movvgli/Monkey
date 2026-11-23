@@ -1,5 +1,6 @@
 import AppKit
 import Foundation
+import UniformTypeIdentifiers
 
 @MainActor
 public final class ApplicationController {
@@ -24,7 +25,7 @@ public final class ApplicationController {
         }
     }
 
-    public func frontmostApplication() -> NSRunningApplication? {
+    private func frontmostApplication() -> NSRunningApplication? {
         NSWorkspace.shared.frontmostApplication
     }
 
@@ -87,7 +88,27 @@ public final class ApplicationController {
             throw AutomationError.fileNotFound(URL(fileURLWithPath: path).lastPathComponent)
         }
         let url = URL(fileURLWithPath: path)
+        // Opening a script or executable through Launch Services runs it (often in
+        // Terminal); a workflow step that "opens a file" must never execute code.
+        guard !Self.isExecutableDocument(url) else {
+            throw AutomationError.executableFileNotAllowed(url.lastPathComponent)
+        }
         return try await open(url, fallbackName: url.lastPathComponent)
+    }
+
+    // Only types Launch Services actually *runs* when opened. Plain scripts such as
+    // .sh or .py open in their default editor, so they stay allowed.
+    private static let executableExtensions: Set<String> = ["command", "tool", "terminal"]
+    private static let executableTypes: [UTType] = [
+        .unixExecutable, UTType("com.apple.terminal.shell-script"),
+    ].compactMap { $0 }
+
+    static func isExecutableDocument(_ url: URL) -> Bool {
+        if executableExtensions.contains(url.pathExtension.lowercased()) { return true }
+        let contentType = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
+            ?? UTType(filenameExtension: url.pathExtension)
+        guard let contentType else { return false }
+        return executableTypes.contains { contentType.conforms(to: $0) }
     }
 
     private func open(_ url: URL, fallbackName: String) async throws -> NSRunningApplication {
@@ -146,6 +167,7 @@ public enum AutomationError: LocalizedError {
     case clipboardWriteFailed
     case imageNotFound(String)
     case fileNotFound(String)
+    case executableFileNotAllowed(String)
     case keyboardEventCreationFailed
     case workflowNotFound
     case workflowAlreadyRunning
@@ -171,6 +193,7 @@ public enum AutomationError: LocalizedError {
         case .clipboardWriteFailed: "클립보드에 내용을 기록하지 못했습니다."
         case .imageNotFound(let name): "이미지를 찾거나 열 수 없습니다: \(name)"
         case .fileNotFound(let name): "파일을 찾을 수 없습니다: \(name)"
+        case .executableFileNotAllowed(let name): "실행 파일이나 스크립트는 열 수 없습니다: \(name)"
         case .keyboardEventCreationFailed: "키 입력을 만들지 못했습니다."
         case .workflowNotFound: "연결된 워크플로를 찾을 수 없습니다."
         case .workflowAlreadyRunning: "이 워크플로가 이미 실행 또는 대기 중입니다."

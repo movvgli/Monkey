@@ -39,15 +39,6 @@ public struct ShortcutModifiers: OptionSet, Codable, Hashable, Sendable {
         return value
     }
 
-    public var cgFlags: CGEventFlags {
-        var value: CGEventFlags = []
-        if contains(.command) { value.insert(.maskCommand) }
-        if contains(.option) { value.insert(.maskAlternate) }
-        if contains(.control) { value.insert(.maskControl) }
-        if contains(.shift) { value.insert(.maskShift) }
-        return value
-    }
-
     public var displayName: String {
         var value = ""
         if contains(.control) { value += "⌃" }
@@ -98,10 +89,6 @@ private enum ShortcutConflictTarget {
 }
 
 public enum ShortcutConflictDetector {
-    public static func conflicts(in workflows: [Workflow]) -> [UUID: String] {
-        conflicts(workflows: workflows, applicationShortcuts: []).workflows
-    }
-
     public struct Result: Sendable {
         public var workflows: [UUID: String]
         public var applications: [UUID: String]

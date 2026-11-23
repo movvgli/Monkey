@@ -91,6 +91,86 @@ struct WookeyStoreTests {
         #expect(store.lastPersistenceError != nil)
         let backups = try FileManager.default.contentsOfDirectory(atPath: root.path)
         #expect(backups.contains(where: { $0.hasPrefix("config-corrupt-") }))
+        #expect(store.needsRecovery)
+    }
+
+    @Test func reloadingTheSameCorruptFileDoesNotDuplicateItsBackup() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data("not-json".utf8).write(to: root.appendingPathComponent("config.json"))
+
+        WookeyStore(rootURL: root).load()
+        WookeyStore(rootURL: root).load()
+        let backups = try FileManager.default.contentsOfDirectory(atPath: root.path)
+            .filter { $0.hasPrefix("config-corrupt-") }
+        #expect(backups.count == 1)
+
+        // A different unreadable file still gets its own backup.
+        try Data("still-not-json".utf8).write(to: root.appendingPathComponent("config.json"))
+        WookeyStore(rootURL: root).load()
+        #expect(try FileManager.default.contentsOfDirectory(atPath: root.path)
+            .filter { $0.hasPrefix("config-corrupt-") }.count == 2)
+    }
+
+    @Test func recoveryStateSurvivesSavesAndRelaunchUntilAcknowledged() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try Data("not-json".utf8).write(to: root.appendingPathComponent("config.json"))
+
+        let store = WookeyStore(rootURL: root)
+        store.load()
+        _ = store.addWorkflow()
+        #expect(store.needsRecovery)
+        #expect(store.lastPersistenceError != nil)
+
+        let reloaded = WookeyStore(rootURL: root)
+        reloaded.load()
+        #expect(reloaded.workflows.count == 1)
+        #expect(reloaded.needsRecovery)
+        reloaded.acknowledgeRecovery()
+        #expect(!reloaded.needsRecovery)
+        #expect(reloaded.lastPersistenceError == nil)
+
+        let fresh = WookeyStore(rootURL: root)
+        fresh.load()
+        #expect(!fresh.needsRecovery)
+    }
+
+    @Test func failedCorruptBackupBlocksOverwritingConfiguration() throws {
+        let files = FileManager.default
+        let root = files.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try files.createDirectory(at: root.appendingPathComponent("Templates"), withIntermediateDirectories: true)
+        let config = root.appendingPathComponent("config.json")
+        try Data("not-json".utf8).write(to: config)
+        // A read-only folder makes both the backup copy and the replacement write impossible to stage.
+        try files.setAttributes([.posixPermissions: 0o500], ofItemAtPath: root.path)
+        defer {
+            try? files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+            try? files.removeItem(at: root)
+        }
+
+        let store = WookeyStore(rootURL: root)
+        store.load()
+        #expect(store.needsRecovery)
+        #expect(store.lastPersistenceError?.contains("백업") == true)
+        try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+        // Even once writable, saving must not replace the unpreserved original.
+        store.workflows = [Workflow(name: "New")]
+        #expect(!store.save())
+        #expect(try Data(contentsOf: config) == Data("not-json".utf8))
+        // Starting fresh preserves the original first, then allows saving.
+        store.acknowledgeRecovery()
+        #expect(!store.needsRecovery)
+        #expect(store.save())
+        #expect(try files.contentsOfDirectory(atPath: root.path).contains { $0.hasPrefix("config-corrupt-") })
+    }
+
+    @Test func legacyOneThirdZonesDecodeAsThirds() throws {
+        let decoded = try JSONDecoder().decode([LayoutZone].self, from: Data(#"["leftOneThird","rightOneThird","centerThird"]"#.utf8))
+        #expect(decoded == [.leftThird, .rightThird, .centerThird])
+        #expect(throws: (any Error).self) { try JSONDecoder().decode([LayoutZone].self, from: Data(#"["unknown"]"#.utf8)) }
     }
 
     @Test func newWorkflowActionsRoundTrip() throws {

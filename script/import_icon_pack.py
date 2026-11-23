@@ -13,9 +13,10 @@ from scipy.ndimage import binary_dilation, label
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "Sources/Wookey/Resources/Assets.xcassets"
 # Asset names in the order of the supplied PNGs. The classic banana (05)
-# is skipped because the menu uses the same banana bolt as the app.
+# is skipped because the menu uses the same banana bolt as the app, and the
+# unused image-shelf mascot (03) is skipped as well.
 ASSET_NAMES = """
-AppIcon FileShelfFolderWookey ImageShelfWookey LightningMascot - MenuBarWookey WookeyCommandAdd WookeyCommandBold
+AppIcon FileShelfFolderWookey - LightningMascot - MenuBarWookey WookeyCommandAdd WookeyCommandBold
 WookeyCommandCheck WookeyCommandChevron WookeyCommandClose WookeyCommandCopy WookeyCommandDelete WookeyCommandEdit WookeyCommandItalic WookeyCommandOpen
 WookeyCommandPlay WookeyCommandRefresh WookeyCommandSearch WookeyCommandSettings WookeyCommandStop WookeyCommandUnderline WookeySettingsAccessibility WookeySettingsDiagnostics
 WookeySettingsDownload WookeySettingsInfo WookeySettingsLogin WookeySettingsMenuBar WookeySettingsPalette WookeySettingsPermissions WookeySettingsStorage WookeySettingsSync
@@ -25,7 +26,6 @@ FileShelfFolderSharkey CoralMascot
 """.split()
 MASCOT_SIZES = {
     "FileShelfFolderWookey": .86,
-    "ImageShelfWookey": .86,
     "LightningMascot": .86,
     "FileShelfFolderSharkey": .953,
     "CoralMascot": .953,

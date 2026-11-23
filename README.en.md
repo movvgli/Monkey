@@ -22,7 +22,7 @@
 
 ## Download and get started
 
-The [stable release](https://github.com/movvgli/Wookey/releases/latest) is Developer ID–signed and notarized by Apple. Older releases use the names **Monkey** and **Wikey**.
+The [stable release](https://github.com/movvgli/Wookey/releases/latest) is Developer ID–signed and notarized by Apple.
 
 The features above describe the [preview releases](https://github.com/movvgli/Wookey/releases). To try them, download a Wookey DMG marked **Pre-release** near the top of the list. Preview builds are not notarized by Apple and are distributed separately from stable in-app updates.
 

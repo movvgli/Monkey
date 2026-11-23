@@ -6,7 +6,7 @@ Wookey는 macOS 14 이상을 대상으로 Apple Silicon과 Intel용으로 빌드
 
 | 설치 파일 | 받는 곳 |
 | --- | --- |
-| 정식 버전 | [GitHub의 최신 정식 릴리스](https://github.com/movvgli/Wookey/releases/latest)에서 Apple 공증을 마친 DMG를 받습니다. 예전 버전의 앱과 파일은 Monkey 또는 Wikey라는 이름으로 표시될 수 있습니다. |
+| 정식 버전 | [GitHub의 최신 정식 릴리스](https://github.com/movvgli/Wookey/releases/latest)에서 Apple 공증을 마친 DMG를 받습니다. |
 | 프리뷰 | [GitHub Releases](https://github.com/movvgli/Wookey/releases)에서 **Pre-release**로 표시된 Wookey DMG를 받습니다. 최신 기능을 먼저 써 볼 수 있는 Apple 공증 전 빌드로, macOS에서 실행이 제한될 수 있습니다. |
 
 DMG를 열고 앱을 **응용 프로그램** 폴더로 옮겨 실행합니다. 프리뷰 파일 무결성을 확인하려면 같은 릴리스의 DMG와 `.sha256`을 한 폴더에 받은 뒤 터미널에서 `shasum -a 256 -c`에 받은 체크섬 파일 이름을 넘기세요.

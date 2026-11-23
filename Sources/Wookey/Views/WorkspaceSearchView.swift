@@ -184,6 +184,8 @@ struct WorkspaceSearchView: View {
                     .labelStyle(.iconOnly)
                     .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                     .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel("닫기")
+                    .help("닫기")
             }
             .padding(18)
             Divider()
@@ -319,9 +321,7 @@ struct WorkspaceSearchView: View {
                                         .lineLimit(1)
                                 } icon: {
                                     if case .openApplication(let application) = entry.id {
-                                        Image(nsImage: NSWorkspace.shared.icon(forFile: application.path))
-                                            .resizable()
-                                            .scaledToFit()
+                                        WookeyFileIcon(path: application.path)
                                             .frame(width: 17, height: 17)
                                     } else {
                                         WookeyActionIcon(symbol: entry.symbol, tint: WookeyActionTint(symbol: entry.symbol), size: 17)

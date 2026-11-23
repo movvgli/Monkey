@@ -8,6 +8,7 @@ struct NewTemplateView: View {
     @State private var editor = RichTextEditorController()
     @State private var name = ""
     @State private var document = NSAttributedString()
+    @State private var editingText = ""
     @State private var saveError: String?
     let onCreated: (UUID) -> Void
 
@@ -30,7 +31,11 @@ struct NewTemplateView: View {
                     .accessibilityLabel("템플릿 이름")
             }
 
-            TemplateContentField(editor: editor, isEmpty: !hasContent, focusesOnAppear: true)
+            TemplateContentField(
+                editor: editor,
+                isEmpty: editingText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                focusesOnAppear: true
+            )
 
             if let saveError {
                 Label(saveError, systemImage: "exclamationmark.triangle")
@@ -56,8 +61,12 @@ struct NewTemplateView: View {
         .frame(width: 570, height: 490)
         .onAppear {
             editor.onDocumentChange = { document = $0 }
+            editor.onTextChange = { editingText = $0 }
         }
-        .onDisappear { editor.onDocumentChange = nil }
+        .onDisappear {
+            editor.onDocumentChange = nil
+            editor.onTextChange = nil
+        }
     }
 
     private func save() {
@@ -85,6 +94,8 @@ struct TemplateEditorView: View {
     var onBack: () -> Void
     var onDelete: () -> Void
     @State private var editor = RichTextEditorController()
+    @State private var autosaver = TemplateDocumentAutosaver()
+    @State private var editingText: String?
     @State private var didCopy = false
     @State private var showsDeleteConfirmation = false
     @State private var copyError: String?
@@ -97,7 +108,7 @@ struct TemplateEditorView: View {
 
             Divider()
 
-            TemplateContentField(editor: editor, isEmpty: template.plainText.isEmpty)
+            TemplateContentField(editor: editor, isEmpty: (editingText ?? template.plainText).isEmpty)
                 .frame(maxWidth: 760)
                 .padding(WookeyPageMetrics.padding)
                 .frame(maxWidth: .infinity)
@@ -125,10 +136,25 @@ struct TemplateEditorView: View {
         .task(id: template.id) {
             let id = template.id
             let store = runtime.store
+            editor.commitMarkedText()
+            autosaver.flush()
+            editingText = nil
             editor.load(store.templateDocument(id: id))
-            editor.onDocumentChange = { [weak store] document in
-                store?.saveTemplateDocument(document, for: id)
+            editor.onDocumentChange = { [weak store, autosaver] document in
+                guard let store else { return }
+                autosaver.schedule(document, for: id, in: store)
             }
+            editor.onTextChange = { editingText = $0 }
+        }
+        .onDisappear {
+            editor.commitMarkedText()
+            autosaver.flush()
+            editor.onDocumentChange = nil
+            editor.onTextChange = nil
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            editor.commitMarkedText()
+            autosaver.flush()
         }
         .task(id: didCopy) {
             guard didCopy else { return }
@@ -144,6 +170,8 @@ struct TemplateEditorView: View {
     }
 
     private func copyTemplate() {
+        editor.commitMarkedText()
+        autosaver.flush()
         do {
             try runtime.clipboard.copy(runtime.store.templateDocument(id: template.id))
             copyError = nil
@@ -152,6 +180,31 @@ struct TemplateEditorView: View {
             didCopy = false
             copyError = error.localizedDescription
         }
+    }
+}
+
+/// Coalesces template edits so typing doesn't encode RTFD and write to disk on every keystroke.
+@MainActor
+private final class TemplateDocumentAutosaver {
+    private var pending: (id: UUID, document: NSAttributedString, store: WookeyStore)?
+    private var saveTask: Task<Void, Never>?
+
+    func schedule(_ document: NSAttributedString, for id: UUID, in store: WookeyStore) {
+        pending = (id, document, store)
+        saveTask?.cancel()
+        saveTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled else { return }
+            self?.flush()
+        }
+    }
+
+    func flush() {
+        saveTask?.cancel()
+        saveTask = nil
+        guard let pending else { return }
+        self.pending = nil
+        pending.store.saveTemplateDocument(pending.document, for: pending.id)
     }
 }
 

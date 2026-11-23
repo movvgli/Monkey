@@ -1,6 +1,6 @@
 name: Wookey
 options:
-  bundleIdPrefix: com.wikey
+  bundleIdPrefix: com.wookey
   developmentLanguage: ko
   deploymentTarget:
     macOS: "14.0"
@@ -28,7 +28,7 @@ targets:
       - Sources/WookeyCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.wikey.core
+        PRODUCT_BUNDLE_IDENTIFIER: com.wookey.core
         GENERATE_INFOPLIST_FILE: YES
 
   WookeyLoginHelper:
@@ -46,7 +46,7 @@ targets:
         LSUIElement: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.wikey.login-helper
+        PRODUCT_BUNDLE_IDENTIFIER: com.wookey.login-helper
         PRODUCT_NAME: WookeyLoginHelper
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
@@ -75,9 +75,9 @@ targets:
         SUScheduledCheckInterval: 86400
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.wikey.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.wookey.app
         PRODUCT_NAME: Wookey
-        PRODUCT_MODULE_NAME: Wikey
+        PRODUCT_MODULE_NAME: Wookey
         EXECUTABLE_NAME: Wookey
         ENABLE_APP_SANDBOX: NO
         ENABLE_HARDENED_RUNTIME: YES

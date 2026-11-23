@@ -440,13 +440,11 @@ struct ShortcutBadge: View {
 struct StatusPill: View {
     enum Tone {
         case good
-        case attention
         case neutral
 
         var color: Color {
             switch self {
             case .good: .green
-            case .attention: .orange
             case .neutral: .secondary
             }
         }
@@ -573,17 +571,17 @@ struct WookeyActionIcon: View {
         case "photo": "WorkflowActionPhoto"
         case "paperclip": "WorkflowActionAttachment"
         case "return", "arrow.turn.down.left": "WorkflowActionReturn"
-        case "plus", "plus.circle": "WookeyCommandAdd"
+        case "plus": "WookeyCommandAdd"
         case "play.fill": "WookeyCommandPlay"
         case "gearshape", "slider.horizontal.3": "WookeyCommandSettings"
         case "magnifyingglass": "WookeyCommandSearch"
         case "pencil": "WookeyCommandEdit"
         case "trash": "WookeyCommandDelete"
         case "doc.on.doc": "WookeyCommandCopy"
-        case "xmark", "xmark.circle.fill": "WookeyCommandClose"
+        case "xmark": "WookeyCommandClose"
         case "arrow.up.right", "arrow.up", "arrow.down": "WookeyCommandOpen"
         case "chevron.left", "chevron.right": "WookeyCommandChevron"
-        case "arrow.clockwise", "arrow.clockwise.circle.fill", "arrow.triangle.2.circlepath": "WookeyCommandRefresh"
+        case "arrow.clockwise", "arrow.clockwise.circle.fill": "WookeyCommandRefresh"
         case "stop.fill": "WookeyCommandStop"
         case "power": "WookeyCommandPower"
         case "checkmark.circle.fill": "WookeyCommandCheck"
@@ -771,5 +769,116 @@ private struct WookeyHoverSurface<Label: View>: View {
             .contentShape(shape)
             .opacity(isEnabled ? 1 : 0.5)
             .onHover { isHovering = $0 }
+    }
+}
+
+/// Caches LaunchServices lookups so view bodies don't hit NSWorkspace on every render.
+@MainActor
+enum WookeyIconCache {
+    private final class ApplicationLookup {
+        let url: URL?
+        let date = Date()
+        init(url: URL?) { self.url = url }
+    }
+
+    private static let fileIcons = NSCache<NSString, NSImage>()
+    private static let applicationURLs = NSCache<NSString, ApplicationLookup>()
+    /// Apps can be installed or removed while Wookey runs, so lookups are refreshed periodically.
+    private static let applicationLookupLifetime: TimeInterval = 30
+
+    static func icon(forFile path: String) -> NSImage {
+        if let icon = fileIcons.object(forKey: path as NSString) { return icon }
+        let icon = NSWorkspace.shared.icon(forFile: path)
+        fileIcons.setObject(icon, forKey: path as NSString)
+        return icon
+    }
+
+    static func applicationURL(forBundleIdentifier bundleIdentifier: String) -> URL? {
+        if let lookup = applicationURLs.object(forKey: bundleIdentifier as NSString),
+           Date().timeIntervalSince(lookup.date) < applicationLookupLifetime {
+            return lookup.url
+        }
+        let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier)
+        applicationURLs.setObject(ApplicationLookup(url: url), forKey: bundleIdentifier as NSString)
+        return url
+    }
+}
+
+/// A resizable Finder icon for a file or app bundle, served from `WookeyIconCache`.
+struct WookeyFileIcon: View {
+    var path: String
+    var interpolation: Image.Interpolation?
+
+    var body: some View {
+        let image = Image(nsImage: WookeyIconCache.icon(forFile: path)).resizable()
+        (interpolation.map { image.interpolation($0) } ?? image)
+            .scaledToFit()
+    }
+}
+
+extension InstalledApplication {
+    /// Reads the bundle identifier and user-facing name of the app bundle at `url`.
+    init?(bundleAt url: URL) {
+        guard let bundle = Bundle(url: url), let identifier = bundle.bundleIdentifier else { return nil }
+        let name = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
+            ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
+            ?? url.deletingPathExtension().lastPathComponent
+        self.init(bundleIdentifier: identifier, displayName: name, path: url.path)
+    }
+}
+
+/// A selectable row used by the setup sheets that pick a template or workflow.
+struct WookeySelectionCard<Accessory: View>: View {
+    @Environment(\.wookeyTheme) private var theme
+    @Environment(\.colorScheme) private var colorScheme
+    var title: String
+    var subtitle: String
+    var symbol: String
+    var tint: WookeyActionTint
+    var subtitleLineLimit: Int?
+    var isSelected: Bool
+    var accessibilityLabel: String
+    var action: () -> Void
+    @ViewBuilder var accessory: Accessory
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 14) {
+                WookeyActionIcon(symbol: symbol, tint: tint, size: 26)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                    Text(subtitle)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(subtitleLineLimit)
+                }
+
+                Spacer(minLength: 12)
+
+                accessory
+
+                WookeyActionIcon(symbol: isSelected ? "checkmark.circle.fill" : "circle", tint: .neutral, size: 17)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
+            .background(
+                isSelected ? Color.wookeyInk(in: colorScheme).opacity(0.08) : theme.panel,
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(
+                        isSelected ? Color.wookeyInk(in: colorScheme).opacity(0.7) : Color(nsColor: .separatorColor).opacity(0.35),
+                        lineWidth: isSelected ? 1.5 : 1
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(isSelected ? "선택됨" : "선택 안 됨")
     }
 }

@@ -314,11 +314,11 @@ struct WorkflowEditorView: View {
         case .wait: workflow.actions.append(.wait(seconds: 1))
         case .template: beginTemplateActionSetup()
         case .images:
-            if let paths = chooseFiles(title: "붙여넣을 이미지 선택", contentType: .image) {
+            if let paths = QuickWorkflowTargetPicker.files(title: "붙여넣을 이미지 선택", contentType: .image) {
                 workflow.actions.append(.pasteImages(filePaths: paths))
             }
         case .files:
-            if let paths = chooseFiles(title: "붙여넣을 파일 선택", contentType: .item) {
+            if let paths = QuickWorkflowTargetPicker.files(title: "붙여넣을 파일 선택", contentType: .item) {
                 workflow.actions.append(.pasteFiles(filePaths: paths))
             }
         case .workflow:
@@ -363,23 +363,10 @@ struct WorkflowEditorView: View {
             workflow.actions.append(.launchApplication(bundleIdentifier: app.id, displayName: app.name))
         }
     }
-
-    private func chooseFiles(title: String, contentType: UTType) -> [String]? {
-        let panel = NSOpenPanel()
-        panel.title = title
-        panel.allowedContentTypes = [contentType]
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        guard panel.runModal() == .OK else { return nil }
-        let paths = panel.urls.map(\.path)
-        return paths.isEmpty ? nil : paths
-    }
 }
 
 private struct TemplateActionSetupView: View {
     @Environment(\.wookeyTheme) private var theme
-    @Environment(\.colorScheme) private var colorScheme
     var templates: [RichTemplate]
     @Binding var selectedTemplateID: UUID?
     @Binding var selectedMode: TemplateDeliveryMode
@@ -449,46 +436,19 @@ private struct TemplateActionSetupView: View {
     }
 
     private func templateButton(_ template: RichTemplate) -> some View {
-        let isSelected = selectedTemplateID == template.id
-
-        return Button {
+        WookeySelectionCard(
+            title: template.name,
+            subtitle: template.plainText.isEmpty ? "내용 없음" : template.plainText,
+            symbol: wookeyTemplateSymbol,
+            tint: .amber,
+            subtitleLineLimit: 1,
+            isSelected: selectedTemplateID == template.id,
+            accessibilityLabel: "\(template.name) 템플릿"
+        ) {
             selectedTemplateID = template.id
-        } label: {
-            HStack(spacing: 14) {
-                WookeyActionIcon(symbol: wookeyTemplateSymbol, tint: .amber, size: 26)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(template.name)
-                        .font(.body)
-                        .foregroundStyle(.primary)
-                    Text(template.plainText.isEmpty ? "내용 없음" : template.plainText)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 12)
-
-                WookeyActionIcon(symbol: isSelected ? "checkmark.circle.fill" : "circle", tint: .neutral, size: 17)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 11)
-            .contentShape(Rectangle())
-            .background(
-                isSelected ? Color.wookeyInk(in: colorScheme).opacity(0.08) : theme.panel,
-                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(
-                        isSelected ? Color.wookeyInk(in: colorScheme).opacity(0.7) : Color(nsColor: .separatorColor).opacity(0.35),
-                        lineWidth: isSelected ? 1.5 : 1
-                    )
-            }
+        } accessory: {
+            EmptyView()
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel("\(template.name) 템플릿")
-        .accessibilityValue(isSelected ? "선택됨" : "선택 안 됨")
     }
 
     private var modeDescription: String {
@@ -690,11 +650,8 @@ private struct FlowActionRow: View {
                     panel.allowsMultipleSelection = false
                     panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
                     guard panel.runModal() == .OK, let url = panel.url,
-                          let bundle = Bundle(url: url), let identifier = bundle.bundleIdentifier else { return }
-                    let displayName = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
-                        ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
-                        ?? url.deletingPathExtension().lastPathComponent
-                    action = .launchApplication(bundleIdentifier: identifier, displayName: displayName)
+                          let application = InstalledApplication(bundleAt: url) else { return }
+                    action = .launchApplication(bundleIdentifier: application.bundleIdentifier, displayName: application.displayName)
                 }
             }
 
@@ -848,15 +805,7 @@ private struct FlowActionRow: View {
     }
 
     private func chooseReplacementFiles(kind: UTType) -> [String]? {
-        let panel = NSOpenPanel()
-        panel.title = kind == .image ? "붙여넣을 이미지 선택" : "붙여넣을 파일 선택"
-        panel.allowedContentTypes = [kind]
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        guard panel.runModal() == .OK else { return nil }
-        let paths = panel.urls.map(\.path)
-        return paths.isEmpty ? nil : paths
+        QuickWorkflowTargetPicker.files(title: kind == .image ? "붙여넣을 이미지 선택" : "붙여넣을 파일 선택", contentType: kind)
     }
 
     private func referenceCandidates(including selectedID: UUID) -> [Workflow] {
@@ -910,10 +859,8 @@ private struct ActionIcon: View {
     var body: some View {
         let icon = action.wookeyIcon
         if case .launchApplication(let bundleIdentifier, _) = action,
-           let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleIdentifier) {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                .resizable()
-                .scaledToFit()
+           let url = WookeyIconCache.applicationURL(forBundleIdentifier: bundleIdentifier) {
+            WookeyFileIcon(path: url.path)
                 .frame(width: 24, height: 24)
                 .padding(6)
                 .background(icon.tint.ink(in: colorScheme).opacity(0.13), in: RoundedRectangle(cornerRadius: 9))

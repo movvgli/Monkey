@@ -18,8 +18,8 @@
 공개 배포용 DMG에는 Apple Developer Program 팀의 `Developer ID Application` 인증서와 키체인에 저장된 공증 프로필이 필요합니다.
 
 ```sh
-WIKEY_CODESIGN_IDENTITY="Developer ID Application: 이름 (TEAMID)" \
-WIKEY_NOTARY_PROFILE="wikey-notary" \
+WOOKEY_CODESIGN_IDENTITY="Developer ID Application: 이름 (TEAMID)" \
+WOOKEY_NOTARY_PROFILE="wookey-notary" \
 ./script/package_release.sh 1.2.30 1002030
 ```
 

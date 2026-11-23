@@ -2,46 +2,46 @@ import AppIntents
 import Foundation
 import WookeyCore
 
-struct WikeyWorkflowEntity: AppEntity {
+struct WookeyWorkflowEntity: AppEntity {
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Wookey 워크플로"
-    static let defaultQuery = WikeyWorkflowQuery()
+    static let defaultQuery = WookeyWorkflowQuery()
 
     var id: UUID
     var name: String
     var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
 }
 
-struct WikeyWorkflowQuery: EntityStringQuery {
+struct WookeyWorkflowQuery: EntityStringQuery {
     @MainActor
-    func entities(for identifiers: [UUID]) async throws -> [WikeyWorkflowEntity] {
+    func entities(for identifiers: [UUID]) async throws -> [WookeyWorkflowEntity] {
         let byID = Dictionary(uniqueKeysWithValues: workflows().map { ($0.id, $0) })
         return identifiers.compactMap { byID[$0] }
     }
 
     @MainActor
-    func suggestedEntities() async throws -> [WikeyWorkflowEntity] { workflows() }
+    func suggestedEntities() async throws -> [WookeyWorkflowEntity] { workflows() }
 
     @MainActor
-    func entities(matching string: String) async throws -> [WikeyWorkflowEntity] {
+    func entities(matching string: String) async throws -> [WookeyWorkflowEntity] {
         let query = string.trimmingCharacters(in: .whitespacesAndNewlines)
         return workflows().filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
     }
 
     @MainActor
-    private func workflows() -> [WikeyWorkflowEntity] {
+    private func workflows() -> [WookeyWorkflowEntity] {
         WookeyAppRuntime.start().store.workflows.compactMap { workflow in
             guard !workflow.actions.isEmpty else { return nil }
-            return WikeyWorkflowEntity(id: workflow.id, name: workflow.name)
+            return WookeyWorkflowEntity(id: workflow.id, name: workflow.name)
         }
     }
 }
 
-struct RunWikeyWorkflowIntent: AppIntent {
+struct RunWookeyWorkflowIntent: AppIntent {
     static let title: LocalizedStringResource = "Wookey 워크플로 실행"
     static let description = IntentDescription("Wookey에서 저장한 자동화를 실행합니다.")
 
     @Parameter(title: "워크플로")
-    var workflow: WikeyWorkflowEntity
+    var workflow: WookeyWorkflowEntity
 
     static var parameterSummary: some ParameterSummary {
         Summary("\(\.$workflow) 실행")

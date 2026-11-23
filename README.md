@@ -22,7 +22,7 @@
 
 ## 다운로드와 첫 실행
 
-[정식 릴리스](https://github.com/movvgli/Wookey/releases/latest)는 Developer ID 서명과 Apple 공증을 마친 설치 파일을 제공합니다. 이전 릴리스에 표시되는 **Monkey**와 **Wikey**는 Wookey의 이전 이름입니다.
+[정식 릴리스](https://github.com/movvgli/Wookey/releases/latest)는 Developer ID 서명과 Apple 공증을 마친 설치 파일을 제공합니다.
 
 위 기능은 [프리뷰 릴리스](https://github.com/movvgli/Wookey/releases)를 기준으로 설명합니다. 최신 기능을 체험하려면 릴리스 목록의 상단에서 **Pre-release**로 표시된 Wookey의 DMG를 받으세요. 프리뷰는 Apple 공증 전 빌드이며 정식 자동 업데이트에는 배포되지 않습니다.
 

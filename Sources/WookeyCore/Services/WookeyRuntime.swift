@@ -18,7 +18,7 @@ public final class WookeyRuntime {
 
     public private(set) var lastRun: RunSummary?
     public private(set) var applicationLaunchErrors: [UUID: String] = [:]
-    public private(set) var hasStarted = false
+    private var hasStarted = false
     @ObservationIgnored private var applicationRunIDs: [String: UUID] = [:]
     @ObservationIgnored private var applicationRunNames: [UUID: String] = [:]
 
@@ -83,6 +83,20 @@ public final class WookeyRuntime {
         loginItem.refresh()
         hasStarted = true
         iCloudSync.start()
+        retryFailedHotkeysAfterLaunch()
+    }
+
+    /// After a relaunch the previous instance can still own exclusive hotkeys for a
+    /// moment, so registrations refused at startup are retried a couple of times.
+    private func retryFailedHotkeysAfterLaunch(delays: [Duration] = [.milliseconds(1500), .milliseconds(2500)]) {
+        guard hotkeys.hasFailedRegistrations else { return }
+        Task { @MainActor [weak self] in
+            for delay in delays {
+                try? await Task.sleep(for: delay)
+                guard let self, self.hotkeys.hasFailedRegistrations else { return }
+                self.hotkeys.retryFailedRegistrations()
+            }
+        }
     }
 
     public func saveAndReloadHotkeys() {

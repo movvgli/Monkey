@@ -2,7 +2,7 @@ import CryptoKit
 import Foundation
 
 public enum SyncError: LocalizedError {
-    case invalidArchive, oversized, missingFile, notCloudFolder, busy, editing
+    case invalidArchive, oversized, missingFile, notCloudFolder, busy, editing, requiresUpdate
     public var errorDescription: String? {
         switch self {
         case .invalidArchive: "백업이 손상되었거나 지원하지 않는 형식입니다. 기존 설정은 유지됩니다."
@@ -11,6 +11,7 @@ public enum SyncError: LocalizedError {
         case .notCloudFolder: "iCloud Drive 안의 개인 폴더를 선택해 주세요. Finder에서 폴더 다운로드가 완료됐는지도 확인해 주세요."
         case .busy: "워크플로우 실행이 끝난 후 다시 시도해 주세요."
         case .editing: "열려 있는 워크플로·템플릿·레이아웃 편집 화면에서 뒤로 이동한 후 다시 적용해 주세요."
+        case .requiresUpdate: "다른 Mac에서 더 새로운 버전의 Wookey로 만든 설정이 있습니다. 앱 업데이트가 필요합니다. 이 Mac의 설정은 유지됩니다."
         }
     }
 }
@@ -137,8 +138,14 @@ public struct SyncBackup: Codable, Identifiable, Sendable {
         return data
     }
 
+    private struct Header: Decodable { var schemaVersion: Int }
+
     public static func decode(_ data: Data) throws -> Self {
         guard data.count <= SyncPayload.maximumBytes * 2 else { throw SyncError.oversized }
+        // Read the version first: a newer layout may not decode as this schema at all.
+        if let header = try? JSONDecoder().decode(Header.self, from: data), header.schemaVersion > 1 {
+            throw SyncError.requiresUpdate
+        }
         let backup = try JSONDecoder().decode(Self.self, from: data)
         guard backup.schemaVersion == 1, !backup.parents.contains(backup.id) else { throw SyncError.invalidArchive }
         try backup.payload.validate()
@@ -149,6 +156,25 @@ public struct SyncBackup: Codable, Identifiable, Sendable {
     public static func heads(in versions: [SyncBackup]) -> [SyncBackup] {
         let parents = Set(versions.flatMap(\.parents))
         return versions.filter { !parents.contains($0.id) }
+    }
+
+    /// Versions safe to delete from shared history: old ancestors only. Heads and recent
+    /// versions stay, along with every descendant of a kept version and the direct parents of
+    /// kept versions, so no surviving ancestor can reappear as a false head and recent versions
+    /// never lose their parent link.
+    public static func prunable(in versions: [SyncBackup], olderThan cutoff: Date) -> [SyncBackup] {
+        let headIDs = Set(heads(in: versions).map(\.id))
+        var keep = Set(versions.filter { headIDs.contains($0.id) || $0.createdAt > cutoff }.map(\.id))
+        var changed = true
+        while changed {
+            changed = false
+            for version in versions where !keep.contains(version.id) && version.parents.contains(where: keep.contains) {
+                keep.insert(version.id); changed = true
+            }
+        }
+        let frontier = versions.filter { keep.contains($0.id) }.flatMap(\.parents)
+        keep.formUnion(frontier)
+        return versions.filter { !keep.contains($0.id) }
     }
 
     public static func validateGraph(_ versions: [SyncBackup]) throws {

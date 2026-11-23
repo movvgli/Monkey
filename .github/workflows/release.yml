@@ -26,19 +26,19 @@ jobs:
           fi
           IFS='.' read -r major minor patch <<< "$version"
           build_number=$((10#$major * 1000000 + 10#$minor * 1000 + 10#$patch))
-          echo "WIKEY_VERSION=$version" >> "$GITHUB_ENV"
-          echo "WIKEY_BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
+          echo "WOOKEY_VERSION=$version" >> "$GITHUB_ENV"
+          echo "WOOKEY_BUILD_NUMBER=$build_number" >> "$GITHUB_ENV"
 
       - name: Run tests
         run: swift test
 
       - name: Build preview DMG
-        run: ./script/package_release.sh "$WIKEY_VERSION" "$WIKEY_BUILD_NUMBER"
+        run: ./script/package_release.sh "$WOOKEY_VERSION" "$WOOKEY_BUILD_NUMBER"
 
       - name: Verify checksum
         run: |
           cd dist
-          shasum -a 256 -c "Wookey-$WIKEY_VERSION.dmg.sha256"
+          shasum -a 256 -c "Wookey-$WOOKEY_VERSION.dmg.sha256"
 
       - name: Generate signed update feed
         env:
@@ -56,8 +56,8 @@ jobs:
           fi
 
           feed_dir="$(mktemp -d)"
-          cp "dist/Wookey-$WIKEY_VERSION.dmg" "$feed_dir/"
-          printf '%s\n' "Wookey $WIKEY_VERSION" > "$feed_dir/release-notes.txt"
+          cp "dist/Wookey-$WOOKEY_VERSION.dmg" "$feed_dir/"
+          printf '%s\n' "Wookey $WOOKEY_VERSION" > "$feed_dir/release-notes.txt"
           printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$appcast_tool" \
             --ed-key-file - \
             --download-url-prefix "https://github.com/movvgli/Wookey/releases/download/$GITHUB_REF_NAME/" \
@@ -76,16 +76,16 @@ jobs:
 
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" \
-              "dist/Wookey-$WIKEY_VERSION.dmg" \
-              "dist/Wookey-$WIKEY_VERSION.dmg.sha256" \
+              "dist/Wookey-$WOOKEY_VERSION.dmg" \
+              "dist/Wookey-$WOOKEY_VERSION.dmg.sha256" \
               "dist/appcast.xml" \
               --clobber
           else
             gh release create "$GITHUB_REF_NAME" \
-              "dist/Wookey-$WIKEY_VERSION.dmg" \
-              "dist/Wookey-$WIKEY_VERSION.dmg.sha256" \
+              "dist/Wookey-$WOOKEY_VERSION.dmg" \
+              "dist/Wookey-$WOOKEY_VERSION.dmg.sha256" \
               "dist/appcast.xml" \
-              --title "Wookey $WIKEY_VERSION" \
+              --title "Wookey $WOOKEY_VERSION" \
               --notes-file "$notes" \
               --generate-notes \
               --prerelease \

@@ -8,6 +8,7 @@ struct LocalHistoryView: View {
     @State private var showsImporter = false
     @State private var isImporting = false
     @State private var kind: HistoryKind
+    @State private var pendingRemoval: LocalHistoryStore.Entry?
 
     init(initialKind: HistoryKind = .files) {
         _kind = State(initialValue: initialKind)
@@ -28,6 +29,20 @@ struct LocalHistoryView: View {
             historyList.id(kind)
         }
         .navigationTitle("파일")
+        .confirmationDialog(
+            "이 항목을 삭제할까요?",
+            isPresented: Binding(
+                get: { pendingRemoval != nil },
+                set: { if !$0 { pendingRemoval = nil } }
+            ),
+            titleVisibility: .visible,
+            presenting: pendingRemoval
+        ) { entry in
+            Button("삭제", role: .destructive) { history.remove(entry, kind: kind) }
+            Button("취소", role: .cancel) {}
+        } message: { entry in
+            Text("‘\(entry.name)’ 항목과 보관된 내용이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
+        }
         .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
             switch result {
             case .success(let urls):
@@ -143,7 +158,7 @@ struct LocalHistoryView: View {
                 .accessibilityLabel("\(entry.name) 열기")
                 .overlay {
                     let file = history.fileURL(for: entry, kind: .files)
-                    ShelfDragSource(entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path))
+                    ShelfDragSource(entry: entry, file: file, history: history, icon: WookeyIconCache.icon(forFile: file.path))
                     .accessibilityHidden(true)
                 }
                 .help("클릭해서 열거나 다른 앱으로 드래그")
@@ -177,18 +192,18 @@ struct LocalHistoryView: View {
         } else if entry.symbol == "photo" {
             HistoryImageThumbnail(url: url)
         } else {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                .resizable()
-                .scaledToFit()
+            WookeyFileIcon(path: url.path)
                 .frame(width: 52, height: 52)
         }
     }
 
     private func removeButton(_ entry: LocalHistoryStore.Entry) -> some View {
-        Button("삭제", wookeyIcon: "trash") { history.remove(entry, kind: kind) }
+        Button("삭제", wookeyIcon: "trash") { pendingRemoval = entry }
             .labelStyle(.iconOnly)
             .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
             .controlSize(.small)
+            .accessibilityLabel("\(entry.name) 삭제")
+            .help("삭제")
     }
 }
 
@@ -272,11 +287,43 @@ private struct HistoryImageThumbnail: View {
             }
         }
         .task(id: url) {
-            thumbnail = await Task.detached(priority: .utility) {
-                historyImageThumbnail(at: url, maxPixelSize: 360)
-            }.value
+            if let cached = HistoryThumbnailCache.shared.image(for: url) {
+                thumbnail = cached
+                return
+            }
+            // Cells that only fly past during a fast scroll never start decoding.
+            try? await Task.sleep(for: .milliseconds(80))
+            guard !Task.isCancelled else { return }
+            // Forward cancellation (e.g. the cell scrolled away) to the background decode.
+            // A decode ImageIO already started cannot be interrupted, so its result is
+            // cached and reused when the cell comes back instead of being thrown away.
+            let decode = Task.detached(priority: .utility) { () -> CGImage? in
+                guard !Task.isCancelled,
+                      let image = historyImageThumbnail(at: url, maxPixelSize: 360) else { return nil }
+                HistoryThumbnailCache.shared.store(image, for: url)
+                return image
+            }
+            let image = await withTaskCancellationHandler {
+                await decode.value
+            } onCancel: {
+                decode.cancel()
+            }
+            if !Task.isCancelled { thumbnail = image }
         }
     }
+}
+
+/// Thread-safe (NSCache) store of decoded history thumbnails, bounded by count.
+private final class HistoryThumbnailCache: @unchecked Sendable {
+    static let shared = HistoryThumbnailCache()
+    private let cache: NSCache<NSURL, CGImage> = {
+        let cache = NSCache<NSURL, CGImage>()
+        cache.countLimit = 300
+        return cache
+    }()
+
+    func image(for url: URL) -> CGImage? { cache.object(forKey: url as NSURL) }
+    func store(_ image: CGImage, for url: URL) { cache.setObject(image, forKey: url as NSURL) }
 }
 
 func historyImageThumbnail(at url: URL, maxPixelSize: Int) -> CGImage? {
@@ -404,7 +451,6 @@ struct FloatingShelfView: View {
 
     private func entryCard(_ entry: LocalHistoryStore.Entry) -> some View {
         let file = history.fileURL(for: entry, kind: .files)
-        let icon = NSWorkspace.shared.icon(forFile: file.path)
         return Button {
             history.openFile(entry)
         } label: {
@@ -415,7 +461,7 @@ struct FloatingShelfView: View {
                     } else if entry.symbol == "photo" {
                         HistoryImageThumbnail(url: file)
                     } else {
-                        Image(nsImage: icon).resizable().scaledToFit()
+                        WookeyFileIcon(path: file.path)
                     }
                 }
                 .frame(width: 36, height: 36)
@@ -439,7 +485,7 @@ struct FloatingShelfView: View {
         .buttonStyle(WookeyHoverButtonStyle())
         .accessibilityLabel("\(entry.name) 열기")
         .overlay {
-            ShelfDragSource(entry: entry, file: file, history: history, icon: icon)
+            ShelfDragSource(entry: entry, file: file, history: history, icon: WookeyIconCache.icon(forFile: file.path))
                 .accessibilityHidden(true)
         }
         .help("클릭해서 열거나 다른 앱으로 드래그")
@@ -734,6 +780,7 @@ private struct HistoryRetentionControls: View {
     @Environment(LocalHistoryStore.self) private var history
     @State private var draft = HistoryRetention()
     @State private var amount = ""
+    @State private var showsShorteningConfirmation = false
     let kind: HistoryKind
 
     var body: some View {
@@ -783,18 +830,36 @@ private struct HistoryRetentionControls: View {
                     }
                     Spacer()
                     Button("적용", wookeyIcon: "checkmark.circle.fill") {
-                        if let proposedRetention {
-                            history.setRetention(proposedRetention, for: kind)
+                        if let seconds = proposedRetention?.seconds, seconds < (saved.seconds ?? .infinity) {
+                            showsShorteningConfirmation = true
+                        } else {
+                            applyRetention()
                         }
                     }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .disabled(proposedRetention == nil)
+                    .confirmationDialog(
+                        "보관 기간을 줄일까요?",
+                        isPresented: $showsShorteningConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("적용", role: .destructive, action: applyRetention)
+                        Button("취소", role: .cancel) {}
+                    } message: {
+                        Text("새 보관 기간이 지난 \(kind.title) 기록이 즉시 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
+                    }
                 }
             }
         }
         .onChange(of: saved, initial: true) { _, value in
             draft = value
             amount = String(value.amount)
+        }
+    }
+
+    private func applyRetention() {
+        if let proposedRetention {
+            history.setRetention(proposedRetention, for: kind)
         }
     }
 

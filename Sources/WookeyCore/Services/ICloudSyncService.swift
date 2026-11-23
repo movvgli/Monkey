@@ -27,9 +27,17 @@ public final class ICloudSyncService {
     @ObservationIgnored private var editingSessions: Set<UUID> = []
     @ObservationIgnored private var stagedBackup: (fingerprint: String, backup: SyncBackup)?
     @ObservationIgnored private var metadata = Metadata()
+    /// The last full fingerprint of local state, keyed by a cheap signature of the config and file dates.
+    @ObservationIgnored private var localFingerprint: (signature: String, fingerprint: String)?
+    /// When a recent version's parent was first seen missing from the folder.
+    @ObservationIgnored private var missingParentsSince: Date?
     private var metadataURL: URL { store.storageURL.appendingPathComponent("sync-device.json") }
     private var backupsURL: URL { store.storageURL.appendingPathComponent("Backups", isDirectory: true) }
+    /// The same window applies to local restore backups and to old shared history.
     private var backupCutoff: Date { Date().addingTimeInterval(-30 * 24 * 60 * 60) }
+    /// How long a missing parent may still be "downloading" before it is treated as deleted
+    /// (for example after the user removed old versions in Finder).
+    @ObservationIgnored var missingParentGracePeriod: TimeInterval = 5 * 60
 
     private struct Metadata: Codable {
         var bookmark: Data?
@@ -47,10 +55,6 @@ public final class ICloudSyncService {
 
     public func setEditing(_ editing: Bool, session: UUID) {
         if editing { editingSessions.insert(session) } else { editingSessions.remove(session) }
-    }
-
-    public func stop() {
-        timer?.cancel(); timer = nil
     }
 
     public func createBackup() async {
@@ -80,9 +84,14 @@ public final class ICloudSyncService {
             if metadata.enabled, let bookmark = metadata.bookmark {
                 var stale = false
                 let url = try URL(resolvingBookmarkData: bookmark, options: [.withSecurityScope, .withoutUI], bookmarkDataIsStale: &stale)
-                guard !stale else { throw SyncError.notCloudFolder }
                 scopedAccess = url.startAccessingSecurityScopedResource()
                 folder = url; folderName = url.lastPathComponent; isEnabled = true
+                if stale {
+                    // The folder still resolves (e.g. it was moved or renamed); refresh the grant.
+                    var next = metadata
+                    next.bookmark = try url.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
+                    try saveMetadata(next); metadata = next
+                }
             }
         } catch { errorMessage = "동기화 폴더를 다시 연결해 주세요. \(error.localizedDescription)" }
         timer = Task { [weak self] in
@@ -139,22 +148,51 @@ public final class ICloudSyncService {
         isBusy = true
         defer { isBusy = false }
         do {
-            guard store.lastPersistenceError == nil else { throw SyncError.invalidArchive }
+            let recovering = store.needsRecovery
+            // A failed save means memory and disk disagree; publish nothing until that is fixed.
+            // During recovery the error describes the recovery itself, and nothing is published.
+            guard recovering || store.lastPersistenceError == nil else { throw SyncError.invalidArchive }
             let capturedGeneration = generation
-            let capturedState = try SyncPayload.encoder().encode(store.state)
-            let local = try await io.capture(store.state, root: store.storageURL)
-            let fingerprint = try await io.fingerprint(local)
+            let snapshot = store.state
+            let capturedState = try SyncPayload.encoder().encode(snapshot)
+            var local: SyncPayload?
+            var fingerprint = metadata.fingerprint
+            if !recovering {
+                let signature = try await io.signature(snapshot, root: store.storageURL)
+                if let cached = localFingerprint, cached.signature == signature {
+                    fingerprint = cached.fingerprint
+                } else {
+                    let captured = try await io.capture(snapshot, root: store.storageURL)
+                    let value = try await io.fingerprint(captured)
+                    local = captured; fingerprint = value
+                    localFingerprint = (signature, value)
+                }
+            } else if !metadata.parents.isEmpty || metadata.fingerprint != nil {
+                // The unreadable configuration is not a descendant of shared history. If the user
+                // later keeps it, it is published as a separate version for every Mac to choose.
+                var next = metadata; next.parents = []; next.fingerprint = nil
+                try saveMetadata(next); metadata = next
+                fingerprint = nil
+            }
             guard generation == capturedGeneration,
                   try SyncPayload.encoder().encode(store.state) == capturedState else { return }
-            if fingerprint != metadata.fingerprint {
-                if stagedBackup?.fingerprint != fingerprint {
-                    let backup = SyncBackup(payload: local, parents: metadata.parents, device: metadata.device)
-                    try await io.write(backup, folder: backupsURL)
-                    stagedBackup = (fingerprint, backup)
-                }
+            let publishesLocal = !recovering && fingerprint != metadata.fingerprint
+            if publishesLocal, let fingerprint, stagedBackup?.fingerprint != fingerprint {
+                let payload: SyncPayload
+                if let local { payload = local } else { payload = try await io.capture(snapshot, root: store.storageURL) }
+                let backup = SyncBackup(payload: payload, parents: metadata.parents, device: metadata.device)
+                try await io.write(backup, folder: backupsURL)
+                stagedBackup = (fingerprint, backup)
             }
-            var remote = try await io.read(folder)
-            if fingerprint != metadata.fingerprint, let backup = stagedBackup?.backup {
+            let scan = try await io.scan(folder)
+            guard !scan.requiresUpdate else {
+                errorMessage = SyncError.requiresUpdate.localizedDescription
+                status = "앱 업데이트가 필요합니다 · 이 Mac의 설정은 유지됩니다."
+                await refreshBackups()
+                return
+            }
+            var remote = scan.backups
+            if publishesLocal, let backup = stagedBackup?.backup {
                 try await io.write(backup, folder: folder)
                 if !remote.contains(where: { $0.id == backup.id }) { remote.append(backup) }
                 var next = metadata
@@ -162,21 +200,46 @@ public final class ICloudSyncService {
                 try saveMetadata(next); metadata = next
                 stagedBackup = nil
             }
-            // An absent ancestor may still be downloading; never resolve incomplete history.
+            let cutoff = backupCutoff
+            // An absent ancestor may still be downloading; don't resolve incomplete history right away.
+            // Parents of old versions were pruned on purpose. After a grace period, a missing parent
+            // is treated as deleted (for example, removed in Finder) rather than waited on forever.
             let ids = Set(remote.map(\.id))
-            guard remote.flatMap(\.parents).allSatisfy({ ids.contains($0) }) else {
-                status = "이전 버전의 다운로드를 기다리는 중입니다."; return
+            let waiting = remote.contains { $0.createdAt > cutoff && $0.parents.contains { !ids.contains($0) } }
+            if waiting {
+                let since = missingParentsSince ?? Date()
+                missingParentsSince = since
+                if Date().timeIntervalSince(since) < missingParentGracePeriod {
+                    status = "이전 버전의 다운로드를 기다리는 중입니다."; return
+                }
+            } else {
+                missingParentsSince = nil
             }
             let heads = SyncBackup.heads(in: remote)
-            try SyncBackup.validateGraph(remote)
-            let cutoff = backupCutoff
+            try SyncBackup.validateGraph(remote.map { backup in
+                var backup = backup; backup.parents.removeAll { !ids.contains($0) }; return backup
+            })
+            // Shared history otherwise grows forever. Skip pruning while any file is unreadable:
+            // its links are unknown, so removing a possible ancestor could create a false head.
+            if scan.skipped == 0 {
+                let prunable = SyncBackup.prunable(in: remote, olderThan: cutoff).map(\.id)
+                if !prunable.isEmpty {
+                    try await io.remove(prunable, in: folder)
+                    remote.removeAll { prunable.contains($0.id) }
+                }
+            }
             for head in heads where head.createdAt > cutoff { try await io.write(head, folder: backupsURL) }
             observedHeads = heads.map(\.id)
             conflicts = heads.count > 1 ? heads : []
             pendingVersion = nil
             if heads.count > 1 {
                 status = "서로 다른 설정이 있습니다. 사용할 버전을 선택해 주세요."
-            } else if let head = heads.first, try await io.fingerprint(head.payload) != metadata.fingerprint {
+            } else if recovering {
+                pendingVersion = heads.first
+                status = heads.isEmpty
+                    ? "설정 파일 복구가 필요합니다. 새로 시작을 선택하면 이 Mac의 설정을 동기화합니다."
+                    : "설정 파일 복구가 필요합니다. iCloud의 설정을 적용하거나 새로 시작을 선택해 주세요."
+            } else if let head = heads.first, try await io.fingerprint(of: head) != metadata.fingerprint {
                 pendingVersion = head
                 if !NSApplication.shared.isActive && editingSessions.isEmpty && canApply() && generation == capturedGeneration,
                    try SyncPayload.encoder().encode(store.state) == capturedState {
@@ -219,14 +282,20 @@ public final class ICloudSyncService {
         let original = try SyncPayload.encoder().encode(store.state)
         let capturedGeneration = generation
         let current = try await io.capture(store.state, root: store.storageURL)
-        let fingerprint = try await io.fingerprint(backup.payload)
+        let fingerprint = try await io.fingerprint(of: backup)
         try await io.write(SyncBackup(payload: current, device: metadata.device), folder: backupsURL)
         if backup.createdAt > backupCutoff { try await io.write(backup, folder: backupsURL) }
         let imported = try await io.prepare(backup.payload, root: store.storageURL)
-        guard canApply(), capturedGeneration == generation,
-              try SyncPayload.encoder().encode(store.state) == original else { throw SyncError.busy }
-        guard editingSessions.isEmpty, !automatic || !NSApplication.shared.isActive else { throw SyncError.editing }
-        try store.commitImportedState(imported)
+        do {
+            guard canApply(), capturedGeneration == generation,
+                  try SyncPayload.encoder().encode(store.state) == original else { throw SyncError.busy }
+            guard editingSessions.isEmpty, !automatic || !NSApplication.shared.isActive else { throw SyncError.editing }
+            try store.commitImportedState(imported)
+        } catch {
+            // Discard this transaction's prepared files; the current state does not reference them.
+            store.removeUnreferencedSyncFiles()
+            throw error
+        }
         generation += 1
         onApply?()
         // Leave metadata untouched on a failed write: the next check preserves it as a local edit.

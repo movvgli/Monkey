@@ -159,7 +159,7 @@ struct LayoutEditorView: View {
             } label: {
                 HStack(spacing: 9) {
                     LayoutApplicationIcon(
-                        url: NSWorkspace.shared.urlForApplication(withBundleIdentifier: placement.bundleIdentifier),
+                        url: WookeyIconCache.applicationURL(forBundleIdentifier: placement.bundleIdentifier),
                         size: 25
                     )
                     VStack(alignment: .leading, spacing: 3) {
@@ -523,9 +523,7 @@ private struct LayoutApplicationIcon: View {
     var body: some View {
         Group {
             if let url {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
-                    .resizable()
-                    .scaledToFit()
+                WookeyFileIcon(path: url.path)
             } else {
                 WookeyActionIcon(symbol: "app", tint: .teal, size: size)
             }
@@ -596,7 +594,7 @@ private struct LayoutApplicationPicker: View {
         .fileImporter(isPresented: $showsFilePicker, allowedContentTypes: [.application], allowsMultipleSelection: true) { result in
             switch result {
             case .success(let urls):
-                let matchingApps = urls.compactMap(Self.application(at:))
+                let matchingApps = urls.compactMap(InstalledApplication.init(bundleAt:))
                 for app in matchingApps {
                     if !applications.contains(where: { $0.id == app.id }) { applications.append(app) }
                     if !existingIDs.contains(app.id), !selection.contains(where: { $0.id == app.id }) { selection.append(app) }
@@ -657,20 +655,12 @@ private struct LayoutApplicationPicker: View {
 
     private func loadApps() async {
         let running = NSWorkspace.shared.runningApplications.filter { $0.activationPolicy == .regular }
-            .compactMap { $0.bundleURL.flatMap(Self.application(at:)) }
+            .compactMap { $0.bundleURL.flatMap(InstalledApplication.init(bundleAt:)) }
         runningIDs = Set(running.map(\.id))
         let installed = await InstalledApplicationCatalog.load()
         guard !Task.isCancelled else { return }
         let known = Dictionary((applications + running + installed).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         applications = known.values.sorted { $0.displayName.localizedStandardCompare($1.displayName) == .orderedAscending }
         isLoading = false
-    }
-
-    private static func application(at url: URL) -> InstalledApplication? {
-        guard let bundle = Bundle(url: url), let id = bundle.bundleIdentifier else { return nil }
-        let name = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
-            ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
-            ?? url.deletingPathExtension().lastPathComponent
-        return InstalledApplication(bundleIdentifier: id, displayName: name, path: url.path)
     }
 }

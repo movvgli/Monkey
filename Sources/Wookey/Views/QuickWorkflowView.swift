@@ -248,11 +248,8 @@ enum QuickWorkflowTargetPicker {
         panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
         panel.begin { response in
             guard response == .OK, let url = panel.url,
-                  let bundle = Bundle(url: url), let identifier = bundle.bundleIdentifier else { return }
-            let name = bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String
-                ?? bundle.object(forInfoDictionaryKey: "CFBundleName") as? String
-                ?? url.deletingPathExtension().lastPathComponent
-            onSelection((identifier, name))
+                  let application = InstalledApplication(bundleAt: url) else { return }
+            onSelection((application.bundleIdentifier, application.displayName))
         }
     }
 
@@ -265,5 +262,18 @@ enum QuickWorkflowTargetPicker {
         panel.begin { response in
             if response == .OK, let url = panel.url { onSelection(url) }
         }
+    }
+
+    /// Runs a modal panel for choosing one or more files; returns nil when cancelled or empty.
+    static func files(title: String, contentType: UTType) -> [String]? {
+        let panel = NSOpenPanel()
+        panel.title = title
+        panel.allowedContentTypes = [contentType]
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        guard panel.runModal() == .OK else { return nil }
+        let paths = panel.urls.map(\.path)
+        return paths.isEmpty ? nil : paths
     }
 }

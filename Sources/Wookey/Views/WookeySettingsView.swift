@@ -477,16 +477,28 @@ private enum GeneralSettingsLayout {
     static let titleInset = iconWidth + columnSpacing
 }
 
-private struct GeneralSettingRow<Control: View>: View {
+/// Icon, title and optional detail with trailing controls. `.general` is the
+/// compact, column-aligned style of the general settings list; `.detailed` is
+/// used by the update and permission rows.
+private struct SettingRow<Control: View>: View {
+    enum Style {
+        case general, detailed
+
+        var iconWidth: CGFloat { self == .general ? GeneralSettingsLayout.iconWidth : 30 }
+        var verticalPadding: CGFloat { self == .general ? 7 : 12 }
+        var minHeight: CGFloat? { self == .general ? 54 : nil }
+    }
+
+    var style: Style
     var symbol: String
     var title: String
-    var detail: String? = nil
+    var detail: String?
     @ViewBuilder var control: Control
 
     var body: some View {
         HStack(spacing: GeneralSettingsLayout.columnSpacing) {
             WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
-                .frame(width: GeneralSettingsLayout.iconWidth)
+                .frame(width: style.iconWidth)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)
@@ -494,15 +506,27 @@ private struct GeneralSettingRow<Control: View>: View {
                     Text(detail)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                        .fixedSize(horizontal: false, vertical: style == .general)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            control.fixedSize()
+            if style == .general { control.fixedSize() } else { control }
         }
-        .padding(.vertical, 7)
-        .frame(minHeight: 54)
+        .padding(.vertical, style.verticalPadding)
+        .frame(minHeight: style.minHeight)
+    }
+}
+
+/// Keeps the general settings call sites unchanged.
+private struct GeneralSettingRow<Control: View>: View {
+    var symbol: String
+    var title: String
+    var detail: String? = nil
+    @ViewBuilder var control: Control
+
+    var body: some View {
+        SettingRow(style: .general, symbol: symbol, title: title, detail: detail) { control }
     }
 }
 
@@ -515,23 +539,13 @@ private struct UpdateSettingRow: View {
     var isEnabled = true
 
     var body: some View {
-        HStack(spacing: 12) {
-            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
-                .frame(width: 30)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.headline)
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        SettingRow(style: .detailed, symbol: symbol, title: title, detail: detail) {
             Toggle(title, isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
                 .tint(theme.selectionTint)
                 .disabled(!isEnabled)
         }
-        .padding(.vertical, 12)
     }
 }
 
@@ -544,19 +558,9 @@ private struct PermissionSettingRow: View {
     var open: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
-                .frame(width: 30)
-            VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.headline)
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        SettingRow(style: .detailed, symbol: symbol, title: title, detail: detail) {
             StatusPill(title: granted ? "허용됨" : "꺼짐", tone: granted ? .good : .neutral)
             Button(granted ? "시스템 설정" : "권한 켜기", action: granted ? open : request)
         }
-        .padding(.vertical, 12)
     }
 }

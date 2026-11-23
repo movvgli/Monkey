@@ -61,6 +61,23 @@ public final class PermissionCenter {
     }
 
     public func relaunchApplication() {
+        // Start the new instance only after this one exits, so it can register the
+        // exclusive global hotkeys this process still holds. Wait at most ~10s; if
+        // this process is somehow still alive then, don't start a second copy.
+        let relauncher = Process()
+        relauncher.executableURL = URL(fileURLWithPath: "/bin/sh")
+        relauncher.arguments = [
+            "-c",
+            "i=0; while kill -0 \"$1\" 2>/dev/null && [ $i -lt 50 ]; do sleep 0.2; i=$((i+1)); done; kill -0 \"$1\" 2>/dev/null && exit 0; exec /usr/bin/open \"$2\"",
+            "sh",
+            String(ProcessInfo.processInfo.processIdentifier),
+            Bundle.main.bundleURL.path,
+        ]
+        if (try? relauncher.run()) != nil {
+            NSApp.terminate(nil)
+            return
+        }
+
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         configuration.addsToRecentItems = false

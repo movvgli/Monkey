@@ -22,7 +22,7 @@ struct ShortcutModelsTests {
         let gesture = ShortcutGesture(steps: [KeyChord(keyCode: 40, modifiers: [.command])])
         let first = Workflow(name: "첫 번째", shortcut: gesture)
         let second = Workflow(name: "두 번째", shortcut: gesture)
-        let conflicts = ShortcutConflictDetector.conflicts(in: [first, second])
+        let conflicts = ShortcutConflictDetector.conflicts(workflows: [first, second], applicationShortcuts: []).workflows
         #expect(conflicts[first.id] != nil)
         #expect(conflicts[second.id] != nil)
     }
@@ -34,7 +34,7 @@ struct ShortcutModelsTests {
             name: "연속",
             shortcut: ShortcutGesture(steps: [prefix, KeyChord(keyCode: 13, modifiers: [])])
         )
-        let conflicts = ShortcutConflictDetector.conflicts(in: [single, sequence])
+        let conflicts = ShortcutConflictDetector.conflicts(workflows: [single, sequence], applicationShortcuts: []).workflows
         #expect(conflicts.count == 2)
     }
 

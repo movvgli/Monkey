@@ -1,22 +1,22 @@
-# Wikey stability QA — 2026-09-06
+# Wookey stability QA — 2026-09-06
 
 Scope: native macOS workflow execution, app and layout shortcuts, and consistency across the app's tabs. This record does not assert App Store review, notarization, public release, or compatibility with every destination app.
 
 ## Confirmed validation
 
 - Final integration run: **67 automated tests in 9 suites passed**, repeated at 22:20 KST before public-release preparation, including the final app-error and monitor-picker corrections.
-- Local signed **1.2.6 (1002006)** build and signature verification succeeded. Team: `WQK7GH6P5Y`; installed at `/Applications/Wikey.app`.
+- Local signed **1.2.6 (1002006)** build and signature verification succeeded. Team: `WQK7GH6P5Y`; installed at `/Applications/Wookey.app`.
 - The macOS 14 release candidate compiled successfully as a universal app (`arm64` and `x86_64`). Its minimum-OS metadata was checked for macOS 14.0. This is build and artifact validation, not an execution test on macOS 14 or an Intel Mac.
 - Live recorder check captured **⌃⌘9** and persisted it.
-- Release-candidate input check passed in a disposable TextEdit document: launch → paste ALPHA → Shift+Enter → wait → nested paste BETA → Enter. The actual document contained `ALPHA\nBETA\n` and Wikey reported completion.
+- Release-candidate input check passed in a disposable TextEdit document: launch → paste ALPHA → Shift+Enter → wait → nested paste BETA → Enter. The actual document contained `ALPHA\nBETA\n` and Wookey reported completion.
 - Existing **Accessibility and Input Monitoring permissions remained granted** after the signed app replacement.
-- Live failure-path workflow stopped before paste; the disposable target document remained unchanged and Wikey showed the failure.
+- Live failure-path workflow stopped before paste; the disposable target document remained unchanged and Wookey showed the failure.
 - Manual layout apply succeeded in the final build. The actual TextEdit window frame matched the requested right half within the 2-point tolerance (requested `900,39,900,1051`; observed `900,39,900,1050`). Before correction, AX returned success while the old `656 × 422` size remained unchanged.
 - App-list direct launch completed. Korean `텍스트` and English `TextEdit` both found the localized TextEdit row after rebuilding.
 - A 30-second wait displayed the current action and one queued workflow. Clicking Stop cancelled the wait and removed the queued workflow before it launched.
 - Live recorder clear-while-recording ended recording, and recording `⌃⌘9` again persisted the new value. Global delivery after editing still needs a physical-key check.
 - Workflow, template, app, layout and settings surfaces were inspected at normal or minimum window sizes. Back navigation, editable disabled workflows, template delete/cancel prompt and visible primary actions were checked.
-- `git diff --check`, shell syntax checks, plist lint and final build passed. No new Wikey crash report appeared during these checks.
+- `git diff --check`, shell syntax checks, plist lint and final build passed. No new Wookey crash report appeared during these checks.
 
 ## Automated coverage in the passing run
 
@@ -45,7 +45,7 @@ The automation service tests use controlled substitutes for destination apps, ke
 - Synthetic key pairs go directly to the validated target process instead of re-entering global shortcut dispatch. The transport and exact event order are tested; real Carbon-collision verification remains pending.
 - Recorder teardown, Escape, recording completion, mode changes, first-responder loss, and key-window loss all end recording and restore suspended hotkeys. Actual post-cancellation shortcut delivery remains a live acceptance check.
 
-`WikeyRuntimeTests.onlyApplicationRunsPopulateApplicationLaunchErrors` passed: non-app failures do not enter the app error list, and successful app retries clear the prior error.
+`WookeyRuntimeTests.onlyApplicationRunsPopulateApplicationLaunchErrors` passed: non-app failures do not enter the app error list, and successful app retries clear the prior error.
 
 ## Live acceptance status
 

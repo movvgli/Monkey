@@ -32,8 +32,8 @@ hdiutil create \
   "$DMG_PATH"
 hdiutil verify "$DMG_PATH"
 
-SIGNING_IDENTITY="${WIKEY_CODESIGN_IDENTITY:--}"
-NOTARY_PROFILE="${WIKEY_NOTARY_PROFILE:-}"
+SIGNING_IDENTITY="${WOOKEY_CODESIGN_IDENTITY:--}"
+NOTARY_PROFILE="${WOOKEY_NOTARY_PROFILE:-}"
 
 if [[ "$SIGNING_IDENTITY" != "-" ]]; then
   codesign --force --sign "$SIGNING_IDENTITY" --timestamp "$DMG_PATH"
@@ -41,7 +41,7 @@ fi
 
 if [[ -n "$NOTARY_PROFILE" ]]; then
   if [[ "$SIGNING_IDENTITY" == "-" ]]; then
-    echo "WIKEY_NOTARY_PROFILE requires a Developer ID identity in WIKEY_CODESIGN_IDENTITY." >&2
+    echo "WOOKEY_NOTARY_PROFILE requires a Developer ID identity in WOOKEY_CODESIGN_IDENTITY." >&2
     exit 1
   fi
   xcrun notarytool submit "$DMG_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
@@ -49,9 +49,9 @@ if [[ -n "$NOTARY_PROFILE" ]]; then
   xcrun stapler validate "$DMG_PATH"
   spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG_PATH"
 elif [[ "$SIGNING_IDENTITY" == "-" ]]; then
-  echo "Created an ad-hoc signed local DMG. Set WIKEY_CODESIGN_IDENTITY and WIKEY_NOTARY_PROFILE for public distribution."
+  echo "Created an ad-hoc signed local DMG. Set WOOKEY_CODESIGN_IDENTITY and WOOKEY_NOTARY_PROFILE for public distribution."
 else
-  echo "Created a Developer ID signed DMG. Notarization has not been submitted; WIKEY_NOTARY_PROFILE is unset."
+  echo "Created a Developer ID signed DMG. Notarization has not been submitted; WOOKEY_NOTARY_PROFILE is unset."
 fi
 
 (

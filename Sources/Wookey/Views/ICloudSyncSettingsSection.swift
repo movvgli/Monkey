@@ -126,7 +126,7 @@ struct ICloudSyncSettingsSection: View {
             if case .launchApplication(let bundle, let name) = $0 { return (bundle, name) }
             return nil
         }
-        return Array(Set(apps.filter { NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.0) == nil }.map(\.1))).sorted()
+        return Array(Set(apps.filter { WookeyIconCache.applicationURL(forBundleIdentifier: $0.0) == nil }.map(\.1))).sorted()
     }
 
     @ViewBuilder private var localDisplayMappings: some View {

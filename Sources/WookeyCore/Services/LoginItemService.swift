@@ -5,7 +5,7 @@ import ServiceManagement
 @MainActor
 @Observable
 public final class LoginItemService {
-    public static let helperIdentifier = "com.wikey.login-helper"
+    public static let helperIdentifier = "com.wookey.login-helper"
 
     public private(set) var status: SMAppService.Status = .notRegistered
     public private(set) var lastError: String?

@@ -153,7 +153,15 @@ struct ContentView: View {
                             .font(.subheadline)
                             .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                         Spacer()
-                        Button("다시 저장") { runtime.saveAndReloadHotkeys() }
+                        if runtime.store.needsRecovery {
+                            Button("새로 시작") {
+                                runtime.store.acknowledgeRecovery()
+                                runtime.saveAndReloadHotkeys()
+                            }
+                            .help("손상된 설정은 백업해 두고 현재 상태로 새로 시작합니다.")
+                        } else {
+                            Button("다시 저장") { runtime.saveAndReloadHotkeys() }
+                        }
                     }
                     .padding(16)
                     .background(WookeyActionTint.rose.ink(in: colorScheme).opacity(0.08))
@@ -392,8 +400,12 @@ struct ContentView: View {
             get: { runtime.store.layouts.first(where: { $0.id == id }) ?? fallback },
             set: { updated in
                 guard let index = runtime.store.layouts.firstIndex(where: { $0.id == id }) else { return }
+                let previous = runtime.store.layouts[index]
                 runtime.store.layouts[index] = updated
-                runtime.saveAndReloadHotkeys()
+                runtime.store.save()
+                if previous.shortcut != updated.shortcut {
+                    runtime.reloadHotkeys()
+                }
             }
         )
     }

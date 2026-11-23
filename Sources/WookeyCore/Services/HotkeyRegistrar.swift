@@ -3,7 +3,7 @@ import Foundation
 import Observation
 import OSLog
 
-private let shortcutLogger = Logger(subsystem: "com.wikey.app", category: "shortcuts")
+private let shortcutLogger = Logger(subsystem: "com.wookey.app", category: "shortcuts")
 
 @Observable
 public final class HotkeyRegistrar {
@@ -28,6 +28,7 @@ public final class HotkeyRegistrar {
     private var configuredLayouts: [WindowLayout] = []
     private var configuredSearchShortcut = ShortcutGesture()
     private var installationStatus: OSStatus = noErr
+    private var failedRegistrations: [FailedRegistration] = []
 
     private enum Route {
         case single(Target)
@@ -39,6 +40,12 @@ public final class HotkeyRegistrar {
         case application(UUID)
         case layout(UUID)
         case search
+    }
+
+    private struct FailedRegistration {
+        var chord: KeyChord
+        var route: Route
+        var targets: [Target]
     }
 
     private struct Candidate {
@@ -161,6 +168,24 @@ public final class HotkeyRegistrar {
         shortcutLogger.info("Global shortcuts ready: \(self.routes.count, privacy: .public) registered prefixes")
     }
 
+    /// True when macOS refused a shortcut that has no conflict inside Wookey.
+    /// Right after a relaunch the previous process may still hold it.
+    public var hasFailedRegistrations: Bool { !failedRegistrations.isEmpty }
+
+    /// Register shortcuts that macOS refused earlier, keeping the others in place.
+    public func retryFailedRegistrations() {
+        guard recordingTokens.isEmpty, !failedRegistrations.isEmpty else { return }
+        if installationStatus != noErr { reinstallEventHandler() }
+        let pending = failedRegistrations
+        failedRegistrations.removeAll()
+        for failed in pending {
+            if register(failed.chord, route: failed.route, affected: failed.targets) {
+                for target in failed.targets { setRegistrationError(nil, for: target) }
+            }
+        }
+        shortcutLogger.info("Global shortcut retry: \(pending.count - self.failedRegistrations.count, privacy: .public) recovered, \(self.failedRegistrations.count, privacy: .public) still failing")
+    }
+
     /// Temporarily release global shortcuts so recording cannot launch another action.
     public func beginRecording(token: UUID) {
         recordingTokens.insert(token)
@@ -219,7 +244,8 @@ public final class HotkeyRegistrar {
         return noErr
     }
 
-    private func register(_ chord: KeyChord, route: Route, affected targets: [Target]) {
+    @discardableResult
+    private func register(_ chord: KeyChord, route: Route, affected targets: [Target]) -> Bool {
         let id = nextID
         nextID &+= 1
         let hotKeyID = EventHotKeyID(signature: fourCharacterCode("WKEY"), id: id)
@@ -235,6 +261,7 @@ public final class HotkeyRegistrar {
         if status == noErr, let ref {
             hotKeyRefs.append(ref)
             routes[id] = route
+            return true
         } else {
             shortcutLogger.error("Global shortcut registration failed: \(status, privacy: .public)")
             for target in targets {
@@ -243,6 +270,8 @@ public final class HotkeyRegistrar {
                     for: target
                 )
             }
+            failedRegistrations.append(FailedRegistration(chord: chord, route: route, targets: targets))
+            return false
         }
     }
 
@@ -270,6 +299,7 @@ public final class HotkeyRegistrar {
         hotKeyRefs.removeAll()
         routes.removeAll()
         pressedIDs.removeAll()
+        failedRegistrations.removeAll()
     }
 }
 

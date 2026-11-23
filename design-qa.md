@@ -1,7 +1,7 @@
-# Wikey Apps Tab Design QA
+# Wookey Apps Tab Design QA
 
 - Reference: user-provided macOS application list and sidebar screenshots
-- Implementation: Wikey 1.2.5 signed test build
+- Implementation: Wookey 1.2.5 signed test build
 - Viewport: 1120 x 760 points
 
 ## Comparison
@@ -10,7 +10,7 @@
 - The detail area uses the reference's spacious list layout with real app icons, app names, and an inline hotkey column.
 - Search and refresh controls are visible without competing with the primary hotkey task.
 - Clicking either the recorder field or its plus button enters a visible hotkey-recording state.
-- Existing Wikey colors, typography, spacing, and selection treatment remain consistent.
+- Existing Wookey colors, typography, spacing, and selection treatment remain consistent.
 - Alias and per-app checkbox columns from the reference were intentionally omitted because they were not part of the requested behavior.
 
 ## Interaction Checks

@@ -37,6 +37,11 @@ struct OnboardingView: View {
             onboardingFooter
         }
         .frame(width: 660, height: 580)
+        .onAppear {
+            // Start from the current login item state so finishing onboarding doesn't turn it off.
+            runtime.loginItem.refresh()
+            launchAtLogin = runtime.loginItem.isEnabled
+        }
     }
 
     private var onboardingHeader: some View {
@@ -183,7 +188,7 @@ struct OnboardingView: View {
     private var onboardingFooter: some View {
         HStack {
             if page == 0 {
-                Button("건너뛰기") { complete(enableLoginItem: false) }
+                Button("건너뛰기") { complete(enableLoginItem: nil) }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .tint(theme.accent)
                 Spacer()
@@ -200,7 +205,7 @@ struct OnboardingView: View {
                 .buttonStyle(WookeyGlossyButtonStyle())
                 .tint(theme.accent)
                 Spacer()
-                Button("나중에 설정") { complete(enableLoginItem: false) }
+                Button("나중에 설정") { complete(enableLoginItem: nil) }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .tint(theme.accent)
                 Button("Wookey 시작") { complete(enableLoginItem: launchAtLogin) }
@@ -214,8 +219,11 @@ struct OnboardingView: View {
         .background(theme.panel)
     }
 
-    private func complete(enableLoginItem: Bool) {
-        runtime.loginItem.setEnabled(enableLoginItem)
+    /// `enableLoginItem` of nil (skipping) leaves the login item as it is.
+    private func complete(enableLoginItem: Bool?) {
+        if let enableLoginItem, enableLoginItem != runtime.loginItem.isEnabled {
+            runtime.loginItem.setEnabled(enableLoginItem)
+        }
         didCompleteOnboarding = true
         isPresented = false
     }

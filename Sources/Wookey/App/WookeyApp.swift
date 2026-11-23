@@ -25,7 +25,6 @@ struct WookeyApp: App {
                 .environment(WookeyAppRuntime.history)
                 .environment(updates)
                 .modifier(WookeyThemeScope())
-                .task { runtime.start() }
                 .frame(minWidth: 920, minHeight: 620)
         }
         .defaultSize(width: 1120, height: 760)
@@ -54,7 +53,6 @@ struct WookeyApp: App {
                 .environment(runtime)
                 .environment(updates)
                 .modifier(WookeyThemeScope())
-                .task { runtime.start() }
         } label: {
             Label {
                 Text(menuBarActivity?.label ?? "Wookey")

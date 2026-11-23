@@ -69,9 +69,9 @@ test("built website contains no old capture, local user path, or private configu
   const root = new URL("../dist/client/", import.meta.url);
   const paths = await readdir(root, { recursive: true, withFileTypes: true });
   for (const entry of paths.filter((entry) => entry.isFile())) {
-    assert.ok(!/wikey-workflows|design-reference|home\.png|config\.json|\.map$/.test(entry.name));
+    assert.ok(!/wookey-workflows|design-reference|home\.png|config\.json|\.map$/.test(entry.name));
     if (!/\.(js|css|html)$/.test(entry.name)) continue;
     const body = await readFile(`${entry.parentPath}/${entry.name}`, "utf8");
-    assert.ok(!/wikey-workflows\.png|design-reference\.png|\/Users\/|Library\/Application Support/.test(body));
+    assert.ok(!/wookey-workflows\.png|design-reference\.png|\/Users\/|Library\/Application Support/.test(body));
   }
 });

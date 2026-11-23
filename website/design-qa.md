@@ -1,4 +1,4 @@
-# Wikey landing page validation — 2026-09-06
+# Wookey landing page validation — 2026-09-06
 
 ## Direction
 
