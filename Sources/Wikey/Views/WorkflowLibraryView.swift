@@ -10,6 +10,7 @@ struct WorkflowLibraryView: View {
     }
 
     @Environment(WikeyRuntime.self) private var runtime
+    @Environment(\.colorScheme) private var colorScheme
     @SceneStorage("workflowFilter") private var filter: Filter = .all
     @SceneStorage("workflowQuery") private var query = ""
     var createWorkflow: () -> Void
@@ -113,7 +114,7 @@ struct WorkflowLibraryView: View {
             WikeyMascot(size: 122)
                 .background {
                     Circle()
-                        .fill(.white.opacity(0.28))
+                        .fill(colorScheme == .dark ? Color.wikeyInk(in: colorScheme).opacity(0.16) : .white.opacity(0.28))
                         .frame(width: 100, height: 100)
                 }
                 .padding(.trailing, 6)
@@ -176,7 +177,7 @@ private struct WorkflowLibraryRow: View {
 
     private var iconForeground: Color {
         guard workflow.isEnabled else { return .secondary }
-        return colorScheme == .dark ? Color(red: 0.80, green: 0.71, blue: 1) : .wikeyAccent
+        return .wikeyInk(in: colorScheme)
     }
 
     var body: some View {
@@ -231,6 +232,7 @@ private struct WorkflowLibraryRow: View {
             }
             .buttonStyle(.bordered)
             .buttonBorderShape(.capsule)
+            .tint(.wikeyInk(in: colorScheme))
             .disabled(workflow.actions.isEmpty || executionStatus != nil)
             .help("워크플로 실행")
             .accessibilityLabel("\(workflow.name) 실행")

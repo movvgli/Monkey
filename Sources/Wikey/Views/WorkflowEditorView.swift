@@ -851,6 +851,7 @@ private struct FlowActionRow: View {
 }
 
 private struct FlowMarker: View {
+    @Environment(\.colorScheme) private var colorScheme
     var number: Int
     var endsFlow: Bool
 
@@ -865,14 +866,14 @@ private struct FlowMarker: View {
                 VStack {
                     Spacer()
                     Circle()
-                        .fill(Color.wikeyAccent)
+                        .fill(Color.wikeyInk(in: colorScheme))
                         .frame(width: 6, height: 6)
                 }
             }
 
             Text("\(number)")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(Color.wikeyAccent)
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
                 .frame(width: 38, height: 38)
                 .background(Color.wikeyAccent.opacity(0.11), in: RoundedRectangle(cornerRadius: 12))
         }
@@ -883,6 +884,7 @@ private struct FlowMarker: View {
 }
 
 private struct ActionIcon: View {
+    @Environment(\.colorScheme) private var colorScheme
     var action: WorkflowAction
 
     var body: some View {
@@ -895,7 +897,7 @@ private struct ActionIcon: View {
             } else {
                 Image(systemName: symbol)
                     .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(Color.wikeyAccent)
+                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
             }
         }
         .frame(width: 24, height: 24)

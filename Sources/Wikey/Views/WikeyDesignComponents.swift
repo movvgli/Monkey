@@ -206,13 +206,14 @@ struct WikeySection<Content: View>: View {
 }
 
 struct ShortcutBadge: View {
+    @Environment(\.colorScheme) private var colorScheme
     var text: String
     var isMuted = false
 
     var body: some View {
         Text(text)
             .font(.system(size: 11, weight: .medium, design: .monospaced))
-            .foregroundStyle(isMuted ? Color.secondary : Color.accentColor)
+            .foregroundStyle(isMuted ? Color.secondary : Color.wikeyInk(in: colorScheme))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(

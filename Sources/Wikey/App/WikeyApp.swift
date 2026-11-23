@@ -4,6 +4,10 @@ import WikeyCore
 
 extension Color {
     static let wikeyAccent = Color(red: 0.40, green: 0.26, blue: 0.73)
+
+    static func wikeyInk(in colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? Color(red: 0.80, green: 0.71, blue: 1) : wikeyAccent
+    }
 }
 
 @main
