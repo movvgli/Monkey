@@ -92,7 +92,7 @@ function Features() {
             <div className="mini-highlight"><NotePencil size={18} /> 회의 노트 <small>템플릿</small></div>
             <div><LinkSimple size={18} /> 회의실 예약 <small>링크</small></div>
           </div>
-          <p><b>⌥ Space</b>로 앱·링크·템플릿·워크플로를 찾고, <b>⌘ Enter</b>로 웹을 검색하세요. 계산과 환율 변환도 바로 할 수 있어요.</p>
+          <p><b className="shortcut">⌥ Space</b>로 앱·링크·템플릿·워크플로를 찾고, <b className="shortcut">⌘ Enter</b>로 웹을 검색하세요. 계산과 환율 변환도 바로 할 수 있어요.</p>
         </article>
         <article className="feature-card feature-drawer">
           <h3>클립보드와 서랍</h3>
@@ -178,7 +178,7 @@ export function App() {
         <div className="details">
           <section id="install" aria-labelledby="install-title">
             <h2 id="install-title">설치와 다운로드</h2>
-            <p>DMG를 열고 앱을 응용 프로그램 폴더로 옮긴 뒤 <b>⌥ Space</b>로 빠른 검색을 열어보세요.</p>
+            <p>DMG를 열고 앱을 응용 프로그램 폴더로 옮긴 뒤 <b className="shortcut">⌥ Space</b>로 빠른 검색을 열어보세요.</p>
             <dl className="channels">
               <div><dt>프리뷰</dt><dd>이 페이지의 기능을 먼저 써 볼 수 있는 Apple 공증 전 빌드입니다. 릴리스 목록에서 <b>Pre-release</b>가 붙은 Wookey DMG를 받으세요.</dd></div>
               <div><dt>정식 버전</dt><dd>Apple 공증을 마친 버전입니다. 파일에 이전 이름인 Monkey가 표시될 수 있습니다.</dd></div>

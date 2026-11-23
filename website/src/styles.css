@@ -33,6 +33,7 @@ button { cursor: pointer; }
 img { display: block; max-width: 100%; }
 h1, h2, h3, p, figure { margin: 0; }
 p { word-break: keep-all; overflow-wrap: anywhere; }
+.shortcut { white-space: nowrap; }
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
 .site { width: min(100% - 80px, 1320px); margin-inline: auto; }
 .skip-link { position: absolute; z-index: 3; inset: 12px auto auto 12px; padding: 10px 14px; background: var(--paper); transform: translateY(-180%); }
