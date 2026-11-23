@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 import WikeyCore
 
 struct LayoutEditorView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @Binding var layout: WindowLayout
     var onBack: () -> Void
@@ -109,7 +110,7 @@ struct LayoutEditorView: View {
             }
             .padding(.horizontal, WikeyPageMetrics.padding)
             .padding(.vertical, 13)
-            .background(.bar)
+            .background(theme.panel)
         }
         .navigationTitle(layout.name)
         .onAppear {
@@ -191,7 +192,7 @@ struct LayoutEditorView: View {
                     }
                 }
                 .padding(.horizontal, 16)
-                .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .background(theme.panel, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .stroke(Color(nsColor: .separatorColor).opacity(0.7), lineWidth: 1)
@@ -235,6 +236,7 @@ struct LayoutEditorView: View {
 }
 
 private struct DisplayPreview: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
     var placements: [AppWindowPlacement]
 
@@ -242,7 +244,7 @@ private struct DisplayPreview: View {
         GeometryReader { geometry in
             ZStack {
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(theme.panel)
                 RoundedRectangle(cornerRadius: 9, style: .continuous)
                     .stroke(.separator, lineWidth: 1)
 

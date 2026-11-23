@@ -3,6 +3,7 @@ import SwiftUI
 import WikeyCore
 
 struct ApplicationsView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @State private var applications: [InstalledApplication] = []
     @State private var searchText = ""
@@ -114,7 +115,7 @@ struct ApplicationsView: View {
                 Button("새로고침", wikeyIcon: "arrow.clockwise") {
                     Task { await reloadApplications() }
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(WikeyGlossyButtonStyle())
                 .controlSize(.large)
                 .disabled(isLoading)
             }
@@ -125,13 +126,9 @@ struct ApplicationsView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 Spacer()
-                Picker("앱 필터", selection: $showsAssignedOnly) {
-                    Text("전체 앱").tag(false)
-                    Text("단축키 지정됨").tag(true)
+                WikeyFilterPicker(title: "앱 필터", selection: $showsAssignedOnly, options: [false, true]) {
+                    $0 ? "단축키 지정됨" : "전체 앱"
                 }
-                .labelsHidden()
-                .pickerStyle(.segmented)
-                .fixedSize()
             }
         }
     }
@@ -177,7 +174,7 @@ struct ApplicationsView: View {
             }
         }
         .background(
-            Color(nsColor: .controlBackgroundColor),
+            theme.panel,
             in: RoundedRectangle(cornerRadius: 16, style: .continuous)
         )
         .overlay {

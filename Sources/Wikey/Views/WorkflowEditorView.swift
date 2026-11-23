@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 import WikeyCore
 
 struct WorkflowEditorView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @Binding var workflow: Workflow
     var onBack: () -> Void
@@ -138,7 +139,7 @@ struct WorkflowEditorView: View {
             }
             .padding(.horizontal, WikeyPageMetrics.padding)
             .padding(.vertical, 13)
-            .background(.bar)
+            .background(theme.panel)
         }
         .navigationTitle(workflow.name)
         .sheet(isPresented: $showsActionPicker, onDismiss: addPickedAction) {
@@ -150,6 +151,7 @@ struct WorkflowEditorView: View {
                 pendingAction = option
                 showsActionPicker = false
             }
+            .presentationBackground(theme.canvas)
         }
         .sheet(isPresented: $showsURLSetup) {
             WorkflowActionSetupSheet(
@@ -163,6 +165,7 @@ struct WorkflowEditorView: View {
                 TextField("웹사이트 주소", text: $newURL, prompt: Text("https://example.com"))
                     .textFieldStyle(.roundedBorder)
             }
+            .presentationBackground(theme.canvas)
         }
         .sheet(isPresented: $showsLayoutSetup) {
             WorkflowActionSetupSheet(
@@ -181,6 +184,7 @@ struct WorkflowEditorView: View {
                     }
                 }
             }
+            .presentationBackground(theme.canvas)
         }
         .confirmationDialog(
             "이 워크플로를 삭제할까요?",
@@ -200,6 +204,7 @@ struct WorkflowEditorView: View {
                 onCancel: { showsTemplateActionSetup = false },
                 onAdd: addSelectedTemplateAction
             )
+            .presentationBackground(theme.canvas)
         }
         .sheet(isPresented: $showsWorkflowActionSetup) {
             WorkflowReferenceSetupView(
@@ -208,6 +213,7 @@ struct WorkflowEditorView: View {
                 onCancel: { showsWorkflowActionSetup = false },
                 onAdd: addSelectedWorkflowAction
             )
+            .presentationBackground(theme.canvas)
         }
     }
 
@@ -239,6 +245,7 @@ struct WorkflowEditorView: View {
                 Spacer()
                 Toggle("단축키 활성", isOn: $workflow.isEnabled)
                     .toggleStyle(.switch)
+                    .tint(WikeyTheme.banana)
                     .controlSize(.small)
                     .help("끄면 이 워크플로의 전역 단축키를 해제합니다.")
                 Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", wikeyIcon: "keyboard") {
@@ -253,6 +260,7 @@ struct WorkflowEditorView: View {
                     }
                     .padding(20)
                     .frame(width: 480)
+                    .background(theme.panel)
                 }
             }
 
@@ -368,6 +376,7 @@ struct WorkflowEditorView: View {
 }
 
 private struct TemplateActionSetupView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(\.colorScheme) private var colorScheme
     var templates: [RichTemplate]
     @Binding var selectedTemplateID: UUID?
@@ -407,13 +416,9 @@ private struct TemplateActionSetupView: View {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("실행 방식")
                             .font(.headline)
-                        Picker("실행 방식", selection: $selectedMode) {
-                            ForEach(TemplateDeliveryMode.allCases, id: \.self) { mode in
-                                Text(mode.title).tag(mode)
-                            }
+                        WikeyFilterPicker(title: "실행 방식", selection: $selectedMode, options: TemplateDeliveryMode.allCases) {
+                            $0.title
                         }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
 
                         Text(modeDescription)
                             .font(.caption)
@@ -436,7 +441,7 @@ private struct TemplateActionSetupView: View {
             }
             .padding(.horizontal, 24)
             .padding(.vertical, 16)
-            .background(.bar)
+            .background(theme.panel)
         }
         .frame(width: 520, height: 480)
     }
@@ -468,7 +473,7 @@ private struct TemplateActionSetupView: View {
             .padding(.vertical, 11)
             .contentShape(Rectangle())
             .background(
-                isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.08) : Color(nsColor: .controlBackgroundColor),
+                isSelected ? Color.wikeyInk(in: colorScheme).opacity(0.08) : theme.panel,
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
             .overlay {
@@ -495,9 +500,10 @@ private struct TemplateActionSetupView: View {
 }
 
 private struct FlowCardBackground: View {
+    @Environment(\.wikeyTheme) private var theme
     var body: some View {
         RoundedRectangle(cornerRadius: 17, style: .continuous)
-            .fill(Color(nsColor: .controlBackgroundColor))
+            .fill(theme.panel)
             .overlay {
                 RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.34), lineWidth: 1)
@@ -581,7 +587,7 @@ private struct FlowActionRow: View {
                 .labelStyle(.iconOnly)
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
-                .tint(Color.wikeyInk(in: colorScheme))
+                .tint(WikeyTheme.banana)
                 .frame(width: 36, height: 36)
                 .background(Color.wikeyInk(in: colorScheme).opacity(0.075), in: RoundedRectangle(cornerRadius: 10))
                 .accessibilityLabel("동작 메뉴")

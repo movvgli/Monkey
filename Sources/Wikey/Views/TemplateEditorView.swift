@@ -2,6 +2,7 @@ import SwiftUI
 import WikeyCore
 
 struct TemplateEditorView: View {
+    @Environment(\.wikeyTheme) private var theme
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(\.colorScheme) private var colorScheme
     @Binding var template: RichTemplate
@@ -67,7 +68,7 @@ struct TemplateEditorView: View {
             }
             .padding(.horizontal, WikeyPageMetrics.padding)
             .padding(.vertical, 10)
-            .background(.bar)
+            .background(theme.panel)
 
             Divider()
 
@@ -80,7 +81,7 @@ struct TemplateEditorView: View {
             }
 
             ZStack {
-                Color(nsColor: .windowBackgroundColor)
+                theme.canvas
                 RichTextEditor(controller: editor)
                     .frame(maxWidth: 760)
                     .clipShape(RoundedRectangle(cornerRadius: 16))

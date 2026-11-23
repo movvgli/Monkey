@@ -51,7 +51,7 @@ enum SidebarSelection: Hashable {
 }
 
 private struct WikeySidebar: View {
-    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.wikeyTheme) private var theme
     @FocusState private var focusedSection: SidebarSelection?
     var selected: SidebarSelection
     var navigate: (SidebarSelection) -> Void
@@ -73,12 +73,13 @@ private struct WikeySidebar: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
         }
+        .background(theme.sidebar)
         .accessibilityLabel("사이드바")
     }
 
     private func row(_ section: SidebarSelection) -> some View {
         let isSelected = selected == section
-        let ink = Color.wikeyInk(in: colorScheme)
+        let ink = theme.accent
         return Button {
             navigate(section)
         } label: {
@@ -114,6 +115,7 @@ private struct WikeySidebar: View {
 }
 
 struct ContentView: View {
+    @Environment(\.wikeyTheme) private var theme
     private enum QuickCreate: Identifiable {
         case workflow, link
 
@@ -164,10 +166,12 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, WikeyPageMetrics.padding)
                     .padding(.vertical, 12)
-                    .background(.bar)
+                    .background(theme.panel)
                 }
             }
+            .background(theme.canvas)
         }
+        .toolbarBackground(theme.panel, for: .windowToolbar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Monkey 검색", wikeyIcon: "magnifyingglass") { showsSearch = true }
@@ -217,6 +221,7 @@ struct ContentView: View {
         .sheet(isPresented: $showOnboarding) {
             OnboardingView(isPresented: $showOnboarding)
                 .environment(runtime)
+                .presentationBackground(theme.canvas)
         }
         .sheet(item: $quickCreate) { destination in
             QuickWorkflowView(
@@ -232,12 +237,14 @@ struct ContentView: View {
                     quickCreate = nil
                 }
             )
+            .presentationBackground(theme.canvas)
         }
         .sheet(isPresented: $showsSearch) {
             WorkspaceSearchView(mode: .library { destination in
                 selection = destination
                 showsSearch = false
             })
+            .presentationBackground(theme.canvas)
         }
     }
 
@@ -552,6 +559,7 @@ private struct LibraryLandingView<Content: View>: View {
     var title: String
     var subtitle: String
     var addTitle: String
+    @Environment(\.wikeyTheme) private var theme
     @Binding var searchText: String
     var isEmpty: Bool
     var hasSearchResults: Bool
@@ -586,7 +594,7 @@ private struct LibraryLandingView<Content: View>: View {
                     LazyVStack(spacing: 0) {
                         content
                     }
-                    .background(.background, in: RoundedRectangle(cornerRadius: 12))
+                    .background(theme.panel, in: RoundedRectangle(cornerRadius: 12))
                     .overlay {
                         RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary)
                     }
