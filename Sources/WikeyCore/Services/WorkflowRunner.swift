@@ -7,6 +7,7 @@ protocol WorkflowApplicationControlling {
     func inputTargetApplication() -> NSRunningApplication?
     func launch(bundleIdentifier: String, activates: Bool) async throws -> NSRunningApplication
     func openURL(_ value: String) async throws -> NSRunningApplication
+    func openFile(at path: String) async throws -> NSRunningApplication
 }
 
 @MainActor
@@ -41,8 +42,10 @@ public final class WorkflowRunner {
     public var onSummary: ((RunSummary) -> Void)?
 
     private struct PendingRun {
+        var ticket: UUID
         var workflow: Workflow
         var inputTarget: NSRunningApplication?
+        var completion: CheckedContinuation<RunSummary, Error>?
     }
 
     private final class ExecutionContext {
@@ -60,6 +63,7 @@ public final class WorkflowRunner {
     private let layouts: any WorkflowLayoutControlling
     @ObservationIgnored private var queue: [PendingRun] = []
     @ObservationIgnored private var drainTask: Task<Void, Never>?
+    @ObservationIgnored private var runningTicket: UUID?
 
     public convenience init(
         store: WikeyStore,
@@ -98,8 +102,45 @@ public final class WorkflowRunner {
 
     /// Direct app/layout shortcuts use the same queue without saving a temporary workflow.
     public func submit(workflow: Workflow) {
-        guard runningWorkflowID != workflow.id, !queuedWorkflowIDs.contains(workflow.id) else { return }
-        queue.append(PendingRun(workflow: workflow, inputTarget: applications.inputTargetApplication()))
+        guard !isPending(workflow.id) else { return }
+        enqueue(workflow)
+    }
+
+    public func runAndWait(workflowID: UUID) async throws -> RunSummary {
+        try Task.checkCancellation()
+        guard let workflow = store.workflows.first(where: { $0.id == workflowID }) else {
+            throw AutomationError.workflowNotFound
+        }
+        guard !isPending(workflowID) else { throw AutomationError.workflowAlreadyRunning }
+        let ticket = UUID()
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                if Task.isCancelled {
+                    continuation.resume(throwing: CancellationError())
+                } else {
+                    enqueue(workflow, ticket: ticket, completion: continuation)
+                }
+            }
+        } onCancel: {
+            Task { @MainActor [weak self] in self?.cancel(ticket: ticket) }
+        }
+    }
+
+    private func isPending(_ workflowID: UUID) -> Bool {
+        runningWorkflowID == workflowID || queuedWorkflowIDs.contains(workflowID)
+    }
+
+    private func enqueue(
+        _ workflow: Workflow,
+        ticket: UUID = UUID(),
+        completion: CheckedContinuation<RunSummary, Error>? = nil
+    ) {
+        queue.append(PendingRun(
+            ticket: ticket,
+            workflow: workflow,
+            inputTarget: applications.inputTargetApplication(),
+            completion: completion
+        ))
         queuedWorkflowIDs.append(workflow.id)
 
         // Claim the worker synchronously. Checking runningWorkflowID here lets multiple
@@ -109,14 +150,27 @@ public final class WorkflowRunner {
     }
 
     public func cancel() {
+        let cancelled = queue
         queue.removeAll()
         queuedWorkflowIDs.removeAll()
+        for pending in cancelled { pending.completion?.resume(throwing: CancellationError()) }
         drainTask?.cancel()
+    }
+
+    private func cancel(ticket: UUID) {
+        if runningTicket == ticket {
+            drainTask?.cancel()
+        } else if let index = queue.firstIndex(where: { $0.ticket == ticket }) {
+            let pending = queue.remove(at: index)
+            queuedWorkflowIDs.removeAll { $0 == pending.workflow.id }
+            pending.completion?.resume(throwing: CancellationError())
+        }
     }
 
     private func drainQueue() async {
         defer {
             runningWorkflowID = nil
+            runningTicket = nil
             currentActionTitle = nil
             drainTask = nil
             // A new request may arrive while the cancelled worker is unwinding.
@@ -128,10 +182,17 @@ public final class WorkflowRunner {
             let pending = queue.removeFirst()
             queuedWorkflowIDs.removeFirst()
             runningWorkflowID = pending.workflow.id
+            runningTicket = pending.ticket
             let summary = await run(pending)
             currentActionTitle = nil
             onSummary?(summary)
             runningWorkflowID = nil
+            runningTicket = nil
+            if Task.isCancelled {
+                pending.completion?.resume(throwing: CancellationError())
+            } else {
+                pending.completion?.resume(returning: summary)
+            }
         }
     }
 
@@ -171,6 +232,9 @@ public final class WorkflowRunner {
 
                 case .openURL(let url):
                     context.inputTarget = try await applications.openURL(url)
+
+                case .openFile(let path):
+                    context.inputTarget = try await applications.openFile(at: path)
 
                 case .wait(let seconds):
                     guard seconds.isFinite, seconds > 0, seconds <= 30 else {

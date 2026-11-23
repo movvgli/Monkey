@@ -68,6 +68,21 @@ struct WorkflowRunnerTests {
         #expect(fixture.keyboard.targets.first??.processIdentifier == NSRunningApplication.current.processIdentifier)
     }
 
+    @Test func fileOpeningUsesTheSameRunnerAndReturnsItsResult() async throws {
+        let fixture = RunnerFixture()
+        defer { fixture.cleanUp() }
+        fixture.applications.original = nil
+        let workflow = Workflow(actions: [.openFile(path: "/tmp/example.pdf"), .pressKey(.enter)])
+        fixture.store.workflows = [workflow]
+
+        let summary = try await fixture.runner.runAndWait(workflowID: workflow.id)
+
+        #expect(summary.workflowID == workflow.id)
+        #expect(summary.failures.isEmpty)
+        #expect(fixture.events.values == ["file:/tmp/example.pdf", "key:enter"])
+        #expect(fixture.keyboard.targets.first??.processIdentifier == NSRunningApplication.current.processIdentifier)
+    }
+
     @Test func queuedRunCapturesInputTargetWhenSubmitted() async {
         let fixture = RunnerFixture()
         defer { fixture.cleanUp() }
@@ -293,6 +308,11 @@ private final class RunnerApplications: WorkflowApplicationControlling {
         events.values.append("launch.begin:\(bundleIdentifier)")
         try await beforeLaunch?(bundleIdentifier)
         events.values.append("launch.end:\(bundleIdentifier)")
+        return .current
+    }
+
+    func openFile(at path: String) async throws -> NSRunningApplication {
+        events.values.append("file:\(path)")
         return .current
     }
 

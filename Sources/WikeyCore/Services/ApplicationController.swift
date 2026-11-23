@@ -74,13 +74,30 @@ public final class ApplicationController {
         guard let url = URL(string: value), let scheme = url.scheme, ["http", "https"].contains(scheme.lowercased()) else {
             throw AutomationError.invalidURL(value)
         }
+        return try await open(url, fallbackName: "웹 브라우저")
+    }
+
+    @discardableResult
+    public func openFile(at path: String) async throws -> NSRunningApplication {
+        try Task.checkCancellation()
+        var isDirectory: ObjCBool = false
+        guard path.hasPrefix("/"),
+              FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory),
+              !isDirectory.boolValue else {
+            throw AutomationError.fileNotFound(URL(fileURLWithPath: path).lastPathComponent)
+        }
+        let url = URL(fileURLWithPath: path)
+        return try await open(url, fallbackName: url.lastPathComponent)
+    }
+
+    private func open(_ url: URL, fallbackName: String) async throws -> NSRunningApplication {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         let application: NSRunningApplication = try await withCheckedThrowingContinuation { continuation in
             NSWorkspace.shared.open(url, configuration: configuration) { app, error in
                 if let error { continuation.resume(throwing: error) }
                 else if let app { continuation.resume(returning: app) }
-                else { continuation.resume(throwing: AutomationError.applicationDidNotLaunch("웹 브라우저")) }
+                else { continuation.resume(throwing: AutomationError.applicationDidNotLaunch(fallbackName)) }
             }
         }
         try Task.checkCancellation()
@@ -131,6 +148,7 @@ public enum AutomationError: LocalizedError {
     case fileNotFound(String)
     case keyboardEventCreationFailed
     case workflowNotFound
+    case workflowAlreadyRunning
     case workflowIsEmpty
     case invalidWaitDuration
     case workflowCycleDetected
@@ -155,6 +173,7 @@ public enum AutomationError: LocalizedError {
         case .fileNotFound(let name): "파일을 찾을 수 없습니다: \(name)"
         case .keyboardEventCreationFailed: "키 입력을 만들지 못했습니다."
         case .workflowNotFound: "연결된 워크플로를 찾을 수 없습니다."
+        case .workflowAlreadyRunning: "이 워크플로가 이미 실행 또는 대기 중입니다."
         case .workflowIsEmpty: "워크플로에 실행할 동작을 먼저 추가해 주세요."
         case .invalidWaitDuration: "대기 시간은 0초보다 길고 30초 이하여야 합니다."
         case .workflowCycleDetected: "워크플로가 서로 반복 실행되도록 연결되어 중단했습니다."

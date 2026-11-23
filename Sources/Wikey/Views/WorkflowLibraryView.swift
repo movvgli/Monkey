@@ -10,7 +10,6 @@ struct WorkflowLibraryView: View {
     }
 
     @Environment(WikeyRuntime.self) private var runtime
-    @Environment(\.colorScheme) private var colorScheme
     @SceneStorage("workflowFilter") private var filter: Filter = .all
     @SceneStorage("workflowQuery") private var query = ""
     var createWorkflow: () -> Void
@@ -112,11 +111,6 @@ struct WorkflowLibraryView: View {
             }
             Spacer(minLength: 0)
             WikeyMascot(size: 122)
-                .background {
-                    Circle()
-                        .fill(colorScheme == .dark ? Color.wikeyInk(in: colorScheme).opacity(0.16) : .white.opacity(0.28))
-                        .frame(width: 100, height: 100)
-                }
                 .padding(.trailing, 6)
         }
         .padding(.horizontal, 22)
@@ -164,7 +158,6 @@ struct WorkflowLibraryView: View {
 private struct WorkflowLibraryRow: View {
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(\.colorScheme) private var colorScheme
-    @State private var isHovering = false
     var workflow: Workflow
     var conflict: String?
     var open: () -> Void
@@ -228,18 +221,16 @@ private struct WorkflowLibraryRow: View {
                 runtime.run(workflowID: workflow.id)
             } label: {
                 Image(systemName: "play.fill")
-                    .frame(width: 24)
+                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
+                    .frame(width: 44, height: 27)
             }
-            .buttonStyle(.bordered)
-            .buttonBorderShape(.capsule)
-            .tint(.wikeyInk(in: colorScheme))
+            .buttonStyle(WikeyHoverButtonStyle(filled: true))
             .disabled(workflow.actions.isEmpty || executionStatus != nil)
             .help("워크플로 실행")
             .accessibilityLabel("\(workflow.name) 실행")
             .frame(width: 56)
         }
         .padding(.horizontal, 16)
-        .background(isHovering ? Color.wikeyAccent.opacity(0.075) : .clear)
-        .onHover { isHovering = $0 }
+
     }
 }

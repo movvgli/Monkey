@@ -6,67 +6,111 @@ struct MenuBarContentView: View {
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(UpdateController.self) private var updates
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let enabledWorkflows = runtime.store.workflows.filter(\.isEnabled)
+        let workflows = runtime.store.workflows.filter { $0.isEnabled && !$0.actions.isEmpty }
 
-        if enabledWorkflows.isEmpty {
-            Text("활성화된 워크플로가 없습니다")
-        } else {
-            ForEach(enabledWorkflows) { workflow in
-                Button {
-                    runtime.run(workflowID: workflow.id)
+        VStack(alignment: .leading, spacing: 5) {
+            Text("Wikey")
+                .font(.headline)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 4)
+            if workflows.isEmpty {
+                Text("실행할 워크플로가 없습니다.")
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 9)
+                    .padding(.bottom, 5)
+            } else {
+                ScrollView {
+                    VStack(spacing: 2) {
+                        ForEach(workflows) { workflow in
+                            Button {
+                                dismiss()
+                                runtime.run(workflowID: workflow.id)
+                            } label: {
+                                HStack {
+                                    rowLabel(shortMenuTitle(workflow.name), symbol: "bolt")
+                                    if !workflow.shortcut.steps.isEmpty {
+                                        ShortcutBadge(text: workflow.shortcut.displayName)
+                                    }
+                                }
+                            }
+                            .buttonStyle(WikeyHoverButtonStyle())
+                            .disabled(runtime.runner.runningWorkflowID == workflow.id ||
+                                      runtime.runner.queuedWorkflowIDs.contains(workflow.id))
+                        }
+                    }
+                }
+                .frame(height: min(CGFloat(workflows.count) * 33, 232))
+            }
+
+            if !runtime.store.layouts.isEmpty {
+                Menu {
+                    ForEach(runtime.store.layouts) { layout in
+                        Button(shortMenuTitle(layout.name)) {
+                            dismiss()
+                            runtime.run(layoutID: layout.id)
+                        }
+                        .disabled(layout.placements.isEmpty ||
+                                  runtime.runner.runningWorkflowID == layout.id ||
+                                  runtime.runner.queuedWorkflowIDs.contains(layout.id))
+                    }
                 } label: {
-                    Text(shortMenuTitle(workflow.name))
-                    Text(workflow.shortcut.steps.isEmpty ? "미지정" : workflow.shortcut.displayName)
+                    rowLabel("레이아웃 적용", symbol: "rectangle.3.group")
                 }
-                .disabled(
-                    runtime.runner.runningWorkflowID == workflow.id ||
-                    runtime.runner.queuedWorkflowIDs.contains(workflow.id) ||
-                    workflow.actions.isEmpty
-                )
+                .menuStyle(.borderlessButton)
             }
-            Divider()
-        }
 
-        if !runtime.store.layouts.isEmpty {
-            Menu("레이아웃 적용") {
-                ForEach(runtime.store.layouts) { layout in
-                    Button(shortMenuTitle(layout.name)) { runtime.run(layoutID: layout.id) }
-                        .disabled(layout.placements.isEmpty
-                                  || runtime.runner.runningWorkflowID == layout.id
-                                  || runtime.runner.queuedWorkflowIDs.contains(layout.id))
-                }
+            if runtime.runner.runningWorkflowID != nil {
+                Divider()
+                menuButton("실행 중지", symbol: "stop.fill", action: runtime.runner.cancel)
+            } else if let lastRun = runtime.lastRun {
+                Text(shortMenuTitle(lastRun.menuTitle))
+                    .font(.caption)
+                    .foregroundStyle(lastRun.failures.isEmpty ? Color.secondary : .orange)
+                    .padding(.horizontal, 9)
+                    .help(lastRun.failures.first?.message ?? lastRun.workflowName)
             }
-            Divider()
-        }
 
-        if runtime.runner.runningWorkflowID != nil {
-            Text(shortMenuTitle("실행 중 · \(runtime.runner.currentActionTitle ?? "준비 중")"))
-            Button("실행 중지") { runtime.runner.cancel() }
             Divider()
-        }
-
-        if let lastRun = runtime.lastRun {
-            Text(lastRun.failures.isEmpty ? "최근 실행 완료" : "최근 실행에서 오류 \(lastRun.failures.count)건")
-            Text(shortMenuTitle(lastRun.workflowName))
-            if let firstFailure = lastRun.failures.first {
-                Text(shortMenuTitle(firstFailure.message))
+            menuButton("Wikey 열기", symbol: "macwindow") {
+                dismiss()
+                NSApp.unhide(nil)
+                openWindow(id: "main")
+                NSApp.activate(ignoringOtherApps: true)
             }
-            Divider()
+            SettingsLink {
+                rowLabel("설정…", symbol: "gearshape")
+            }
+            .buttonStyle(WikeyHoverButtonStyle())
+            menuButton("업데이트 확인…", symbol: "arrow.clockwise") {
+                dismiss()
+                updates.checkForUpdates()
+            }
+            .disabled(!updates.canCheckForUpdates)
+            menuButton("Wikey 종료", symbol: "power") { NSApp.terminate(nil) }
         }
+        .padding(10)
+        .frame(width: 290)
+    }
 
-        Button("Wikey 열기") {
-            NSApp.unhide(nil)
-            openWindow(id: "main")
-            NSApp.activate(ignoringOtherApps: true)
+    private func rowLabel(_ title: String, symbol: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: symbol)
+                .foregroundStyle(Color.wikeyInk(in: colorScheme))
+                .frame(width: 16)
+                .accessibilityHidden(true)
+            Text(title).lineLimit(1)
         }
-        Button("업데이트 확인…") {
-            updates.checkForUpdates()
-        }
-        .disabled(!updates.canCheckForUpdates)
-        SettingsLink { Text("설정…") }
-        Divider()
-        Button("Wikey 종료") { NSApp.terminate(nil) }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 9)
+        .frame(height: 31)
+    }
+
+    private func menuButton(_ title: String, symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { rowLabel(title, symbol: symbol) }
+            .buttonStyle(WikeyHoverButtonStyle())
     }
 }

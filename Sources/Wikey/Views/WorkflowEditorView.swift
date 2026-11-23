@@ -289,6 +289,10 @@ struct WorkflowEditorView: View {
         pendingAction = nil
         switch option {
         case .app: chooseApplication()
+        case .file:
+            QuickWorkflowTargetPicker.file { url in
+                workflow.actions.append(.openFile(path: url.path))
+            }
         case .website:
             newURL = ""
             showsURLSetup = true
@@ -342,17 +346,9 @@ struct WorkflowEditorView: View {
     }
 
     private func chooseApplication() {
-        let panel = NSOpenPanel()
-        panel.title = "실행할 앱 선택"
-        panel.allowedContentTypes = [.application]
-        panel.allowsMultipleSelection = false
-        panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
-        guard panel.runModal() == .OK, let url = panel.url, let bundle = Bundle(url: url),
-              let identifier = bundle.bundleIdentifier else { return }
-        let name = (bundle.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String)
-            ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
-            ?? url.deletingPathExtension().lastPathComponent
-        workflow.actions.append(.launchApplication(bundleIdentifier: identifier, displayName: name))
+        QuickWorkflowTargetPicker.application { app in
+            workflow.actions.append(.launchApplication(bundleIdentifier: app.id, displayName: app.name))
+        }
     }
 
     private func chooseFiles(title: String, contentType: UTType) -> [String]? {
@@ -631,7 +627,8 @@ private struct FlowActionRow: View {
         switch action {
         case .launchApplication: "앱 열기"
         case .copyTemplate: "템플릿 붙여넣기"
-        case .openURL: "웹사이트 열기"
+        case .openURL: "링크 열기"
+        case .openFile: "파일 열기"
         case .applyLayout: "창 배치"
         case .pressKey(let key): "\(key.title) 입력"
         case .wait: "잠시 기다리기"
@@ -650,6 +647,8 @@ private struct FlowActionRow: View {
             return "\(name) · \(mode.title)"
         case .openURL(let url):
             return URL(string: url)?.host ?? url
+        case .openFile(let path):
+            return URL(fileURLWithPath: path).lastPathComponent
         case .applyLayout(let layoutID):
             return layouts.first(where: { $0.id == layoutID })?.name ?? "레이아웃 선택"
         case .pressKey(let key):
@@ -686,6 +685,17 @@ private struct FlowActionRow: View {
                         ?? (bundle.object(forInfoDictionaryKey: "CFBundleName") as? String)
                         ?? url.deletingPathExtension().lastPathComponent
                     action = .launchApplication(bundleIdentifier: identifier, displayName: displayName)
+                }
+            }
+
+        case .openFile(let path):
+            VStack(alignment: .leading, spacing: 8) {
+                Label(URL(fileURLWithPath: path).lastPathComponent, systemImage: "doc")
+                    .lineLimit(1)
+                Button("파일 변경…") {
+                    QuickWorkflowTargetPicker.file { url in
+                        action = .openFile(path: url.path)
+                    }
                 }
             }
 
@@ -910,6 +920,7 @@ private struct ActionIcon: View {
         case .launchApplication: "app"
         case .copyTemplate: "doc.on.clipboard"
         case .openURL: "globe"
+        case .openFile: "doc"
         case .applyLayout: "rectangle.3.group"
         case .pressKey: "return"
         case .wait: "clock"

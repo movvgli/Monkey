@@ -13,20 +13,8 @@ extension Color {
 @main
 struct WikeyApp: App {
     @NSApplicationDelegateAdaptor(WikeyAppDelegate.self) private var appDelegate
-    @State private var runtime = WikeyRuntime()
+    @State private var runtime = WikeyAppRuntime.shared
     @State private var updates = UpdateController()
-
-    init() {
-        // A separate store lets local regression checks exercise the signed app
-        // without changing the user's workflows, templates, or app shortcuts.
-        let arguments = ProcessInfo.processInfo.arguments
-        if let index = arguments.firstIndex(of: "--test-store"),
-           arguments.indices.contains(index + 1), arguments[index + 1].hasPrefix("/") {
-            _runtime = State(initialValue: WikeyRuntime(
-                storeRootURL: URL(fileURLWithPath: arguments[index + 1], isDirectory: true)
-            ))
-        }
-    }
 
     var body: some Scene {
         Window("Wikey", id: "main") {
@@ -63,8 +51,10 @@ struct WikeyApp: App {
             MenuBarContentView()
                 .environment(runtime)
                 .environment(updates)
+                .tint(.wikeyAccent)
                 .task { runtime.start() }
         }
+        .menuBarExtraStyle(.window)
 
         Settings {
             WikeySettingsView()
@@ -79,6 +69,23 @@ struct WikeyApp: App {
         if runtime.lastRun?.failures.isEmpty == false { return "bolt.trianglebadge.exclamationmark" }
         if runtime.runner.runningWorkflowID != nil { return "bolt.badge.clock" }
         return "bolt.circle"
+    }
+}
+
+@MainActor
+enum WikeyAppRuntime {
+    static let shared: WikeyRuntime = {
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "--test-store"),
+           arguments.indices.contains(index + 1), arguments[index + 1].hasPrefix("/") {
+            return WikeyRuntime(storeRootURL: URL(fileURLWithPath: arguments[index + 1], isDirectory: true))
+        }
+        return WikeyRuntime()
+    }()
+
+    static func start() -> WikeyRuntime {
+        shared.start()
+        return shared
     }
 }
 

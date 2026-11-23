@@ -272,3 +272,46 @@ struct PlainPanel<Content: View>: View {
             .shadow(color: .black.opacity(0.04), radius: 10, y: 3)
     }
 }
+
+struct WikeyHoverButtonStyle: ButtonStyle {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.isEnabled) private var isEnabled
+    var selected = false
+    var filled = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        HoverSurface(
+            label: configuration.label,
+            ink: .wikeyInk(in: colorScheme),
+            selected: selected,
+            filled: filled,
+            isPressed: configuration.isPressed,
+            isEnabled: isEnabled
+        )
+    }
+
+    private struct HoverSurface<Label: View>: View {
+        @State private var isHovering = false
+        var label: Label
+        var ink: Color
+        var selected: Bool
+        var filled: Bool
+        var isPressed: Bool
+        var isEnabled: Bool
+
+        private var fillOpacity: Double {
+            if isPressed { return 0.24 }
+            if isHovering && isEnabled { return 0.17 }
+            if selected { return 0.14 }
+            return filled ? 0.075 : 0
+        }
+
+        var body: some View {
+            label
+                .background(ink.opacity(fillOpacity), in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(RoundedRectangle(cornerRadius: 9))
+                .opacity(isEnabled ? 1 : 0.5)
+                .onHover { isHovering = $0 }
+        }
+    }
+}

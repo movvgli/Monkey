@@ -8,7 +8,7 @@ struct WorkflowActionPicker: View {
 
         var options: [Option] {
             switch self {
-            case .open: [.app, .website, .layout, .workflow]
+            case .open: [.app, .website, .file, .layout, .workflow]
             case .paste: [.template, .images, .files]
             case .input: [.enter, .shiftEnter, .wait]
             }
@@ -17,7 +17,8 @@ struct WorkflowActionPicker: View {
 
     enum Option: String {
         case app = "앱 열기"
-        case website = "웹사이트 열기"
+        case website = "링크 열기"
+        case file = "파일 열기"
         case layout = "창 레이아웃 적용"
         case workflow = "다른 워크플로 실행"
         case template = "템플릿 붙여넣기"
@@ -31,6 +32,7 @@ struct WorkflowActionPicker: View {
             switch self {
             case .app: "app"
             case .website: "globe"
+            case .file: "doc"
             case .layout: "rectangle.3.group"
             case .workflow: "arrow.triangle.branch"
             case .template: "doc.on.clipboard"

@@ -93,7 +93,6 @@ private struct WikeySidebar: View {
             }
             .padding(.horizontal, 10)
             .frame(minHeight: 32)
-            .background(ink.opacity(isSelected ? (colorScheme == .dark ? 0.19 : 0.13) : 0), in: shape)
             .overlay {
                 if focusedSection == section {
                     shape.strokeBorder(ink, lineWidth: 1.5)
@@ -101,7 +100,7 @@ private struct WikeySidebar: View {
             }
             .contentShape(shape)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(WikeyHoverButtonStyle(selected: isSelected))
         .focusable()
         .focused($focusedSection, equals: section)
         .focusEffectDisabled()
@@ -126,6 +125,7 @@ struct ContentView: View {
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
     @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
+    @State private var showsQuickCreate = false
     @State private var showsSearch = false
     @State private var editingSession = UUID()
 
@@ -192,11 +192,11 @@ struct ContentView: View {
         }
         .focusedSceneValue(\.workspaceActions, WorkspaceActions(
             createWorkflow: {
-                guard !showOnboarding, !showsSearch else { return }
+                guard !showOnboarding, !showsSearch, !showsQuickCreate else { return }
                 addWorkflow()
             },
             search: {
-                guard !showOnboarding else { return }
+                guard !showOnboarding, !showsQuickCreate else { return }
                 showsSearch = true
             }
         ))
@@ -213,6 +213,20 @@ struct ContentView: View {
         .sheet(isPresented: $showOnboarding) {
             OnboardingView(isPresented: $showOnboarding)
                 .environment(runtime)
+        }
+        .sheet(isPresented: $showsQuickCreate) {
+            QuickWorkflowView(
+                onSave: { workflow in
+                    _ = runtime.store.addWorkflow(workflow)
+                    runtime.reloadHotkeys()
+                    selection = .workflowCollection
+                    showsQuickCreate = false
+                },
+                onAdvanced: {
+                    selection = .workflow(runtime.store.addWorkflow())
+                    showsQuickCreate = false
+                }
+            )
         }
         .sheet(isPresented: $showsSearch) {
             WorkspaceSearchView { destination in
@@ -324,7 +338,7 @@ struct ContentView: View {
     }
 
     private func addWorkflow() {
-        selection = .workflow(runtime.store.addWorkflow())
+        showsQuickCreate = true
     }
 
     private func addTemplate() {
