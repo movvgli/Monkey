@@ -15,10 +15,12 @@ struct WorkspaceSearchView: View {
         case copy(UUID)
         case copyValue(String)
         case openApplication(InstalledApplication)
+        case openWebAddress(URL)
 
         var actionTitle: String {
             switch self {
             case .library, .openApplication: "열기"
+            case .openWebAddress: "브라우저에서 열기"
             case .run: "실행"
             case .copy, .copyValue: "복사"
             }
@@ -60,10 +62,11 @@ struct WorkspaceSearchView: View {
     }
 
     private func matches(for query: String) -> (entries: [Result], utility: Utility?) {
+        let webAddress = SearchWebAddress.parse(query)
         let keywordResults = WorkflowKeyword.matches(query, in: runtime.store.workflows).map {
             workflowResult($0.workflow, matchingKeyword: $0.keyword)
         }
-        if let utility = utility(for: query, keywordResults: keywordResults) {
+        if webAddress == nil, let utility = utility(for: query, keywordResults: keywordResults) {
             return (utilityResults(utility), utility)
         }
         let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
@@ -75,7 +78,10 @@ struct WorkspaceSearchView: View {
             }
         }
         let applications = isLauncher && !terms.isEmpty ? applicationResults(matching: terms) : []
-        return (keywordResults + matchingEntries + applications, nil)
+        let webResults = webAddress.map {
+            [Result(id: .openWebAddress($0), name: $0.absoluteString, detail: "웹사이트", symbol: "link")]
+        } ?? []
+        return (webResults + keywordResults + matchingEntries + applications, nil)
     }
 
     private func applicationResults(matching terms: [String]) -> [Result] {
@@ -168,8 +174,9 @@ struct WorkspaceSearchView: View {
                     text: Binding(get: { query }, set: changeQuery),
                     onMove: moveSelection,
                     onSubmit: openSelected,
+                    onWebSearch: searchWeb,
                     onCancel: close,
-                    prompt: isLauncher ? "앱·워크플로·템플릿 검색 또는 계산·환율 입력" : "템플릿·워크플로·검색 키워드 찾기"
+                    prompt: isLauncher ? "앱·워크플로 검색, 웹 주소 입력, 계산·환율" : "보관함 검색 또는 웹 주소 입력"
                 )
                 .frame(height: 28)
                 Button("닫기", wookeyIcon: "xmark", action: close)
@@ -212,6 +219,11 @@ struct WorkspaceSearchView: View {
                 Text("↑ ↓ 이동").foregroundStyle(.secondary)
                 Text("↵ \(actionTitle)").foregroundStyle(.secondary)
                 Spacer()
+                Button("웹 검색  ⌘↵", action: searchWeb)
+                    .buttonStyle(WookeyGlossyButtonStyle())
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .accessibilityLabel("웹 검색")
+                    .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 Button(actionTitle, action: openSelected)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
@@ -365,6 +377,20 @@ struct WorkspaceSearchView: View {
         perform(destination)
     }
 
+    private func searchWeb() {
+        guard (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() != true,
+              let url = SearchWebAddress.searchURL(for: query) else { return }
+        openInBrowser(url)
+    }
+
+    private func openInBrowser(_ url: URL) {
+        if NSWorkspace.shared.open(url) {
+            close()
+        } else {
+            actionError = "기본 브라우저를 열지 못했습니다."
+        }
+    }
+
     private func perform(_ destination: Destination) {
         switch destination {
         case .library(let location):
@@ -375,6 +401,8 @@ struct WorkspaceSearchView: View {
             } else {
                 actionError = "‘\(application.displayName)’ 앱을 열지 못했습니다."
             }
+        case .openWebAddress(let url):
+            openInBrowser(url)
         case .run(let id):
             guard runtime.store.workflows.contains(where: { $0.id == id && !$0.actions.isEmpty }) else { return }
             close()
@@ -504,6 +532,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
     @Binding var text: String
     var onMove: (Int) -> Void
     var onSubmit: () -> Void
+    var onWebSearch: () -> Void
     var onCancel: () -> Void
     var prompt: String
 
@@ -546,7 +575,10 @@ private struct WorkspaceSearchField: NSViewRepresentable {
             switch command {
             case #selector(NSResponder.moveUp(_:)): parent.onMove(-1)
             case #selector(NSResponder.moveDown(_:)): parent.onMove(1)
-            case #selector(NSResponder.insertNewline(_:)): parent.onSubmit()
+            case #selector(NSResponder.insertNewline(_:)):
+                let modifiers = NSApp.currentEvent?.modifierFlags.intersection([.command, .option, .control, .shift])
+                if modifiers == .command { parent.onWebSearch() }
+                else { parent.onSubmit() }
             case #selector(NSResponder.cancelOperation(_:)): parent.onCancel()
             default: return false
             }

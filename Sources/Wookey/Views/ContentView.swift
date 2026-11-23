@@ -12,6 +12,7 @@ enum SidebarSelection: Hashable {
     case templateCollection
     case template(UUID)
     case layoutCollection
+    case newLayout
     case layout(UUID)
     case clipboard
     case images
@@ -22,7 +23,7 @@ enum SidebarSelection: Hashable {
         case .link: .linkCollection
         case .application: .applications
         case .template: .templateCollection
-        case .layout: .layoutCollection
+        case .newLayout, .layout: .layoutCollection
         default: self
         }
     }
@@ -312,6 +313,15 @@ struct ContentView: View {
                 open: { selection = .layout($0) },
                 add: addLayout
             )
+        case .newLayout:
+            NewLayoutEditor(
+                onCancel: { selection = .layoutCollection },
+                onSave: { layout in
+                    guard runtime.store.addLayout(layout) else { return }
+                    runtime.reloadHotkeys()
+                    selection = .layout(layout.id)
+                }
+            )
         case .layout(let id):
             if let binding = layoutBinding(id) {
                 LayoutEditorView(
@@ -379,7 +389,7 @@ struct ContentView: View {
     }
 
     private func addLayout() {
-        selection = .layout(runtime.store.addLayout())
+        selection = .newLayout
     }
 
     private func deleteWorkflow(_ id: UUID, returnTo collection: SidebarSelection) {

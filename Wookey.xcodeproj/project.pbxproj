@@ -35,6 +35,7 @@
 		7CC0613A4BFE3B169DBFB94A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = A699EC2BB7C9CCC56AF58A54 /* main.swift */; };
 		7E6F3623DC1A138E9727F277 /* WookeyCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 40179216A1772150F1719EAC /* WookeyCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		7FC721976CD9AA5F3E1DC8E9 /* SearchCalculation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */; };
+		0A9ED17A66B64AAC98B229A2 /* SearchWebAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9ED17A66B64AAC98B229A1 /* SearchWebAddress.swift */; };
 		8362354BC1EB4FBE72EA9192 /* WookeyCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40179216A1772150F1719EAC /* WookeyCore.framework */; };
 		854F4322866212E982763957 /* RichTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CD5FD16E604EF4F1646268C /* RichTextEditor.swift */; };
 		8C4980DCEAB4DBFB4490CF2A /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D474D7A2FE6E9C6853A5B0 /* TemplateEditorView.swift */; };
@@ -138,6 +139,7 @@
 		4E4044A7589BCC13D42395C5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		51FDEC8A0E2FCB4DFE3AF16D /* WookeyRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WookeyRuntimeTests.swift; sourceTree = "<group>"; };
 		5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCalculation.swift; sourceTree = "<group>"; };
+		0A9ED17A66B64AAC98B229A1 /* SearchWebAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchWebAddress.swift; sourceTree = "<group>"; };
 		63FE0BB2F94CD62E9B19DE0A /* WorkspaceSearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkspaceSearchView.swift; sourceTree = "<group>"; };
 		132AC6809C524620F64C1A03 /* LocalHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalHistoryView.swift; sourceTree = "<group>"; };
 		663A3FFA0154A8359CDC55F4 /* ShortcutModelsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutModelsTests.swift; sourceTree = "<group>"; };
@@ -348,6 +350,7 @@
 			children = (
 				7EDE41677010F0CFC513F4F7 /* AutomationModels.swift */,
 				5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */,
+				0A9ED17A66B64AAC98B229A1 /* SearchWebAddress.swift */,
 				ED5010F9413D6A08D7589440 /* SearchCurrency.swift */,
 				6A806BBE6571A9A314CA4626 /* ShortcutModels.swift */,
 				8A79D5DA40723B9FDE481569 /* SyncBackup.swift */,
@@ -556,6 +559,7 @@
 				27A9C27A392B8F1F5A58FB7F /* LoginItemService.swift in Sources */,
 				63147077D02F807AD118A26A /* PermissionCenter.swift in Sources */,
 				7FC721976CD9AA5F3E1DC8E9 /* SearchCalculation.swift in Sources */,
+				0A9ED17A66B64AAC98B229A2 /* SearchWebAddress.swift in Sources */,
 				6E7AA44143D6CF740668DF0F /* SearchCurrency.swift in Sources */,
 				BC6A1834D3C90304AFE9B0A3 /* SequenceMonitor.swift in Sources */,
 				E24573A2C1C0FF57A601F03A /* ShortcutModels.swift in Sources */,

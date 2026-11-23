@@ -3,6 +3,33 @@ import Testing
 @testable import WookeyCore
 
 struct SearchUtilityTests {
+    @Test func webSearchPreservesSpacesAndSpecialCharacters() throws {
+        let url = try #require(SearchWebAddress.searchURL(for: "  우키 C++ & Swift #1  "))
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        #expect(components.host == "www.google.com")
+        #expect(components.path == "/search")
+        #expect(components.queryItems == [URLQueryItem(name: "q", value: "우키 C++ & Swift #1")])
+        #expect(components.percentEncodedQuery?.contains("C%2B%2B") == true)
+        #expect(SearchWebAddress.searchURL(for: "  \n") == nil)
+    }
+
+    @Test func webAddressesSupportPastedLinksAndBareDomains() {
+        let full = "http://example.com:8080/path?q=hello%20world#page"
+        #expect(SearchWebAddress.parse(" \(full)\n")?.absoluteString == full)
+        #expect(SearchWebAddress.parse("example.com/path?return=https://example.org")?.absoluteString
+                == "https://example.com/path?return=https://example.org")
+        #expect(SearchWebAddress.parse("https://한글.kr/문서")?.scheme == "https")
+    }
+
+    @Test(arguments: [
+        "", "Calendar", "hello world", "달러 환율", "3.14", "3.14*2",
+        "name@example.com", "example..com", "-example.com", "https://",
+        "ftp://example.com", "file:///Applications", "javascript:alert(1)"
+    ])
+    func webAddressDetectionLeavesOrdinarySearchAndOtherSchemesAlone(_ input: String) {
+        #expect(SearchWebAddress.parse(input) == nil)
+    }
+
     @Test func arithmeticUsesGroupingAndOperatorPrecedence() {
         #expect(SearchCalculation.evaluate("100+10000") == .value(10_100))
         #expect(SearchCalculation.evaluate("100+10,000") == .value(10_100))

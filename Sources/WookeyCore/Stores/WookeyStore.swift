@@ -111,11 +111,13 @@ public final class WookeyStore {
         return template.id
     }
 
-    public func addLayout() -> UUID {
-        let layout = WindowLayout()
+    public func addLayout(_ layout: WindowLayout) -> Bool {
         state.layouts.append(layout)
-        save()
-        return layout.id
+        guard save() else {
+            state.layouts.removeLast()
+            return false
+        }
+        return true
     }
 
     public func setApplicationShortcut(
