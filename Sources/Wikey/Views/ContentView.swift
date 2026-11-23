@@ -170,9 +170,9 @@ struct ContentView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Wikey 검색", wikeyIcon: "magnifyingglass") { showsSearch = true }
+                Button("Monkey 검색", wikeyIcon: "magnifyingglass") { showsSearch = true }
                     .labelStyle(.iconOnly)
-                    .help("Wikey 검색 (⌘K)")
+                    .help("Monkey 검색 (⌘K)")
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {

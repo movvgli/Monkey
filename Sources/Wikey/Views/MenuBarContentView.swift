@@ -13,7 +13,7 @@ struct MenuBarContentView: View {
         let workflows = runtime.store.workflows.filter { $0.isEnabled && !$0.actions.isEmpty }
 
         VStack(alignment: .leading, spacing: 5) {
-            Text("Wikey")
+            Text("Monkey")
                 .font(.headline)
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
@@ -75,11 +75,11 @@ struct MenuBarContentView: View {
             }
 
             Divider()
-            menuButton("Wikey 검색창 열기", symbol: "magnifyingglass") {
+            menuButton("Monkey 검색창 열기", symbol: "magnifyingglass") {
                 dismiss()
                 Task { @MainActor in showSearch() }
             }
-            menuButton("Wikey 열기", symbol: "macwindow") {
+            menuButton("Monkey 열기", symbol: "macwindow") {
                 dismiss()
                 NSApp.unhide(nil)
                 openWindow(id: "main")
@@ -94,7 +94,7 @@ struct MenuBarContentView: View {
                 updates.checkForUpdates()
             }
             .disabled(!updates.canCheckForUpdates)
-            menuButton("Wikey 종료", symbol: "power") { NSApp.terminate(nil) }
+            menuButton("Monkey 종료", symbol: "power") { NSApp.terminate(nil) }
         }
         .padding(10)
         .frame(width: 290)

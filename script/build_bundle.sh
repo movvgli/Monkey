@@ -3,7 +3,7 @@ set -euo pipefail
 
 VERSION="${1:-1.0.0}"
 BUILD_NUMBER="${2:-1}"
-APP_NAME="Wikey"
+APP_NAME="Monkey"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_DIR="$ROOT_DIR/.build-bundle"
@@ -18,7 +18,7 @@ mkdir -p "$DIST_DIR"
 
 XCODEBUILD_ARGS=(
   -project "$ROOT_DIR/Wikey.xcodeproj"
-  -scheme "$APP_NAME"
+  -scheme Wikey
   -configuration Release
   -quiet
   -derivedDataPath "$DERIVED_DATA"
