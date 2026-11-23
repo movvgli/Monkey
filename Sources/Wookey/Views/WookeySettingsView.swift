@@ -7,7 +7,9 @@ struct WookeySettingsView: View {
     @Environment(WookeyRuntime.self) private var runtime
     @Environment(UpdateController.self) private var updates
     @AppStorage(WookeyMenuBarIcon.visibilityKey) private var showsMenuBarIcon = true
-    @AppStorage(WookeyMenuBarIcon.styleKey) private var menuBarIcon = WookeyMenuBarIcon.wookey
+    @AppStorage(WookeyMenuBarIcon.styleKey) private var menuBarIcon = WookeyMenuBarIcon.character
+    @AppStorage(WookeyCharacter.storageKey) private var character = WookeyCharacter.wookey
+    @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @AppStorage(WookeyTheme.storageKey) private var selectedTheme = WookeyTheme.defaultTheme
     @AppStorage(ShelfAfterDrop.storageKey) private var shelfAfterDrop = ShelfAfterDrop.defaultValue
 
@@ -59,6 +61,7 @@ struct WookeySettingsView: View {
         }
         .frame(width: 620, height: 490)
         .background(theme.canvas)
+        .onChange(of: iconTheme) { _, theme in theme.applyDockIcon() }
         .task { updates.refresh() }
     }
 
@@ -147,6 +150,29 @@ struct WookeySettingsView: View {
                 }
 
                 PlainPanel {
+                    VStack(alignment: .leading, spacing: 0) {
+                        GeneralSettingRow(symbol: "face.smiling", title: "캐릭터") {
+                            WookeyFilterPicker(title: "캐릭터", selection: $character, options: WookeyCharacter.allCases) {
+                                $0.title
+                            }
+                        }
+                        generalDivider
+                        GeneralSettingRow(symbol: "square.stack.3d.up", title: "아이콘 테마") {
+                            WookeyFilterPicker(title: "아이콘 테마", selection: $iconTheme, options: WookeyIconTheme.allCases) {
+                                $0.title
+                            }
+                        }
+                        if artworkIsPending {
+                            Text("아직 추가되지 않은 그림은 기존 아이콘으로 표시됩니다.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, GeneralSettingsLayout.titleInset)
+                                .padding(.bottom, 6)
+                        }
+                    }
+                }
+
+                PlainPanel {
                     GeneralSettingRow(symbol: HistoryKind.files.symbol, title: "파일을 담은 뒤 우키 서랍") {
                         WookeyFilterPicker(title: "파일을 담은 뒤 우키 서랍", selection: $shelfAfterDrop, options: ShelfAfterDrop.allCases) {
                             $0.title
@@ -193,23 +219,30 @@ struct WookeySettingsView: View {
         }
     }
 
+    private var artworkIsPending: Bool {
+        let characterArtwork = [character.shelfArtwork, character.companionArtwork]
+            + WookeyMenuBarIcon.allCases.map { $0.artwork(for: character) }
+        return characterArtwork.contains { !iconTheme.hasArtwork($0) }
+            || (iconTheme == .fluffy && !iconTheme.hasArtwork("WookeyCommandSettings"))
+    }
+
     private var menuBarIconPicker: some View {
         Menu {
             Picker("메뉴 막대 아이콘", selection: $menuBarIcon) {
                 ForEach(WookeyMenuBarIcon.allCases) { icon in
-                    Label { Text(icon.title) } icon: { icon.image() }
+                    Label { Text(icon.title(for: character)) } icon: { icon.image(character: character, theme: iconTheme) }
                         .tag(icon)
                 }
             }
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            Label { Text(menuBarIcon.title) } icon: { menuBarIcon.image() }
+            Label { Text(menuBarIcon.title(for: character)) } icon: { menuBarIcon.image(character: character, theme: iconTheme) }
         }
         .menuStyle(.borderlessButton)
         .foregroundStyle(theme.accent)
         .accessibilityLabel("메뉴 막대 아이콘")
-        .accessibilityValue(menuBarIcon.title)
+        .accessibilityValue(menuBarIcon.title(for: character))
         .help("메뉴 막대 아이콘")
     }
 

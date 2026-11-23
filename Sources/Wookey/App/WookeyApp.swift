@@ -12,7 +12,9 @@ extension Color {
 struct WookeyApp: App {
     @NSApplicationDelegateAdaptor(WookeyAppDelegate.self) private var appDelegate
     @AppStorage(WookeyMenuBarIcon.visibilityKey) private var showsMenuBarIcon = true
-    @AppStorage(WookeyMenuBarIcon.styleKey) private var menuBarIcon = WookeyMenuBarIcon.wookey
+    @AppStorage(WookeyMenuBarIcon.styleKey) private var menuBarIcon = WookeyMenuBarIcon.character
+    @AppStorage(WookeyCharacter.storageKey) private var character = WookeyCharacter.wookey
+    @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @State private var runtime = WookeyAppRuntime.shared
     @State private var updates = UpdateController()
 
@@ -58,6 +60,8 @@ struct WookeyApp: App {
                 Text(menuBarActivity?.label ?? "Wookey")
             } icon: {
                 menuBarIcon.image(
+                    character: character,
+                    theme: iconTheme,
                     activity: menuBarActivity,
                     accessibilityLabel: menuBarActivity?.label ?? "Wookey"
                 )
@@ -139,6 +143,9 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination("Wookey menu bar runtime")
+        let storedTheme = UserDefaults.standard.string(forKey: WookeyIconTheme.storageKey)
+        let iconTheme = storedTheme.flatMap(WookeyIconTheme.init(rawValue:)) ?? .threeDimensional
+        iconTheme.applyDockIcon()
         let activationPolicy = DockIconService.activationPolicy(for: DockIconService.savedVisibility())
         if NSApp.activationPolicy() != activationPolicy {
             NSApp.setActivationPolicy(activationPolicy)

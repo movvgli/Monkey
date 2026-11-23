@@ -427,6 +427,8 @@ private struct ShelfBubbleTail: Shape {
 }
 
 struct FileDropSurface: View {
+    @AppStorage(WookeyCharacter.storageKey) private var selectedCharacter = WookeyCharacter.wookey
+    @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @Environment(\.wookeyTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var biteStage: BiteStage = .idle
@@ -435,8 +437,15 @@ struct FileDropSurface: View {
 
     private enum BiteStage { case idle, offered, swallowed, saved }
 
-    private var wookeySize: CGFloat { floating ? 118 : 100 }
-    private var mouthOffset: CGSize { CGSize(width: wookeySize * -0.06, height: wookeySize * -0.08) }
+    private var characterSize: CGFloat { floating ? 118 : 100 }
+    private var mouthOffset: CGSize {
+        switch selectedCharacter {
+        case .wookey where iconTheme == .fluffy:
+            CGSize(width: characterSize * -0.05, height: characterSize * -0.07)
+        case .wookey: CGSize(width: characterSize * -0.09, height: characterSize * -0.06)
+        case .sharkey: CGSize(width: characterSize * -0.28, height: characterSize * 0.048)
+        }
+    }
 
     private var mouthIsOpen: Bool { feedback.isTargeted || biteStage == .offered }
     private var isSaved: Bool { biteStage == .saved }
@@ -480,19 +489,20 @@ struct FileDropSurface: View {
                     .blur(radius: 6)
             }
             ZStack {
-                Image("FileShelfFolderWookey", bundle: wookeyAssetBundle)
+                Image(iconTheme.asset(selectedCharacter.shelfArtwork, fallback: WookeyCharacter.wookey.shelfArtwork),
+                      bundle: wookeyAssetBundle)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
                 Ellipse()
                     .fill(WookeyTheme.cocoa)
-                    .frame(width: 8, height: 7)
+                    .frame(width: selectedCharacter == .sharkey ? 9 : 8, height: 7)
                     .rotationEffect(.degrees(14))
                     .offset(mouthOffset)
                     .opacity(mouthIsOpen ? 1 : 0)
             }
-            .frame(width: wookeySize, height: wookeySize)
-            .scaleEffect(reduceMotion ? 1 : wookeyScale)
+            .frame(width: characterSize, height: characterSize)
+            .scaleEffect(reduceMotion ? 1 : characterScale)
 
             if !reduceMotion, let receipt = feedback.receipt {
                 receiptCard(receipt)
@@ -506,7 +516,7 @@ struct FileDropSurface: View {
         .accessibilityHidden(true)
     }
 
-    private var wookeyScale: CGFloat {
+    private var characterScale: CGFloat {
         if biteStage == .swallowed { return 0.91 }
         if mouthIsOpen || isSaved { return 1.06 }
         return 1

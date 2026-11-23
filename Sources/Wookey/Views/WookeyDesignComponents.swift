@@ -94,10 +94,13 @@ var wookeyAssetBundle: Bundle {
 }
 
 struct WookeyMascot: View {
+    @AppStorage(WookeyCharacter.storageKey) private var character = WookeyCharacter.wookey
+    @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     var size: CGFloat
 
     var body: some View {
-        Image("LightningMascot", bundle: wookeyAssetBundle)
+        Image(iconTheme.asset(character.companionArtwork, fallback: WookeyCharacter.wookey.companionArtwork),
+              bundle: wookeyAssetBundle)
             .resizable()
             .interpolation(.high)
             .scaledToFit()
@@ -532,6 +535,7 @@ extension WorkflowAction {
 }
 
 struct WookeyActionIcon: View {
+    @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @Environment(\.colorScheme) private var colorScheme
     var symbol: String
     var tint: WookeyActionTint
@@ -564,6 +568,7 @@ struct WookeyActionIcon: View {
         case "chevron.left", "chevron.right": "WookeyCommandChevron"
         case "arrow.clockwise", "arrow.clockwise.circle.fill", "arrow.triangle.2.circlepath": "WookeyCommandRefresh"
         case "stop.fill": "WookeyCommandStop"
+        case "power": "WookeyCommandPower"
         case "checkmark.circle.fill": "WookeyCommandCheck"
         case "bold": "WookeyCommandBold"
         case "italic": "WookeyCommandItalic"
@@ -596,7 +601,7 @@ struct WookeyActionIcon: View {
     var body: some View {
         Group {
             if let artwork {
-                Image(artwork, bundle: wookeyAssetBundle)
+                Image(iconTheme.asset(artwork), bundle: wookeyAssetBundle)
                     .renderingMode(.original)
                     .resizable()
                     .interpolation(.high)

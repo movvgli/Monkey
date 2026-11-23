@@ -1,31 +1,83 @@
 import AppKit
 import SwiftUI
 
+enum WookeyCharacter: String, CaseIterable {
+    static let storageKey = "selectedCharacter"
+
+    case wookey
+    case sharkey
+
+    var title: String { self == .wookey ? "우키" : "샤키" }
+    var companionTitle: String { self == .wookey ? "바나나" : "산호" }
+
+    var shelfArtwork: String {
+        self == .wookey ? "FileShelfFolderWookey" : "FileShelfFolderSharkey"
+    }
+
+    var companionArtwork: String {
+        self == .wookey ? "LightningMascot" : "CoralMascot"
+    }
+}
+
+enum WookeyIconTheme: String, CaseIterable {
+    static let storageKey = "selectedIconTheme"
+
+    case threeDimensional
+    case fluffy
+
+    var title: String { self == .threeDimensional ? "3D" : "플러피" }
+
+    // Fluffy variants use the same asset name with a Fluffy prefix.
+    func asset(_ preferred: String, fallback: String? = nil) -> String {
+        if self == .fluffy, hasArtwork(preferred) { return "Fluffy" + preferred }
+        guard let fallback, !hasArtwork(preferred, themed: false) else { return preferred }
+        return asset(fallback)
+    }
+
+    func hasArtwork(_ name: String, themed: Bool = true) -> Bool {
+        let prefix = themed && self == .fluffy ? "Fluffy" : ""
+        return wookeyAssetBundle.image(forResource: NSImage.Name(prefix + name)) != nil
+    }
+
+    @MainActor
+    func applyDockIcon() {
+        NSApp.applicationIconImage = self == .fluffy
+            ? wookeyAssetBundle.image(forResource: "FluffyAppIcon")
+            : nil
+    }
+}
+
 enum WookeyMenuBarIcon: String, CaseIterable, Identifiable {
     static let visibilityKey = "showsMenuBarIcon"
     static let styleKey = "menuBarIconStyle"
 
-    case wookey = "monkey"
-    case banana
+    // Keep the stored values so existing menu bar choices retain their role.
+    case character = "monkey"
+    case companion = "banana"
 
     var id: Self { self }
 
-    var title: String {
-        switch self {
-        case .wookey: "우키"
-        case .banana: "바나나"
+    func title(for character: WookeyCharacter) -> String {
+        self == .character ? character.title : character.companionTitle
+    }
+
+    func artwork(for character: WookeyCharacter) -> String {
+        switch (self, character) {
+        case (.character, .wookey): "MenuBarWookey"
+        case (.companion, .wookey): "MenuBarBanana"
+        case (.character, .sharkey): "MenuBarSharkey"
+        case (.companion, .sharkey): "MenuBarCoral"
         }
     }
 
-    var assetName: String {
-        switch self {
-        case .wookey: "MenuBarWookey"
-        case .banana: "MenuBarBanana"
-        }
-    }
-
-    func image(activity: Activity? = nil, accessibilityLabel: String? = nil) -> Image {
-        let label = accessibilityLabel ?? title
+    func image(
+        character: WookeyCharacter,
+        theme: WookeyIconTheme,
+        activity: Activity? = nil,
+        accessibilityLabel: String? = nil
+    ) -> Image {
+        let label = accessibilityLabel ?? title(for: character)
+        let assetName = theme.asset(artwork(for: character), fallback: artwork(for: .wookey))
         guard let activity,
               let base = wookeyAssetBundle.image(forResource: NSImage.Name(assetName)),
               let badge = NSImage(systemSymbolName: activity.symbol, accessibilityDescription: nil) else {
