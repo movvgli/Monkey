@@ -2,12 +2,10 @@ import SwiftUI
 import WikeyCore
 
 private enum WorkflowListMetrics {
-    static let columnPadding: CGFloat = 16
-    static let shortcutWidth: CGFloat = 136
-    static let runWidth: CGFloat = 56
-    static let controlHeight: CGFloat = 42
-    static let editInset: CGFloat = 8
-    static let controlSpacing: CGFloat = 6
+    static let horizontalPadding: CGFloat = 10
+    static let shortcutWidth: CGFloat = 132
+    static let playWidth: CGFloat = 32
+    static let spacing: CGFloat = 12
 }
 
 struct WorkflowLibraryView: View {
@@ -136,32 +134,29 @@ struct WorkflowLibraryView: View {
 
     private func workflowList(_ workflows: [Workflow]) -> some View {
         LazyVStack(spacing: 0) {
-            HStack(spacing: WorkflowListMetrics.controlSpacing + WorkflowListMetrics.editInset) {
+            HStack(spacing: WorkflowListMetrics.spacing) {
                 Text("이름").frame(maxWidth: .infinity, alignment: .leading)
                 Text("단축키").frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
-                Text("실행").frame(width: WorkflowListMetrics.runWidth)
+                Text("실행").frame(width: WorkflowListMetrics.playWidth)
             }
-            .font(.caption.weight(.semibold))
+            .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
-            .padding(.horizontal, WorkflowListMetrics.columnPadding)
-            .padding(.vertical, 10)
-            .background {
-                Rectangle().fill(Color.wikeyAccent.opacity(0.063))
-            }
+            .padding(.horizontal, WorkflowListMetrics.horizontalPadding)
+            .padding(.bottom, 8)
+
+            Divider()
 
             ForEach(workflows) { workflow in
-                Divider()
                 WorkflowLibraryRow(
                     workflow: workflow,
                     conflict: runtime.hotkeys.registrationErrors[workflow.id],
                     open: { openWorkflow(workflow.id) }
                 )
+
+                if workflow.id != workflows.last?.id {
+                    Divider().opacity(0.5)
+                }
             }
-        }
-        .background(.background, in: RoundedRectangle(cornerRadius: 16))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16).strokeBorder(.quaternary)
         }
     }
 }
@@ -169,6 +164,7 @@ struct WorkflowLibraryView: View {
 private struct WorkflowLibraryRow: View {
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(\.colorScheme) private var colorScheme
+    @State private var isHovering = false
     var workflow: Workflow
     var conflict: String?
     var open: () -> Void
@@ -179,69 +175,114 @@ private struct WorkflowLibraryRow: View {
         return nil
     }
 
-    private var iconForeground: Color {
-        guard workflow.isEnabled else { return .secondary }
-        return .wikeyInk(in: colorScheme)
+    private var detail: String? {
+        if let executionStatus { return executionStatus }
+        if !workflow.isEnabled { return "단축키 꺼짐" }
+        switch workflow.actions.count {
+        case 0: return "동작 없음"
+        case 1: return nil
+        default: return "\(workflow.actions.count)개 동작"
+        }
+    }
+
+    private var symbol: String {
+        guard workflow.actions.count == 1, let action = workflow.actions.first else { return "bolt" }
+        switch action {
+        case .copyTemplate: return "doc.on.clipboard"
+        case .openURL: return "link"
+        case .launchApplication: return "app"
+        case .openFile: return "doc"
+        case .applyLayout: return "rectangle.3.group"
+        case .pressKey: return "keyboard"
+        case .runWorkflow: return "bolt"
+        case .pasteImages: return "photo"
+        case .pasteFiles: return "paperclip"
+        case .wait: return "clock"
+        }
     }
 
     var body: some View {
-        HStack(spacing: WorkflowListMetrics.controlSpacing) {
-            Button(action: open) {
-                HStack(spacing: 12) {
-                    Image(systemName: workflow.isEnabled ? "bolt.fill" : "pause.fill")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(iconForeground)
-                        .frame(width: 34, height: 34)
-                        .background(
-                            workflow.isEnabled
-                                ? Color.wikeyAccent.opacity(colorScheme == .dark ? 0.30 : 0.11)
-                                : Color.secondary.opacity(0.10),
-                            in: RoundedRectangle(cornerRadius: 10)
-                        )
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(workflow.name)
-                            .font(.body.weight(.semibold))
-                            .lineLimit(1)
-                        Text(executionStatus ?? "\(workflow.actions.count)개 동작" + (workflow.isEnabled ? "" : " · 꺼짐"))
+        HStack(spacing: WorkflowListMetrics.spacing) {
+            editButton
+            runButton
+        }
+        .padding(.horizontal, WorkflowListMetrics.horizontalPadding)
+        .background {
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isHovering ? Color.wikeyInk(in: colorScheme).opacity(0.06) : .clear)
+        }
+        .onHover { isHovering = $0 }
+    }
+
+    private var editButton: some View {
+        Button(action: open) {
+            HStack(spacing: WorkflowListMetrics.spacing) {
+                HStack(spacing: 10) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color.secondary)
+                        .frame(width: 22)
+                        .accessibilityHidden(true)
+
+                    Text(workflow.name)
+                        .font(.body.weight(.medium))
+                        .lineLimit(1)
+                        .layoutPriority(1)
+
+                    if let detail {
+                        Text(detail)
                             .font(.caption)
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
-                    Spacer(minLength: 0)
-                    HStack(spacing: 6) {
-                        if let conflict {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
-                                .accessibilityLabel(conflict)
-                                .help(conflict)
-                        }
-                        ShortcutBadge(
-                            text: workflow.shortcut.steps.isEmpty ? "미지정" : workflow.shortcut.displayName,
-                            isMuted: workflow.shortcut.steps.isEmpty || !workflow.isEnabled
-                        )
-                    }
-                    .frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
-                }
-                .padding(.horizontal, WorkflowListMetrics.editInset)
-                .frame(minHeight: WorkflowListMetrics.controlHeight)
-            }
-            .buttonStyle(WikeyHoverButtonStyle())
-            .help("\(workflow.name) 편집")
-            .accessibilityLabel("\(workflow.name) 편집")
 
-            Button {
-                runtime.run(workflowID: workflow.id)
-            } label: {
-                Image(systemName: "play.fill")
-                    .foregroundStyle(Color.wikeyInk(in: colorScheme))
-                    .frame(width: WorkflowListMetrics.runWidth, height: WorkflowListMetrics.controlHeight)
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                shortcut
+                    .frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
             }
-            .buttonStyle(WikeyHoverButtonStyle(filled: true))
-            .disabled(workflow.actions.isEmpty || executionStatus != nil)
-            .help("워크플로 실행")
-            .accessibilityLabel("\(workflow.name) 실행")
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
-        .padding(.leading, WorkflowListMetrics.columnPadding - WorkflowListMetrics.editInset)
-        .padding(.trailing, WorkflowListMetrics.columnPadding)
-        .padding(.vertical, 4)
+        .buttonStyle(.plain)
+        .help("\(workflow.name) 편집")
+        .accessibilityLabel("\(workflow.name) 편집")
+    }
+
+    private var shortcut: some View {
+        HStack(spacing: 6) {
+            if let conflict {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+                    .accessibilityLabel(conflict)
+                    .help(conflict)
+            }
+
+            if workflow.shortcut.steps.isEmpty {
+                Text("—")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .accessibilityLabel("단축키 미지정")
+            } else {
+                ShortcutBadge(text: workflow.shortcut.displayName, isMuted: !workflow.isEnabled)
+            }
+        }
+    }
+
+    private var runButton: some View {
+        Button {
+            runtime.run(workflowID: workflow.id)
+        } label: {
+            Image(systemName: "play.fill")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(isHovering ? Color.wikeyInk(in: colorScheme) : .secondary)
+                .frame(width: WorkflowListMetrics.playWidth, height: 30)
+        }
+        .buttonStyle(WikeyHoverButtonStyle())
+        .disabled(workflow.actions.isEmpty || executionStatus != nil)
+        .help("워크플로 실행")
+        .accessibilityLabel("\(workflow.name) 실행")
     }
 }
