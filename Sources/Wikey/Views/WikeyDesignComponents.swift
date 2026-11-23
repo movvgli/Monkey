@@ -388,7 +388,7 @@ struct WikeyActionIcon: View {
         let tile = RoundedRectangle(cornerRadius: size * 0.30)
 
         Image(systemName: symbol)
-            .symbolVariant(.fill)
+            .symbolVariant(symbol == "app" ? .none : .fill)
             .font(.system(size: size > 30 ? 16 : 13, weight: .semibold))
             .foregroundStyle(LinearGradient(
                 colors: [ink.opacity(0.83), ink],
