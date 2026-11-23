@@ -17,13 +17,24 @@ struct WookeySettingsView: View {
         case sync = "동기화"
         case updates = "업데이트"
         case diagnostics = "문제 확인"
+
+        var symbol: String {
+            switch self {
+            case .general: "gearshape"
+            case .permissions: "lock.shield"
+            case .history: "clock"
+            case .sync: "icloud"
+            case .updates: "arrow.clockwise"
+            case .diagnostics: "stethoscope"
+            }
+        }
     }
 
     @State private var page: Page = .general
 
     var body: some View {
         VStack(spacing: 0) {
-            WookeyFilterPicker(title: "설정 항목", selection: $page, options: Page.allCases) { page in
+            WookeyFilterPicker(title: "설정 항목", selection: $page, options: Page.allCases, icon: { $0.symbol }) { page in
                 page == .diagnostics && hasErrors ? "문제 확인 •" : page.rawValue
             }
             .padding(.horizontal, 24)
@@ -57,8 +68,7 @@ struct WookeySettingsView: View {
         ) {
             if !isRunningFromApplications {
                 HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.orange)
+                    WookeyActionIcon(symbol: "info.circle.fill", tint: .accent, size: 18)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Wookey를 응용 프로그램 폴더에서 실행해 주세요")
                             .font(.headline)
@@ -78,6 +88,7 @@ struct WookeySettingsView: View {
             PlainPanel {
                 VStack(spacing: 0) {
                     PermissionSettingRow(
+                        symbol: "accessibility",
                         title: "손쉬운 사용",
                         detail: "창 배치·자동 붙여넣기·두 단계 단축키에 사용",
                         granted: runtime.permissions.accessibilityGranted,
@@ -86,6 +97,7 @@ struct WookeySettingsView: View {
                     )
                     Divider().padding(.leading, 42)
                     PermissionSettingRow(
+                        symbol: "keyboard",
                         title: "입력 모니터링",
                         detail: "두 단계 단축키에 사용 · 손쉬운 사용도 필요",
                         granted: runtime.permissions.inputMonitoringGranted,
@@ -97,9 +109,7 @@ struct WookeySettingsView: View {
 
             if runtime.permissions.inputMonitoringRestartRecommended {
                 HStack(spacing: 12) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .foregroundStyle(Color.wookeyInk(in: colorScheme))
-                        .font(.title3)
+                    WookeyActionIcon(symbol: "arrow.clockwise.circle.fill", tint: .accent, size: 20)
                         .frame(width: 30)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("입력 모니터링을 켰다면 Wookey를 다시 열어 주세요")
@@ -197,7 +207,7 @@ struct WookeySettingsView: View {
     private var loginSetting: some View {
         VStack(alignment: .leading, spacing: 0) {
             GeneralSettingRow(
-                symbol: "rectangle.portrait.and.arrow.right",
+                symbol: "door.left.hand.open",
                 title: "로그인 시 Wookey 실행",
                 detail: "로그인할 때 단축키를 준비합니다."
             ) {
@@ -213,13 +223,13 @@ struct WookeySettingsView: View {
             if runtime.loginItem.status == .requiresApproval || runtime.loginItem.lastError != nil {
                 VStack(alignment: .leading, spacing: 8) {
                     if runtime.loginItem.status == .requiresApproval {
-                        Label("macOS 설정에서 로그인 항목을 허용해 주세요.", systemImage: "info.circle")
+                        WookeyControlLabel(title: "macOS 설정에서 로그인 항목을 허용해 주세요.", symbol: "info.circle")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Button("로그인 항목 설정 열기") { runtime.loginItem.openSystemSettings() }
                     }
                     if let error = runtime.loginItem.lastError {
-                        Label(error, systemImage: "exclamationmark.triangle")
+                        WookeyControlLabel(title: error, symbol: "exclamationmark.triangle")
                             .font(.caption)
                             .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                     }
@@ -254,7 +264,7 @@ struct WookeySettingsView: View {
                 }
             }
             if let error = runtime.hotkeys.searchRegistrationError {
-                Label(error, systemImage: "exclamationmark.triangle.fill")
+                WookeyControlLabel(title: error, symbol: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                     .padding(.leading, GeneralSettingsLayout.titleInset)
@@ -282,6 +292,7 @@ struct WookeySettingsView: View {
             PlainPanel {
                 VStack(spacing: 0) {
                     UpdateSettingRow(
+                        symbol: Page.updates.symbol,
                         title: "자동으로 업데이트 확인",
                         detail: "하루에 한 번 새 버전을 확인합니다.",
                         isOn: Binding(
@@ -293,6 +304,7 @@ struct WookeySettingsView: View {
                     Divider().padding(.leading, 42)
 
                     UpdateSettingRow(
+                        symbol: "arrow.down.circle",
                         title: "업데이트 자동 다운로드",
                         detail: "새 버전을 미리 받아 설치할 준비를 합니다.",
                         isOn: Binding(
@@ -305,9 +317,7 @@ struct WookeySettingsView: View {
                     Divider().padding(.leading, 42)
 
                     HStack(spacing: 12) {
-                        Image(systemName: "info.circle")
-                            .foregroundStyle(.secondary)
-                            .font(.title3)
+                        WookeyActionIcon(symbol: "info.circle", tint: .accent, size: 20)
                             .frame(width: 30)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("현재 버전 \(currentVersion)")
@@ -336,38 +346,38 @@ struct WookeySettingsView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(Array(runtime.hotkeys.registrationErrors.keys), id: \.self) { id in
                             let name = runtime.store.workflows.first(where: { $0.id == id })?.name ?? "워크플로"
-                            Label(
-                                "\(name): \(runtime.hotkeys.registrationErrors[id] ?? "단축키 오류")",
-                                systemImage: "exclamationmark.triangle.fill"
+                            WookeyControlLabel(
+                                title: "\(name): \(runtime.hotkeys.registrationErrors[id] ?? "단축키 오류")",
+                                symbol: "exclamationmark.triangle.fill"
                             )
                             .foregroundStyle(.orange)
                         }
                         ForEach(Array(runtime.hotkeys.layoutRegistrationErrors.keys), id: \.self) { id in
                             let name = runtime.store.layouts.first(where: { $0.id == id })?.name ?? "레이아웃"
-                            Label(
-                                "\(name): \(runtime.hotkeys.layoutRegistrationErrors[id] ?? "단축키 오류")",
-                                systemImage: "exclamationmark.triangle.fill"
+                            WookeyControlLabel(
+                                title: "\(name): \(runtime.hotkeys.layoutRegistrationErrors[id] ?? "단축키 오류")",
+                                symbol: "exclamationmark.triangle.fill"
                             )
                             .foregroundStyle(.orange)
                         }
                         ForEach(Array(runtime.hotkeys.applicationRegistrationErrors.keys), id: \.self) { id in
                             let name = runtime.store.applicationShortcuts.first(where: { $0.id == id })?.displayName ?? "앱"
-                            Label(
-                                "\(name): \(runtime.hotkeys.applicationRegistrationErrors[id] ?? "단축키 오류")",
-                                systemImage: "exclamationmark.triangle.fill"
+                            WookeyControlLabel(
+                                title: "\(name): \(runtime.hotkeys.applicationRegistrationErrors[id] ?? "단축키 오류")",
+                                symbol: "exclamationmark.triangle.fill"
                             )
                             .foregroundStyle(.orange)
                         }
                         ForEach(Array(runtime.applicationLaunchErrors.keys), id: \.self) { id in
                             let name = runtime.applicationName(runID: id) ?? "앱"
-                            Label(
-                                "\(name): \(runtime.applicationLaunchErrors[id] ?? "실행 오류")",
-                                systemImage: "exclamationmark.triangle.fill"
+                            WookeyControlLabel(
+                                title: "\(name): \(runtime.applicationLaunchErrors[id] ?? "실행 오류")",
+                                symbol: "exclamationmark.triangle.fill"
                             )
                             .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                         }
                         if let error = runtime.store.lastPersistenceError {
-                            Label(error, systemImage: "externaldrive.badge.exclamationmark")
+                            WookeyControlLabel(title: error, symbol: "externaldrive.badge.exclamationmark")
                                 .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                         }
                     }
@@ -375,8 +385,10 @@ struct WookeySettingsView: View {
                 }
             }
         } else {
-            ContentUnavailableView("확인할 문제가 없습니다", systemImage: "checkmark.circle")
-                .frame(maxWidth: .infinity, minHeight: 230)
+            ContentUnavailableView {
+                WookeyEmptyStateLabel(title: "확인할 문제가 없습니다", symbol: "checkmark.circle.fill")
+            }
+            .frame(maxWidth: .infinity, minHeight: 230)
         }
     }
 
@@ -428,11 +440,8 @@ private struct GeneralSettingRow<Control: View>: View {
 
     var body: some View {
         HStack(spacing: GeneralSettingsLayout.columnSpacing) {
-            Image(systemName: symbol)
-                .font(.system(size: 16))
-                .foregroundStyle(.secondary)
+            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
                 .frame(width: GeneralSettingsLayout.iconWidth)
-                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)
@@ -453,6 +462,7 @@ private struct GeneralSettingRow<Control: View>: View {
 }
 
 private struct UpdateSettingRow: View {
+    var symbol: String
     var title: String
     var detail: String
     @Binding var isOn: Bool
@@ -460,9 +470,7 @@ private struct UpdateSettingRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "arrow.triangle.2.circlepath")
-                .foregroundStyle(.secondary)
-                .font(.title3)
+            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)
@@ -482,6 +490,7 @@ private struct UpdateSettingRow: View {
 }
 
 private struct PermissionSettingRow: View {
+    var symbol: String
     var title: String
     var detail: String
     var granted: Bool
@@ -490,9 +499,7 @@ private struct PermissionSettingRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: granted ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(granted ? Color.green : Color.secondary)
-                .font(.title3)
+            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title).font(.headline)

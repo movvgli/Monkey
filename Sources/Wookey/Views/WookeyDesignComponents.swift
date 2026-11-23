@@ -155,12 +155,22 @@ struct WookeyFilterPicker<Value: Hashable>: View {
     var title: String
     @Binding var selection: Value
     var options: [Value]
+    var icon: ((Value) -> String)? = nil
     var label: (Value) -> String
 
     var body: some View {
         HStack(spacing: 2) {
             ForEach(options, id: \.self) { option in
-                Button(label(option)) { selection = option }
+                Button {
+                    selection = option
+                } label: {
+                    HStack(spacing: 5) {
+                        if let symbol = icon?(option) {
+                            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 15)
+                        }
+                        Text(label(option))
+                    }
+                }
                     .buttonStyle(WookeyFilterButtonStyle(
                         selected: selection == option, focused: focusedOption == option
                     ))
@@ -562,6 +572,18 @@ struct WookeyActionIcon: View {
         case "bold": "WookeyCommandBold"
         case "italic": "WookeyCommandItalic"
         case "underline": "WookeyCommandUnderline"
+        case "lock.shield": "WookeySettingsPermissions"
+        case "icloud": "WookeySettingsSync"
+        case "stethoscope": "WookeySettingsDiagnostics"
+        case "paintpalette": "WookeySettingsPalette"
+        case "menubar.rectangle": "WookeySettingsMenuBar"
+        case "door.left.hand.open": "WookeySettingsLogin"
+        case "accessibility": "WookeySettingsAccessibility"
+        case "arrow.down.circle": "WookeySettingsDownload"
+        case "info.circle", "info.circle.fill": "WookeySettingsInfo"
+        case "exclamationmark.triangle", "exclamationmark.triangle.fill": "WookeySettingsWarning"
+        case "externaldrive.badge.exclamationmark": "WookeySettingsStorage"
+        case "app.badge.checkmark": "WorkflowActionApplication"
         default: nil
         }
     }

@@ -20,7 +20,7 @@ struct ICloudSyncSettingsSection: View {
             PlainPanel {
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
-                        Image(systemName: "icloud").font(.title2).foregroundStyle(.secondary)
+                        WookeyActionIcon(symbol: "icloud", tint: .accent, size: 20)
                         VStack(alignment: .leading, spacing: 4) {
                             Text(sync.isEnabled ? "iCloud Drive 연결됨" : "이 Mac에만 저장 중").font(.headline)
                             Text(sync.status).font(.subheadline).foregroundStyle(.secondary)
@@ -46,7 +46,8 @@ struct ICloudSyncSettingsSection: View {
                             .font(.caption).foregroundStyle(.secondary)
                     }
                     if let error = sync.errorMessage ?? pickerError {
-                        Label(error, systemImage: "exclamationmark.triangle").font(.subheadline).foregroundStyle(.orange)
+                        WookeyControlLabel(title: error, symbol: "exclamationmark.triangle")
+                            .font(.subheadline).foregroundStyle(.orange)
                     }
                     if !sync.conflicts.isEmpty {
                         Divider()
@@ -72,7 +73,10 @@ struct ICloudSyncSettingsSection: View {
                     Text("앱 설치와 손쉬운 사용·입력 모니터링 권한은 각 Mac에서 설정해야 합니다. 첨부 파일은 각각 20MB, 백업은 총 50MB까지 지원합니다. 공유 폴더는 사용하지 마세요.")
                         .font(.caption).foregroundStyle(.secondary)
                     if !missingApps.isEmpty {
-                        Label("이 Mac에 없는 앱: " + missingApps.joined(separator: ", "), systemImage: "app.badge.checkmark")
+                        WookeyControlLabel(
+                            title: "이 Mac에 없는 앱: " + missingApps.joined(separator: ", "),
+                            symbol: "app.badge.checkmark"
+                        )
                             .font(.caption).foregroundStyle(.orange)
                     }
                     localDisplayMappings

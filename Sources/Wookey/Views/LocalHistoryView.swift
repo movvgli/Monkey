@@ -307,20 +307,23 @@ struct HistorySettingsView: View {
     @Environment(LocalHistoryStore.self) private var history
 
     var body: some View {
-        WookeySection(title: "보관 기간", detail: "이 Mac에 보관하며 동기화하지 않습니다. 보관 기간이 지나면 기록이 자동으로 삭제됩니다.") {
+        WookeySection(
+            title: "보관 기간",
+            detail: "기록은 이 Mac에만 저장되며, 보관 기간이 지나면 자동으로 삭제됩니다."
+        ) {
             ForEach(HistoryKind.allCases, id: \.self) { kind in
                 PlainPanel {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label(kind.title, systemImage: kind.symbol)
-                            .font(.headline)
-                        if kind == .clipboard {
-                            Toggle("클립보드 기록", isOn: Binding(
-                                get: { history.recordsClipboard }, set: { history.setRecordsClipboard($0) }
-                            ))
-                        }
-                        HistoryRetentionControls(kind: kind)
-                        if let error = history.errors[kind] {
-                            Text(error).font(.caption).foregroundStyle(.orange)
+                    HStack(alignment: .top, spacing: 12) {
+                        WookeyActionIcon(symbol: kind.symbol, tint: WookeyActionTint(symbol: kind.symbol), size: 26)
+                        VStack(alignment: .leading, spacing: 12) {
+                            historyHeader(for: kind)
+                            Divider()
+                            HistoryRetentionControls(kind: kind)
+                            if let error = history.errors[kind] {
+                                WookeyControlLabel(title: error, symbol: "exclamationmark.triangle")
+                                    .font(.caption)
+                                    .foregroundStyle(.orange)
+                            }
                         }
                     }
                 }
@@ -328,6 +331,40 @@ struct HistorySettingsView: View {
         }
     }
 
+    private func historyHeader(for kind: HistoryKind) -> some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(kind.title)
+                    .font(.headline)
+                    .accessibilityAddTraits(.isHeader)
+                Text(description(for: kind))
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if kind == .clipboard {
+                Toggle("클립보드 기록", isOn: Binding(
+                    get: { history.recordsClipboard },
+                    set: { history.setRecordsClipboard($0) }
+                ))
+                .labelsHidden()
+                .toggleStyle(.switch)
+                .tint(WookeyTheme.banana)
+            }
+        }
+    }
+
+    private func description(for kind: HistoryKind) -> String {
+        switch kind {
+        case .clipboard:
+            history.recordsClipboard
+                ? "복사한 텍스트, 이미지, 파일을 기록합니다."
+                : "새로 복사한 내용은 기록하지 않습니다."
+        case .images:
+            "이미지 보관함에 추가한 사진을 저장합니다."
+        }
+    }
 }
 
 private struct HistoryRetentionControls: View {
@@ -338,17 +375,27 @@ private struct HistoryRetentionControls: View {
 
     var body: some View {
         let saved = history.retention(kind)
-        VStack(alignment: .leading, spacing: 8) {
-            Picker("보관 기간", selection: $draft.period) {
-                ForEach(HistoryRetention.Period.allCases, id: \.self) { period in
-                    Text(period.rawValue).tag(period)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text("보관 기간")
+                Spacer()
+                Picker("\(kind.title) 보관 기간", selection: $draft.period) {
+                    ForEach(HistoryRetention.Period.allCases, id: \.self) { period in
+                        Text(period.rawValue).tag(period)
+                    }
                 }
+                .labelsHidden()
+                .frame(width: 120)
             }
+
             if draft.period == .custom {
-                HStack(spacing: 8) {
+                HStack {
+                    Text("직접 설정한 기간")
+                    Spacer()
                     TextField("기간", text: $amount)
                         .textFieldStyle(.roundedBorder)
-                        .frame(width: 80)
+                        .frame(width: 64)
+                        .accessibilityLabel("\(kind.title) 보관 기간 값")
                     Picker("기간 단위", selection: $draft.unit) {
                         ForEach(HistoryRetention.Unit.allCases, id: \.self) { unit in
                             Text(unit.rawValue).tag(unit)
@@ -358,13 +405,29 @@ private struct HistoryRetentionControls: View {
                     .fixedSize()
                 }
             }
-            Button("적용") {
-                if draft.period == .custom, let customAmount { draft.amount = customAmount }
-                history.setRetention(draft, for: kind)
+
+            if hasChanges(from: saved) {
+                HStack(spacing: 12) {
+                    if proposedRetention == nil {
+                        Text("1 이상의 정수를 입력하세요.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else if let seconds = proposedRetention?.seconds,
+                              seconds < (saved.seconds ?? .infinity) {
+                        Text("새 보관 기간이 지난 기록은 적용 즉시 삭제됩니다.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("적용", wookeyIcon: "checkmark.circle.fill") {
+                        if let proposedRetention {
+                            history.setRetention(proposedRetention, for: kind)
+                        }
+                    }
+                    .buttonStyle(WookeyGlossyButtonStyle())
+                    .disabled(proposedRetention == nil)
+                }
             }
-            .disabled(draft.period == .custom
-                ? customAmount == nil || (draft.period == saved.period && draft.unit == saved.unit && customAmount == saved.amount)
-                : draft.period == saved.period)
         }
         .onChange(of: saved, initial: true) { _, value in
             draft = value
@@ -372,8 +435,15 @@ private struct HistoryRetentionControls: View {
         }
     }
 
-    private var customAmount: Int? {
-        guard let value = Int(amount.trimmingCharacters(in: .whitespaces)), value > 0 else { return nil }
-        return value
+    private var proposedRetention: HistoryRetention? {
+        guard draft.period == .custom else { return draft }
+        guard let amount = Int(amount.trimmingCharacters(in: .whitespaces)), amount > 0 else { return nil }
+        var proposed = draft
+        proposed.amount = amount
+        return proposed
+    }
+
+    private func hasChanges(from saved: HistoryRetention) -> Bool {
+        draft.period == .custom ? proposedRetention != saved : draft.period != saved.period
     }
 }
