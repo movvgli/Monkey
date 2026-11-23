@@ -80,12 +80,7 @@ struct WorkspaceSearchView: View {
 
     private func applicationResults(matching terms: [String]) -> [Result] {
         installedApplications.compactMap { application in
-            let fileName = URL(fileURLWithPath: application.path).deletingPathExtension().lastPathComponent
-            guard terms.allSatisfy({ term in
-                application.displayName.localizedStandardContains(term)
-                    || fileName.localizedStandardContains(term)
-                    || application.bundleIdentifier.localizedStandardContains(term)
-            }) else { return nil }
+            guard application.matchesSearchTerms(terms) else { return nil }
             return Result(id: .openApplication(application), name: application.displayName, detail: "설치된 앱", symbol: "app")
         }
     }
@@ -124,7 +119,7 @@ struct WorkspaceSearchView: View {
 
     private var launcherResults: [Result] {
         let templates = runtime.store.templates.map {
-            Result(id: .copy($0.id), name: $0.name, detail: "템플릿", symbol: "doc.on.clipboard")
+            Result(id: .copy($0.id), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
         }
         return templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map { workflowResult($0) }
     }
@@ -154,7 +149,7 @@ struct WorkspaceSearchView: View {
                    detail: "앱 · \($0.shortcut.displayName)", symbol: "app")
         }
         let templates = runtime.store.templates.map {
-            Result(id: .library(.template($0.id)), name: $0.name, detail: "템플릿", symbol: "doc.on.clipboard")
+            Result(id: .library(.template($0.id)), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
         }
         let layouts = runtime.store.layouts.map {
             Result(id: .library(.layout($0.id)), name: $0.name,
@@ -179,7 +174,7 @@ struct WorkspaceSearchView: View {
                 .frame(height: 28)
                 Button("닫기", wookeyIcon: "xmark", action: close)
                     .labelStyle(.iconOnly)
-                    .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
+                    .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                     .keyboardShortcut(.cancelAction)
             }
             .padding(18)
@@ -451,6 +446,12 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
                 .environment(runtime)
                 .modifier(WookeyThemeScope())
         )
+        panel.openSettings = { [weak self] event in
+            NSApp.activate(ignoringOtherApps: true)
+            guard NSApp.mainMenu?.performKeyEquivalent(with: event) == true else { return false }
+            self?.close()
+            return true
+        }
         panel.delegate = self
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main {
             let area = screen.visibleFrame
@@ -481,7 +482,18 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
     }
 
     private final class SearchWindow: NSPanel {
+        var openSettings: ((NSEvent) -> Bool)?
+
         override var canBecomeKey: Bool { true }
+
+        override func performKeyEquivalent(with event: NSEvent) -> Bool {
+            let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
+            if modifiers == .command, event.charactersIgnoringModifiers == ",",
+               openSettings?(event) == true {
+                return true
+            }
+            return super.performKeyEquivalent(with: event)
+        }
     }
 }
 

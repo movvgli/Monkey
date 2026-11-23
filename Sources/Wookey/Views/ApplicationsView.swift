@@ -65,7 +65,10 @@ struct ApplicationsView: View {
                         .frame(maxWidth: .infinity, minHeight: 180)
                     } else if filteredApplications.isEmpty && missingApplications.isEmpty {
                         ContentUnavailableView {
-                            Label(showsAssignedOnly && searchText.isEmpty ? "지정된 단축키가 없습니다" : "앱을 찾을 수 없습니다", systemImage: "app.dashed")
+                            WookeyEmptyStateLabel(
+                                title: showsAssignedOnly && searchText.isEmpty ? "지정된 단축키가 없습니다" : "앱을 찾을 수 없습니다",
+                                symbol: SidebarSelection.applications.symbol
+                            )
                         } description: {
                             Text(showsAssignedOnly ? "‘전체 앱’에서 앱을 선택해 단축키를 지정하세요." : "다른 이름으로 검색하거나 앱 목록을 새로고침해 주세요.")
                         }
@@ -110,7 +113,7 @@ struct ApplicationsView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
             WookeyPageHeader(title: "앱", subtitle: "설치된 앱에 단축키를 지정하고 바로 실행합니다.") {
                 Button("새로고침", wookeyIcon: "arrow.clockwise") {
                     Task { await reloadApplications() }
@@ -263,7 +266,7 @@ private struct ApplicationShortcutRow: View {
                     .frame(width: 32, height: 32)
                     .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                 .disabled(isRunning)
                 .foregroundStyle(Color.wookeyInk(in: colorScheme))
                 .help("\(application.displayName) 열기")

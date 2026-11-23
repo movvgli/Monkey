@@ -24,8 +24,8 @@ struct ShortcutRecorderView: View {
                     .frame(maxWidth: 390)
                 if !shortcut.steps.isEmpty {
                     Button("지우기") { shortcut = ShortcutGesture() }
-                        .buttonStyle(.borderless)
-                        .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
+                        .buttonStyle(WookeyGlossyButtonStyle(tint: .rose))
+                        .controlSize(.small)
                 }
             }
 
@@ -78,7 +78,8 @@ struct CompactShortcutRecorderView: View {
                     .frame(width: 28, height: 28)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(WookeyHoverButtonStyle(filled: true))
+            .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
+            .controlSize(.small)
             .help(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
             .accessibilityLabel(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
         }

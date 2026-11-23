@@ -13,6 +13,8 @@ enum SidebarSelection: Hashable {
     case template(UUID)
     case layoutCollection
     case layout(UUID)
+    case clipboard
+    case images
 
     var section: Self {
         switch self {
@@ -25,7 +27,9 @@ enum SidebarSelection: Hashable {
         }
     }
 
-    static let sections: [Self] = [.workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection]
+    static let sections: [Self] = [
+        .workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection, .clipboard, .images
+    ]
 
     var title: String {
         switch section {
@@ -34,6 +38,8 @@ enum SidebarSelection: Hashable {
         case .applications: "앱"
         case .templateCollection: "템플릿"
         case .layoutCollection: "레이아웃"
+        case .clipboard: "클립보드"
+        case .images: "이미지"
         default: ""
         }
     }
@@ -43,8 +49,10 @@ enum SidebarSelection: Hashable {
         case .workflowCollection: "bolt"
         case .linkCollection: "link"
         case .applications: "app"
-        case .templateCollection: "doc.on.clipboard"
+        case .templateCollection: wookeyTemplateSymbol
         case .layoutCollection: "rectangle.3.group"
+        case .clipboard: HistoryKind.clipboard.symbol
+        case .images: HistoryKind.images.symbol
         default: ""
         }
     }
@@ -182,7 +190,7 @@ struct ContentView: View {
                 Menu {
                     Button("새 워크플로", wookeyIcon: "bolt", action: addWorkflow)
                     Button("새 링크", wookeyIcon: "link", action: addLink)
-                    Button("새 템플릿", wookeyIcon: "doc.on.clipboard", action: addTemplate)
+                    Button("새 템플릿", wookeyIcon: wookeyTemplateSymbol, action: addTemplate)
                     Button("새 레이아웃", wookeyIcon: "rectangle.3.group", action: addLayout)
                 } label: {
                     WookeyControlLabel(title: "새로 만들기", symbol: "plus")
@@ -275,6 +283,12 @@ struct ContentView: View {
         case .application(let bundleID):
             ApplicationsView(initialSearch: bundleID)
                 .id(bundleID)
+        case .clipboard:
+            LocalHistoryView(kind: .clipboard)
+                .id(HistoryKind.clipboard)
+        case .images:
+            LocalHistoryView(kind: .images)
+                .id(HistoryKind.images)
         case .templateCollection:
             TemplateLibraryView(
                 templates: runtime.store.templates,
@@ -448,7 +462,7 @@ private struct LinkLibraryView: View {
             searchText: $searchText,
             isEmpty: links.isEmpty,
             hasSearchResults: !filtered.isEmpty,
-            emptySymbol: "link",
+            section: .linkCollection,
             emptyDescription: "자주 방문하는 웹사이트의 주소를 추가해 보세요.",
             add: add
         ) {
@@ -466,7 +480,7 @@ private struct LinkLibraryView: View {
                     } label: {
                         WookeyActionIcon(symbol: "arrow.up.right", tint: .graphite, size: 14)
                     }
-                    .buttonStyle(WookeyGlossyButtonStyle(tint: .graphite, iconOnly: true))
+                    .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                     .accessibilityLabel("\(link.workflow.name) 링크 열기")
                     .help("링크 열기")
                     .disabled(runtime.runner.runningWorkflowID == link.id || runtime.runner.queuedWorkflowIDs.contains(link.id))
@@ -500,7 +514,7 @@ private struct TemplateLibraryView: View {
             searchText: $searchText,
             isEmpty: templates.isEmpty,
             hasSearchResults: !filteredTemplates.isEmpty,
-            emptySymbol: "doc.on.clipboard",
+            section: .templateCollection,
             emptyDescription: "자주 쓰는 문장과 이미지를 담은 첫 템플릿을 만들어 보세요.",
             add: add
         ) {
@@ -508,7 +522,7 @@ private struct TemplateLibraryView: View {
                 LibraryItemButton(
                     title: template.name,
                     subtitle: template.plainText.isEmpty ? "내용 없음" : template.plainText,
-                    systemImage: "doc.on.clipboard",
+                    systemImage: wookeyTemplateSymbol,
                     action: { open(template.id) }
                 )
             }
@@ -537,7 +551,7 @@ private struct LayoutLibraryView: View {
             searchText: $searchText,
             isEmpty: layouts.isEmpty,
             hasSearchResults: !filteredLayouts.isEmpty,
-            emptySymbol: "rectangle.3.group",
+            section: .layoutCollection,
             emptyDescription: "함께 사용하는 앱을 추가하고 창을 배치할 위치를 정하세요.",
             add: add
         ) {
@@ -563,7 +577,7 @@ private struct LibraryLandingView<Content: View>: View {
     @Binding var searchText: String
     var isEmpty: Bool
     var hasSearchResults: Bool
-    var emptySymbol: String
+    var section: SidebarSelection
     var emptyDescription: String
     var add: () -> Void
     @ViewBuilder var content: Content
@@ -571,20 +585,22 @@ private struct LibraryLandingView<Content: View>: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 28) {
-                WookeyPageHeader(title: title, subtitle: subtitle) {
-                    Button(addTitle, wookeyIcon: "plus", action: add)
-                        .wookeyPrimaryButtonStyle()
-                        .controlSize(.large)
+                VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
+                    WookeyPageHeader(title: title, subtitle: subtitle) {
+                        Button(addTitle, wookeyIcon: "plus", action: add)
+                            .buttonStyle(WookeyGlossyButtonStyle())
+                            .controlSize(.large)
+                    }
+                    WookeySearchField(prompt: "\(title) 검색", text: $searchText)
                 }
-                WookeySearchField(prompt: "\(title) 검색", text: $searchText)
                 if isEmpty {
                     ContentUnavailableView {
-                        Label("저장한 항목이 없습니다", systemImage: emptySymbol)
+                        WookeyEmptyStateLabel(title: "저장한 항목이 없습니다", symbol: section.symbol)
                     } description: {
                         Text(emptyDescription)
                     } actions: {
                         Button(addTitle, action: add)
-                            .wookeyPrimaryButtonStyle()
+                            .buttonStyle(WookeyGlossyButtonStyle())
                     }
                     .frame(maxWidth: .infinity, minHeight: 240)
                 } else if !hasSearchResults {

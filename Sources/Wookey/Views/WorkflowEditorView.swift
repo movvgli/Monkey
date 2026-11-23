@@ -133,7 +133,7 @@ struct WorkflowEditorView: View {
                         WookeyControlLabel(title: "워크플로 실행", symbol: "play.fill")
                     }
                 }
-                .buttonStyle(WookeyGlossyButtonStyle(tint: .accent))
+                .buttonStyle(WookeyGlossyButtonStyle())
                 .disabled(workflow.actions.isEmpty || isRunning || runtime.runner.queuedWorkflowIDs.contains(workflow.id))
                 .keyboardShortcut(.return, modifiers: [.command])
             }
@@ -251,7 +251,7 @@ struct WorkflowEditorView: View {
                 Button(workflow.shortcut.steps.isEmpty ? "지정" : "변경", wookeyIcon: "keyboard") {
                     showsShortcutEditor.toggle()
                 }
-                .buttonStyle(WookeyGlossyButtonStyle(tint: .graphite))
+                .buttonStyle(WookeyGlossyButtonStyle())
                 .popover(isPresented: $showsShortcutEditor, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("단축키 변경")
@@ -437,7 +437,7 @@ private struct TemplateActionSetupView: View {
                 Button("취소", action: onCancel)
                     .keyboardShortcut(.cancelAction)
                 Button("동작 추가", action: onAdd)
-                    .wookeyPrimaryButtonStyle()
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selectedTemplateID == nil)
             }
@@ -455,7 +455,7 @@ private struct TemplateActionSetupView: View {
             selectedTemplateID = template.id
         } label: {
             HStack(spacing: 14) {
-                WookeyActionIcon(symbol: "doc.on.clipboard", tint: .amber, size: 26)
+                WookeyActionIcon(symbol: wookeyTemplateSymbol, tint: .amber, size: 26)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(template.name)
@@ -604,13 +604,13 @@ private struct FlowActionRow: View {
                                 showsEditor = false
                                 moveUp()
                             }
-                            .buttonStyle(WookeyGlossyButtonStyle(tint: .graphite))
+                            .buttonStyle(WookeyGlossyButtonStyle())
                             .disabled(!canMoveUp)
                             Button("아래로 이동", wookeyIcon: "arrow.down") {
                                 showsEditor = false
                                 moveDown()
                             }
-                            .buttonStyle(WookeyGlossyButtonStyle(tint: .graphite))
+                            .buttonStyle(WookeyGlossyButtonStyle())
                             .disabled(!canMoveDown)
                             Spacer()
                             Button("삭제", wookeyIcon: "trash", role: .destructive) {

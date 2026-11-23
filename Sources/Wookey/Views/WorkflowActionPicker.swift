@@ -35,7 +35,7 @@ struct WorkflowActionPicker: View {
             case .file: "doc"
             case .layout: "rectangle.3.group"
             case .workflow: "bolt"
-            case .template: "doc.on.clipboard"
+            case .template: wookeyTemplateSymbol
             case .images: "photo"
             case .files: "paperclip"
             case .enter: "return"
@@ -118,7 +118,7 @@ struct WorkflowActionPicker: View {
             HStack {
                 Spacer()
                 Button("취소") { dismiss() }
-                    .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral))
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Button("선택", action: addSelection)
                     .buttonStyle(WookeyGlossyButtonStyle())
@@ -160,7 +160,7 @@ struct WorkflowActionSetupSheet<Content: View>: View {
             HStack {
                 Spacer()
                 Button("취소", action: cancel)
-                    .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral))
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Button("동작 추가", action: add)
                     .keyboardShortcut(.defaultAction)

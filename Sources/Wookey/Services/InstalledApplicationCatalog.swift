@@ -5,6 +5,15 @@ struct InstalledApplication: Identifiable, Hashable, Sendable {
     var bundleIdentifier: String
     var displayName: String
     var path: String
+
+    func matchesSearchTerms(_ terms: [String]) -> Bool {
+        let fileName = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+        var names = [displayName, fileName, bundleIdentifier]
+        if bundleIdentifier == "com.apple.Safari" { names.append("사파리") }
+        return terms.allSatisfy { term in
+            names.contains { $0.localizedStandardContains(term) }
+        }
+    }
 }
 
 enum InstalledApplicationCatalog {
@@ -19,6 +28,8 @@ enum InstalledApplicationCatalog {
         let roots = [
             URL(fileURLWithPath: "/Applications", isDirectory: true),
             URL(fileURLWithPath: "/System/Applications", isDirectory: true),
+            // macOS can expose Safari in /Applications as a hidden symlink.
+            URL(fileURLWithPath: "/System/Cryptexes/App/System/Applications", isDirectory: true),
             fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true),
         ]
         var applicationsByIdentifier: [String: InstalledApplication] = [:]

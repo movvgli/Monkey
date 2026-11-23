@@ -60,19 +60,10 @@ private struct WookeyThemeKey: EnvironmentKey {
     static let defaultValue = WookeyTheme.defaultTheme
 }
 
-private struct WookeyPrimarySurfaceKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
 extension EnvironmentValues {
     var wookeyTheme: WookeyTheme {
         get { self[WookeyThemeKey.self] }
         set { self[WookeyThemeKey.self] = newValue }
-    }
-
-    fileprivate var wookeyPrimarySurface: Bool {
-        get { self[WookeyPrimarySurfaceKey.self] }
-        set { self[WookeyPrimarySurfaceKey.self] = newValue }
     }
 }
 
@@ -84,12 +75,14 @@ struct WookeyThemeScope: ViewModifier {
             .environment(\.wookeyTheme, theme)
             .preferredColorScheme(theme.colorScheme)
             .tint(theme.accent)
+            .buttonStyle(WookeyGlossyButtonStyle())
     }
 }
 
 enum WookeyPageMetrics {
     static let padding: CGFloat = 26
     static let maximumWidth: CGFloat = 1000
+    static let headerSpacing: CGFloat = 18
 }
 
 var wookeyAssetBundle: Bundle {
@@ -141,10 +134,6 @@ struct WookeyGlossyPanel: View {
 }
 
 extension View {
-    func wookeyPrimaryButtonStyle() -> some View {
-        buttonStyle(WookeyWarmButtonStyle(kind: .primary))
-    }
-
     @ViewBuilder
     func wookeyLauncherGlass(theme: WookeyTheme) -> some View {
         let shape = RoundedRectangle(cornerRadius: 24)
@@ -172,9 +161,9 @@ struct WookeyFilterPicker<Value: Hashable>: View {
         HStack(spacing: 2) {
             ForEach(options, id: \.self) { option in
                 Button(label(option)) { selection = option }
-                    .buttonStyle(WookeyWarmButtonStyle(kind: .filter(
+                    .buttonStyle(WookeyFilterButtonStyle(
                         selected: selection == option, focused: focusedOption == option
-                    )))
+                    ))
                     .focusable()
                     .focused($focusedOption, equals: option)
                     .focusEffectDisabled()
@@ -203,60 +192,41 @@ struct WookeyFilterPicker<Value: Hashable>: View {
     }
 }
 
-private struct WookeyWarmButtonStyle: ButtonStyle {
-    enum Kind {
-        case primary
-        case filter(selected: Bool, focused: Bool)
-    }
-
-    var kind: Kind
+private struct WookeyFilterButtonStyle: ButtonStyle {
+    var selected: Bool
+    var focused: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        Surface(label: configuration.label, kind: kind, isPressed: configuration.isPressed)
+        Surface(label: configuration.label, selected: selected, focused: focused, isPressed: configuration.isPressed)
     }
 
     private struct Surface: View {
         @Environment(\.colorScheme) private var colorScheme
-        @Environment(\.controlSize) private var controlSize
         @Environment(\.isEnabled) private var isEnabled
         @State private var hovered = false
         var label: Configuration.Label
-        var kind: Kind
+        var selected: Bool
+        var focused: Bool
         var isPressed: Bool
 
-        private var palette: (text: Color, fill: [Color]) {
-            switch kind {
-            case .primary:
-                (WookeyTheme.cocoa,
-                 [Color(red: 0.91, green: 0.76, blue: 0.57), Color(red: 0.79, green: 0.58, blue: 0.38)])
-            case .filter(selected: true, focused: _):
-                (WookeyTheme.cocoa, [Color(red: 1, green: 0.89, blue: 0.59), WookeyTheme.banana])
-            case .filter(selected: false, focused: _):
-                (WookeyTheme.controlInk(in: colorScheme), [.clear, .clear])
-            }
-        }
-
         var body: some View {
-            let primary = if case .primary = kind { true } else { false }
-            let focused = if case .filter(_, let focused) = kind { focused } else { false }
             let shape = RoundedRectangle(cornerRadius: 7, style: .continuous)
-            let palette = palette
+            let textColor = selected ? WookeyTheme.cocoa : WookeyTheme.controlInk(in: colorScheme)
+            let fill: [Color] = selected
+                ? [Color(red: 1, green: 0.89, blue: 0.59), WookeyTheme.banana]
+                : [.clear, .clear]
             let charcoal = Color(white: 0.16).opacity(isPressed ? 0.23 : hovered ? 0.11 : 0)
 
             label
-                .font(.system(size: primary ? 13 : 12))
-                .foregroundStyle(palette.text)
-                .environment(\.wookeyPrimarySurface, primary)
-                .padding(.horizontal, primary ? 13 : 11)
-                .frame(minHeight: primary ? (controlSize == .large ? 32 : 30) : 25)
+                .font(.system(size: 12))
+                .foregroundStyle(textColor)
+                .padding(.horizontal, 11)
+                .frame(minHeight: 25)
                 .background {
-                    shape.fill(LinearGradient(colors: palette.fill, startPoint: .top, endPoint: .bottom))
-                    if primary {
-                        shape.strokeBorder(WookeyTheme.cocoa.opacity(0.17), lineWidth: 1)
-                    }
+                    shape.fill(LinearGradient(colors: fill, startPoint: .top, endPoint: .bottom))
                     shape.fill(charcoal)
                     if focused {
-                        shape.strokeBorder(palette.text.opacity(0.8), lineWidth: 1)
+                        shape.strokeBorder(textColor.opacity(0.8), lineWidth: 1)
                     }
                 }
                 .contentShape(shape)
@@ -276,6 +246,7 @@ struct WookeyPageHeader<Actions: View>: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .accessibilityAddTraits(.isHeader)
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -284,6 +255,7 @@ struct WookeyPageHeader<Actions: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             actions
         }
+        .frame(minHeight: 54)
     }
 }
 
@@ -350,7 +322,6 @@ struct WookeyDeleteButton: View {
 }
 
 struct WookeyEditorHeader<Actions: View>: View {
-    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isEditingName: Bool
     @Binding var title: String
     var subtitle: String
@@ -360,17 +331,12 @@ struct WookeyEditorHeader<Actions: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let onBack {
-                Button(action: onBack) {
-                    WookeyControlLabel(title: "목록", symbol: "chevron.left")
-                        .font(.subheadline)
-                        .foregroundStyle(Color.wookeyInk(in: colorScheme))
-                        .padding(.horizontal, 8)
-                        .frame(height: 26)
-                }
-                .buttonStyle(WookeyHoverButtonStyle())
-                .help("목록으로 돌아가기 (⌘[)")
-                .accessibilityLabel("목록으로 돌아가기")
-                .keyboardShortcut("[", modifiers: [.command])
+                Button("목록", wookeyIcon: "chevron.left", action: onBack)
+                    .buttonStyle(WookeyGlossyButtonStyle())
+                    .controlSize(.small)
+                    .help("목록으로 돌아가기 (⌘[)")
+                    .accessibilityLabel("목록으로 돌아가기")
+                    .keyboardShortcut("[", modifiers: [.command])
             }
 
             HStack(alignment: .center, spacing: 16) {
@@ -379,7 +345,8 @@ struct WookeyEditorHeader<Actions: View>: View {
                         Button { isEditingName = true } label: {
                             WookeyActionIcon(symbol: "pencil", tint: .accent, size: 19)
                         }
-                        .buttonStyle(WookeyHoverButtonStyle())
+                        .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
+                        .controlSize(.small)
                         .accessibilityLabel("이름 수정")
                         .help("이름 수정")
 
@@ -496,6 +463,10 @@ struct PlainPanel<Content: View>: View {
     }
 }
 
+let wookeyTemplateSymbol = NSImage(systemSymbolName: "pencil.and.scribble", accessibilityDescription: nil) != nil
+    ? "pencil.and.scribble"
+    : "square.and.pencil"
+
 enum WookeyActionTint {
     case accent
     case graphite
@@ -510,7 +481,7 @@ enum WookeyActionTint {
         case "link": self = .graphite
         case "rectangle.3.group": self = .blue
         case "app", "arrow.left.arrow.right": self = .teal
-        case "doc", "doc.on.clipboard", "photo", "paperclip": self = .amber
+        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip": self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
         default: self = .accent
         }
@@ -540,7 +511,7 @@ enum WookeyActionTint {
 extension WorkflowAction {
     var wookeyIcon: (symbol: String, tint: WookeyActionTint) {
         let symbol = switch self {
-        case .copyTemplate: "doc.on.clipboard"
+        case .copyTemplate: wookeyTemplateSymbol
         case .openURL: "link"
         case .launchApplication: "app"
         case .openFile: "doc"
@@ -557,7 +528,6 @@ extension WorkflowAction {
 
 struct WookeyActionIcon: View {
     @Environment(\.colorScheme) private var colorScheme
-    @Environment(\.wookeyPrimarySurface) private var onPrimarySurface
     var symbol: String
     var tint: WookeyActionTint
     var size: CGFloat = 24
@@ -566,6 +536,7 @@ struct WookeyActionIcon: View {
         switch symbol {
         case "bolt", "bolt.fill": "WorkflowActionBolt"
         case "link": "WorkflowActionLink"
+        case wookeyTemplateSymbol: "WorkflowActionTemplateNote"
         case "doc.on.clipboard": "WorkflowActionTemplate"
         case "app", "macwindow", "dock.rectangle": "WorkflowActionApplication"
         case "doc": "WorkflowActionDocument"
@@ -607,7 +578,7 @@ struct WookeyActionIcon: View {
     private func artworkTint(_ artwork: String) -> Color {
         switch artwork {
         case "WookeyCommandAdd":
-            colorScheme == .dark && !onPrimarySurface
+            colorScheme == .dark
                 ? Color(red: 0.97, green: 0.72, blue: 0.44)
                 : Color(red: 0.51, green: 0.29, blue: 0.14)
         case "WookeyCommandClose":
@@ -624,7 +595,7 @@ struct WookeyActionIcon: View {
                 let isSilverChain = symbol == "link"
                 let darkModeLift = colorScheme == .dark && (isSilverChain || artwork.hasPrefix("WookeyCommand"))
                 let highlight = isSilverChain ? 0.095 : artwork == "WookeyCommandClose" ? 0.25 : 0
-                let darkLift = darkModeLift && !onPrimarySurface ? 0.19 : 0
+                let darkLift = darkModeLift ? 0.19 : 0
                 Image(artwork, bundle: wookeyAssetBundle)
                     .resizable()
                     .interpolation(.high)
@@ -641,6 +612,19 @@ struct WookeyActionIcon: View {
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
+    }
+}
+
+struct WookeyEmptyStateLabel: View {
+    let title: String
+    let symbol: String
+
+    var body: some View {
+        Label {
+            Text(title)
+        } icon: {
+            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 44)
+        }
     }
 }
 
@@ -671,16 +655,14 @@ struct WookeyHoverButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     var selected = false
     var focused = false
-    var filled = false
-    var cornerRadius: CGFloat = 9
 
     func makeBody(configuration: Configuration) -> some View {
         WookeyHoverSurface(
             label: configuration.label,
             ink: WookeyTheme.controlInk(in: colorScheme),
             selected: selected,
-            filled: filled,
-            cornerRadius: cornerRadius,
+            filled: false,
+            cornerRadius: 9,
             isPressed: configuration.isPressed,
             isEnabled: isEnabled,
             focused: focused
@@ -690,19 +672,22 @@ struct WookeyHoverButtonStyle: ButtonStyle {
 
 struct WookeyGlossyButtonStyle: ButtonStyle {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.controlSize) private var controlSize
     @Environment(\.isEnabled) private var isEnabled
     var tint: WookeyActionTint = .accent
     var iconOnly = false
 
     func makeBody(configuration: Configuration) -> some View {
         let ink = tint.ink(in: colorScheme)
+        let compact = controlSize == .small || controlSize == .mini
+        let minimumSize: CGFloat = compact ? 29 : 36
         return WookeyHoverSurface(
             label: configuration.label
                 .font(.system(size: 13, weight: .regular))
                 .foregroundStyle(ink)
-                .padding(.horizontal, iconOnly ? 0 : 12)
-                .frame(minWidth: 36, minHeight: 36),
-            ink: ink,
+                .padding(.horizontal, iconOnly ? 0 : compact ? 9 : 12)
+                .frame(minWidth: minimumSize, minHeight: minimumSize),
+            ink: WookeyTheme.controlInk(in: colorScheme),
             selected: false,
             filled: true,
             cornerRadius: 10,

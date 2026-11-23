@@ -28,7 +28,7 @@ struct LayoutEditorView: View {
                     showsDeleteConfirmation = true
                 }
                 Button("앱 추가", wookeyIcon: "plus", action: addApplication)
-                    .wookeyPrimaryButtonStyle()
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
                     .disabled(displays.isEmpty)
             }
@@ -101,7 +101,7 @@ struct LayoutEditorView: View {
                 Button("레이아웃 적용", wookeyIcon: "play.fill") {
                     runtime.run(layoutID: layout.id)
                 }
-                .wookeyPrimaryButtonStyle()
+                .buttonStyle(WookeyGlossyButtonStyle())
                 .controlSize(.large)
                 .disabled(layout.placements.isEmpty || displays.isEmpty
                           || runtime.runner.runningWorkflowID == layout.id

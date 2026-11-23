@@ -20,6 +20,7 @@ struct WookeyApp: App {
         Window("Wookey", id: "main") {
             ContentView()
                 .environment(runtime)
+                .environment(WookeyAppRuntime.history)
                 .environment(updates)
                 .modifier(WookeyThemeScope())
                 .task { runtime.start() }
@@ -67,6 +68,7 @@ struct WookeyApp: App {
         Settings {
             WookeySettingsView()
                 .environment(runtime)
+                .environment(WookeyAppRuntime.history)
                 .environment(updates)
                 .modifier(WookeyThemeScope())
         }
@@ -89,6 +91,7 @@ enum WookeyAppRuntime {
         }
         return WookeyRuntime()
     }()
+    static let history = LocalHistoryStore(root: shared.store.storageURL)
 
     static func start() -> WookeyRuntime {
         shared.start()
@@ -132,6 +135,7 @@ private struct WorkspaceCommands: Commands {
 @MainActor
 final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
     private lazy var searchPanel = WorkspaceSearchPanel(runtime: WookeyAppRuntime.shared)
+    private lazy var imageDropShelf = ImageDropShelf(history: WookeyAppRuntime.history)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination("Wookey menu bar runtime")
@@ -142,6 +146,8 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
         let runtime = WookeyAppRuntime.shared
         runtime.hotkeys.onSearch = { [weak self] in self?.toggleSearch() }
         runtime.start()
+        WookeyAppRuntime.history.start()
+        imageDropShelf.start()
         if ProcessInfo.processInfo.arguments.contains("--background") {
             DispatchQueue.main.async {
                 // Keep the app available to the launcher while leaving its main window out of view.

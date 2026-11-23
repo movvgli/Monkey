@@ -13,6 +13,7 @@ struct WookeySettingsView: View {
     private enum Page: String, CaseIterable {
         case general = "일반"
         case permissions = "권한"
+        case history = "보관 기간"
         case sync = "동기화"
         case updates = "업데이트"
         case diagnostics = "문제 확인"
@@ -34,6 +35,7 @@ struct WookeySettingsView: View {
                     switch page {
                     case .general: general
                     case .permissions: permissions
+                    case .history: HistorySettingsView()
                     case .sync: ICloudSyncSettingsSection()
                     case .updates: updateSettings
                     case .diagnostics: diagnostics
@@ -118,7 +120,7 @@ struct WookeySettingsView: View {
             Button("권한 상태 새로고침", wookeyIcon: "arrow.clockwise") {
                 runtime.permissions.refresh()
             }
-            .buttonStyle(WookeyGlossyButtonStyle(tint: .graphite))
+            .buttonStyle(WookeyGlossyButtonStyle())
         }
     }
 

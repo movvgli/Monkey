@@ -44,7 +44,7 @@ struct WorkflowReferenceSetupView: View {
                 Button("취소", action: onCancel)
                     .keyboardShortcut(.cancelAction)
                 Button("동작 추가", action: onAdd)
-                    .wookeyPrimaryButtonStyle()
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selectedWorkflowID == nil)
             }

@@ -14,7 +14,7 @@ struct QuickWorkflowView: View {
 
         var symbol: String {
             switch self {
-            case .template: "doc.on.clipboard"
+            case .template: wookeyTemplateSymbol
             case .link: "link"
             case .app: "app"
             case .file: "doc"
@@ -73,10 +73,9 @@ struct QuickWorkflowView: View {
                                     .font(.system(.body, design: .rounded))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 10)
                             .frame(minHeight: 46)
                         }
-                        .buttonStyle(WookeyHoverButtonStyle(filled: true))
+                        .buttonStyle(WookeyGlossyButtonStyle())
                     }
                 }
             }
@@ -92,13 +91,13 @@ struct QuickWorkflowView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
                     }
-                    .buttonStyle(WookeyHoverButtonStyle())
+                    .buttonStyle(WookeyGlossyButtonStyle())
                 }
                 Spacer()
                 Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
                 if let kind {
                     Button("저장") { save(kind) }
-                        .wookeyPrimaryButtonStyle()
+                        .buttonStyle(WookeyGlossyButtonStyle())
                         .keyboardShortcut(.defaultAction)
                         .disabled(action(kind) == nil || keywordError != nil || (!shortcut.steps.isEmpty && shortcut.validationMessage != nil))
                 }

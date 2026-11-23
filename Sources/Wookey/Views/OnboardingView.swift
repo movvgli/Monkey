@@ -189,27 +189,27 @@ struct OnboardingView: View {
         HStack {
             if page == 0 {
                 Button("건너뛰기") { complete(enableLoginItem: false) }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .tint(theme.accent)
                 Spacer()
                 Button("다음") {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 1 }
                 }
-                .wookeyPrimaryButtonStyle()
+                .buttonStyle(WookeyGlossyButtonStyle())
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
             } else {
                 Button("이전") {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 0 }
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(WookeyGlossyButtonStyle())
                 .tint(theme.accent)
                 Spacer()
                 Button("나중에 설정") { complete(enableLoginItem: false) }
-                    .buttonStyle(.borderless)
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .tint(theme.accent)
                 Button("Wookey 시작") { complete(enableLoginItem: launchAtLogin) }
-                    .wookeyPrimaryButtonStyle()
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
                     .keyboardShortcut(.defaultAction)
             }

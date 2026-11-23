@@ -39,7 +39,7 @@ struct TemplateEditorView: View {
                     showsDeleteConfirmation = true
                 }
                 Button("클립보드에 복사", wookeyIcon: "doc.on.doc", action: copyTemplate)
-                    .wookeyPrimaryButtonStyle()
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
             }
 

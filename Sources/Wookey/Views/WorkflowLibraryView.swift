@@ -66,7 +66,7 @@ struct WorkflowLibraryView: View {
 
                     if runtime.store.workflows.isEmpty {
                         ContentUnavailableView {
-                            Label("첫 워크플로를 만들어 보세요", systemImage: "bolt")
+                            WookeyEmptyStateLabel(title: "첫 워크플로를 만들어 보세요", symbol: SidebarSelection.workflowCollection.symbol)
                         } description: {
                             Text("앱 열기, 웹사이트 열기, 템플릿 붙여넣기 등의 동작을 원하는 순서로 추가하세요.")
                         }
@@ -109,7 +109,7 @@ struct WorkflowLibraryView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 Button("새 워크플로", wookeyIcon: "plus", action: createWorkflow)
-                    .wookeyPrimaryButtonStyle()
+                    .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
                     .padding(.top, 3)
             }
@@ -260,7 +260,8 @@ private struct WorkflowLibraryRow: View {
             WookeyActionIcon(symbol: "play.fill", tint: .accent, size: 14)
                 .frame(width: 28, height: 28)
         }
-        .buttonStyle(WookeyHoverButtonStyle(filled: true, cornerRadius: 14))
+        .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
+        .controlSize(.small)
         .frame(width: WorkflowListMetrics.playWidth)
         .disabled(workflow.actions.isEmpty || executionStatus != nil)
         .help("워크플로 실행")
