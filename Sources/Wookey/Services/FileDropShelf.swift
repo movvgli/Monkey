@@ -17,12 +17,13 @@ enum ShelfAfterDrop: String, CaseIterable {
 final class FloatingShelfSession {
     static let mascotSize = NSSize(width: 148, height: 134)
     static let preferredBubbleWidth: CGFloat = 258
+    static let singleItemBubbleWidth: CGFloat = 144
     static let cardHeight: CGFloat = 80
     static let cardSpacing: CGFloat = 8
     static let bubblePadding: CGFloat = 12
-    static let tailWidth: CGFloat = 11
+    static let thoughtGutterWidth: CGFloat = 24
 
-    let mascotFrame: NSRect
+    var mascotFrame: NSRect
     var entries: [LocalHistoryStore.Entry] = []
     var isExpanded = false
     var bubbleOnLeft = false
@@ -77,7 +78,8 @@ final class FileDropView: NSView {
 
     init(
         history: LocalHistoryStore, shelf: FloatingShelfSession? = nil, onToggle: @escaping () -> Void = {},
-        onClose: @escaping () -> Void = {}, onSaved: @escaping ([LocalHistoryStore.Entry]) -> Void = { _ in }
+        onClose: @escaping () -> Void = {}, onMove: @escaping (NSEvent) -> Void = { _ in },
+        onSaved: @escaping ([LocalHistoryStore.Entry]) -> Void = { _ in }
     ) {
         self.history = history
         self.onSaved = onSaved
@@ -85,7 +87,10 @@ final class FileDropView: NSView {
         let artwork = NSHostingView(rootView:
             Group {
                 if let shelf {
-                    FloatingShelfView(history: history, session: shelf, feedback: feedback, onToggle: onToggle, onClose: onClose)
+                    FloatingShelfView(
+                        history: history, session: shelf, feedback: feedback,
+                        onToggle: onToggle, onClose: onClose, onMove: onMove
+                    )
                 } else {
                     FileDropSurface(feedback: feedback, floating: false)
                         .allowsHitTesting(false)
@@ -288,6 +293,7 @@ final class FileDropShelf {
     private var shake = DragShake()
     private var tracking = false
     private var lastRelease: TimeInterval?
+    private var moveStart: (pointer: NSPoint, origin: NSPoint)?
 
     private var behavior: ShelfAfterDrop {
         UserDefaults.standard.string(forKey: ShelfAfterDrop.storageKey).flatMap(ShelfAfterDrop.init(rawValue:))
@@ -309,6 +315,7 @@ final class FileDropShelf {
 
     private func sample() {
         let now = ProcessInfo.processInfo.systemUptime
+        guard moveStart == nil else { return }
         guard NSEvent.pressedMouseButtons & 1 != 0 else {
             if tracking {
                 tracking = false
@@ -351,6 +358,7 @@ final class FileDropShelf {
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isFloatingPanel = true
+        panel.isMovable = true
         panel.hidesOnDeactivate = false
         panel.isOpaque = false
         panel.backgroundColor = .clear
@@ -362,6 +370,7 @@ final class FileDropShelf {
             history: history, shelf: session,
             onToggle: { [weak self] in self?.toggleExpanded() },
             onClose: { [weak self] in self?.close() },
+            onMove: { [weak self] event in self?.move(with: event) },
             onSaved: { [weak self, weak session] entries in
                 guard let self, let session, self.session === session else { return }
                 session.entries.append(contentsOf: entries)
@@ -388,21 +397,57 @@ final class FileDropShelf {
         resize()
     }
 
+    private func move(with event: NSEvent) {
+        guard let panel, let session, event.window === panel else { return }
+        switch event.type {
+        case .leftMouseDown:
+            guard let pointer = event.cgEvent?.location else { return }
+            moveStart = (pointer, panel.frame.origin)
+        case .leftMouseDragged:
+            guard let moveStart, let pointer = event.cgEvent?.location else { return }
+            let previous = panel.frame.origin
+            // Quartz mouse coordinates stay fixed as the panel moves and increase downward.
+            panel.setFrameOrigin(NSPoint(
+                x: moveStart.origin.x + pointer.x - moveStart.pointer.x,
+                y: moveStart.origin.y - (pointer.y - moveStart.pointer.y)
+            ))
+            session.mascotFrame = session.mascotFrame.offsetBy(
+                dx: panel.frame.minX - previous.x,
+                dy: panel.frame.minY - previous.y
+            )
+        case .leftMouseUp:
+            guard moveStart != nil else { return }
+            moveStart = nil
+            resize()
+        default:
+            break
+        }
+    }
+
     private func resize() {
-        guard let panel, let session, let screen = panel.screen ?? NSScreen.main else { return }
-        let anchor = session.mascotFrame
+        guard moveStart == nil, let panel, let session else { return }
+        var anchor = session.mascotFrame
+        let center = NSPoint(x: anchor.midX, y: anchor.midY)
+        guard let screen = NSScreen.screens.first(where: { $0.frame.contains(center) }) ?? panel.screen ?? NSScreen.main
+        else { return }
+        let bounds = screen.visibleFrame.insetBy(dx: 10, dy: 10)
+        anchor.origin.x = max(bounds.minX, min(anchor.minX, bounds.maxX - anchor.width))
+        anchor.origin.y = max(bounds.minY, min(anchor.minY, bounds.maxY - anchor.height))
+        session.mascotFrame = anchor
+
         guard session.isExpanded else {
             session.mascotTopInset = 0
             panel.setFrame(anchor, display: true)
             return
         }
 
-        let bounds = screen.visibleFrame.insetBy(dx: 10, dy: 10)
         let leftRoom = anchor.minX - bounds.minX
         let rightRoom = bounds.maxX - anchor.maxX
-        session.bubbleOnLeft = rightRoom < FloatingShelfSession.preferredBubbleWidth && leftRoom > rightRoom
+        let preferredWidth = session.entries.count == 1
+            ? FloatingShelfSession.singleItemBubbleWidth : FloatingShelfSession.preferredBubbleWidth
+        session.bubbleOnLeft = rightRoom < preferredWidth && leftRoom > rightRoom
         let available = session.bubbleOnLeft ? leftRoom : rightRoom
-        session.bubbleWidth = max(0, min(available, FloatingShelfSession.preferredBubbleWidth))
+        session.bubbleWidth = max(0, min(available, preferredWidth))
         let rows = min(3, max(1, (session.entries.count + session.columnCount - 1) / session.columnCount))
         let gridHeight = CGFloat(rows) * FloatingShelfSession.cardHeight + CGFloat(rows - 1) * FloatingShelfSession.cardSpacing
         let height = min(bounds.height, max(anchor.height, gridHeight + 2 * FloatingShelfSession.bubblePadding))
@@ -416,6 +461,7 @@ final class FileDropShelf {
         panel?.orderOut(nil)
         panel = nil
         session = nil
+        moveStart = nil
         lastRelease = nil
     }
 

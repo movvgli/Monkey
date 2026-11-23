@@ -296,6 +296,7 @@ struct FloatingShelfView: View {
     let feedback: FileDropFeedback
     let onToggle: () -> Void
     let onClose: () -> Void
+    let onMove: (NSEvent) -> Void
     @State private var isHovered = false
 
     var body: some View {
@@ -321,6 +322,10 @@ struct FloatingShelfView: View {
                     .accessibilityValue("\(session.entries.count)개 항목")
             }
         }
+        .overlay {
+            ShelfMascotInteraction(onClick: session.entries.isEmpty ? nil : onToggle, onMove: onMove)
+                .accessibilityHidden(true)
+        }
         .overlay(alignment: .topTrailing) {
             Button("서랍 닫기", wookeyIcon: "xmark", action: onClose)
                 .labelStyle(.iconOnly)
@@ -345,6 +350,10 @@ struct FloatingShelfView: View {
         let spacing = FloatingShelfSession.cardSpacing
         let columns = Array(repeating: GridItem(.flexible(minimum: 0), spacing: spacing), count: session.columnCount)
         let edge: Edge.Set = session.bubbleOnLeft ? .trailing : .leading
+        let shape = ShelfThoughtBubble(
+            mascotOnLeft: !session.bubbleOnLeft,
+            dotOriginY: session.mascotTopInset + FloatingShelfSession.mascotSize.height / 3
+        )
         return ScrollView {
             LazyVGrid(columns: columns, spacing: spacing) {
                 ForEach(session.entries) { entry in
@@ -353,17 +362,13 @@ struct FloatingShelfView: View {
             }
             .padding(FloatingShelfSession.bubblePadding)
         }
-        .background(theme.panel, in: RoundedRectangle(cornerRadius: 18))
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .padding(edge, FloatingShelfSession.tailWidth - 1)
-        .overlay(alignment: session.bubbleOnLeft ? .topTrailing : .topLeading) {
-            ShelfBubbleTail(pointsLeft: !session.bubbleOnLeft)
-                .fill(theme.panel)
-                .frame(width: FloatingShelfSession.tailWidth, height: 20)
-                .offset(y: session.mascotTopInset + FloatingShelfSession.mascotSize.height / 2 - 10)
+        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .padding(edge, FloatingShelfSession.thoughtGutterWidth)
+        .background {
+            shape.fill(theme.panel)
+                .overlay { shape.stroke(Color.primary.opacity(0.15), lineWidth: 1) }
                 .allowsHitTesting(false)
         }
-        .shadow(color: .black.opacity(0.16), radius: 8, y: 2)
         .frame(width: session.bubbleWidth)
         .accessibilityLabel("서랍에 담은 항목")
     }
@@ -411,17 +416,75 @@ struct FloatingShelfView: View {
     }
 }
 
-private struct ShelfBubbleTail: Shape {
-    let pointsLeft: Bool
+private struct ShelfMascotInteraction: NSViewRepresentable {
+    let onClick: (() -> Void)?
+    let onMove: (NSEvent) -> Void
+
+    func makeNSView(context: Context) -> MascotView { MascotView() }
+
+    func updateNSView(_ view: MascotView, context: Context) {
+        view.onClick = onClick
+        view.onMove = onMove
+    }
+
+    final class MascotView: NSView {
+        var onClick: (() -> Void)?
+        var onMove: ((NSEvent) -> Void)?
+        private var mouseDownEvent: NSEvent?
+        private var isMoving = false
+
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+        override func resetCursorRects() { addCursorRect(bounds, cursor: .openHand) }
+
+        override func mouseDown(with event: NSEvent) {
+            mouseDownEvent = event
+            isMoving = false
+        }
+
+        override func mouseDragged(with event: NSEvent) {
+            guard let mouseDownEvent else { return }
+            if !isMoving {
+                guard let start = mouseDownEvent.cgEvent?.location,
+                      let location = event.cgEvent?.location,
+                      hypot(location.x - start.x, location.y - start.y) >= 4 else { return }
+                isMoving = true
+                onMove?(mouseDownEvent)
+            }
+            onMove?(event)
+        }
+
+        override func mouseUp(with event: NSEvent) {
+            defer {
+                mouseDownEvent = nil
+                isMoving = false
+            }
+            if isMoving {
+                onMove?(event)
+            } else if mouseDownEvent != nil, bounds.contains(convert(event.locationInWindow, from: nil)) {
+                onClick?()
+            }
+        }
+    }
+}
+
+private struct ShelfThoughtBubble: Shape {
+    let mascotOnLeft: Bool
+    let dotOriginY: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        let base = pointsLeft ? rect.maxX : rect.minX
-        let tip = pointsLeft ? rect.minX : rect.maxX
-        var path = Path()
-        path.move(to: CGPoint(x: base, y: rect.minY))
-        path.addLine(to: CGPoint(x: tip, y: rect.midY))
-        path.addLine(to: CGPoint(x: base, y: rect.maxY))
-        path.closeSubpath()
+        let bounds = rect.insetBy(dx: 0.5, dy: 0.5)
+        let width = FloatingShelfSession.thoughtGutterWidth
+        guard bounds.width > width, bounds.height > 1 else { return Path() }
+        let body = CGRect(
+            x: bounds.minX + (mascotOnLeft ? width : 0), y: bounds.minY,
+            width: bounds.width - width, height: bounds.height
+        )
+        let direction: CGFloat = mascotOnLeft ? -1 : 1
+        let edge = mascotOnLeft ? body.minX : body.maxX
+        let y = min(max(dotOriginY, bounds.minY + 10), bounds.maxY - 10)
+        var path = Path(roundedRect: body, cornerRadius: 22)
+        path.addEllipse(in: CGRect(x: edge + direction * 8 - 4, y: y - 9, width: 8, height: 8))
+        path.addEllipse(in: CGRect(x: edge + direction * 18 - 2.5, y: y + 1, width: 5, height: 5))
         return path
     }
 }
