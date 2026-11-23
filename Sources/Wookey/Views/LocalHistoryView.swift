@@ -291,6 +291,7 @@ func historyImageThumbnail(at url: URL, maxPixelSize: Int) -> CGImage? {
 
 struct FloatingShelfView: View {
     @Environment(\.wookeyTheme) private var theme
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     let history: LocalHistoryStore
     let session: FloatingShelfSession
     let feedback: FileDropFeedback
@@ -364,13 +365,41 @@ struct FloatingShelfView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 22))
         .padding(edge, FloatingShelfSession.thoughtGutterWidth)
-        .background {
-            shape.fill(theme.panel)
-                .overlay { shape.stroke(Color.primary.opacity(0.15), lineWidth: 1) }
-                .allowsHitTesting(false)
-        }
+        .background { thoughtBubbleBackground(shape) }
+        .environment(\.colorScheme, theme.colorScheme)
         .frame(width: session.bubbleWidth)
         .accessibilityLabel("서랍에 담은 항목")
+    }
+
+    private func thoughtBubbleBackground(_ shape: ShelfThoughtBubble) -> some View {
+        let isDark = theme == .dark
+        return thoughtBubbleMaterial(shape)
+            .overlay {
+                shape.fill(LinearGradient(
+                    colors: [.white.opacity(isDark ? 0.14 : 0.42), .clear],
+                    startPoint: .topLeading, endPoint: UnitPoint(x: 0.65, y: 0.52)
+                ))
+            }
+            .overlay {
+                shape.stroke(.white.opacity(isDark ? 0.25 : 0.60), lineWidth: 1)
+            }
+            .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private func thoughtBubbleMaterial(_ shape: ShelfThoughtBubble) -> some View {
+        let fallback = reduceTransparency ? AnyShapeStyle(theme.panel) : AnyShapeStyle(.thinMaterial)
+        #if compiler(>=6.2)
+        if #available(macOS 26.0, *), !reduceTransparency {
+            Color.clear
+                .glassEffect(.clear, in: shape)
+                .clipShape(shape)
+        } else {
+            shape.fill(fallback)
+        }
+        #else
+        shape.fill(fallback)
+        #endif
     }
 
     private func entryCard(_ entry: LocalHistoryStore.Entry) -> some View {
@@ -392,13 +421,14 @@ struct FloatingShelfView: View {
                 .frame(width: 36, height: 36)
                 Text(entry.name)
                     .font(.caption.weight(.medium))
+                    .foregroundStyle(theme == .dark ? Color(white: 0.96) : Color(white: 0.12))
                     .lineLimit(1)
                     .truncationMode(.middle)
             }
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity)
             .frame(height: FloatingShelfSession.cardHeight)
-            .background(theme.canvas, in: RoundedRectangle(cornerRadius: 10))
+            .background(theme.canvas.opacity(reduceTransparency ? 1 : 0.66), in: RoundedRectangle(cornerRadius: 10))
             .overlay {
                 RoundedRectangle(cornerRadius: 10)
                     .strokeBorder(Color.primary.opacity(0.09))
