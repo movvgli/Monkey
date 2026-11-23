@@ -230,10 +230,10 @@ struct ContentView: View {
             )
         }
         .sheet(isPresented: $showsSearch) {
-            WorkspaceSearchView { destination in
+            WorkspaceSearchView(mode: .library { destination in
                 selection = destination
                 showsSearch = false
-            }
+            })
         }
     }
 

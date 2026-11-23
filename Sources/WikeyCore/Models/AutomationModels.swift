@@ -6,19 +6,54 @@ public struct Workflow: Identifiable, Codable, Hashable, Sendable {
     public var isEnabled: Bool
     public var shortcut: ShortcutGesture
     public var actions: [WorkflowAction]
+    public var keyword: String?
 
     public init(
         id: UUID = UUID(),
         name: String = "새 워크플로",
         isEnabled: Bool = true,
         shortcut: ShortcutGesture = .init(),
-        actions: [WorkflowAction] = []
+        actions: [WorkflowAction] = [],
+        keyword: String? = nil
     ) {
         self.id = id
         self.name = name
         self.isEnabled = isEnabled
         self.shortcut = shortcut
         self.actions = actions
+        self.keyword = keyword
+    }
+}
+
+public enum WorkflowKeyword {
+    public static func normalized(_ text: String?) -> String? {
+        guard let text else { return nil }
+        let token = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .precomposedStringWithCanonicalMapping
+        guard (1...32).contains(token.count),
+              token.allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" || $0 == "_" }) else { return nil }
+        return token.lowercased(with: Locale(identifier: "en_US_POSIX"))
+    }
+
+    public static func validationMessage(for text: String?, excluding id: UUID? = nil, in workflows: [Workflow]) -> String? {
+        guard let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard let token = normalized(text) else { return "공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요." }
+        if let conflict = workflows.first(where: { $0.id != id && normalized($0.keyword) == token }) {
+            return "‘\(conflict.name)’에서 이미 사용 중인 키워드입니다."
+        }
+        return nil
+    }
+
+    public static func matches(_ query: String, in workflows: [Workflow]) -> [Workflow] {
+        guard let token = normalized(query) else { return [] }
+        let candidates = workflows.compactMap { workflow -> (keyword: String, workflow: Workflow)? in
+            guard let keyword = normalized(workflow.keyword), keyword.hasPrefix(token) else { return nil }
+            return (keyword, workflow)
+        }
+        let grouped = Dictionary(grouping: candidates, by: \.keyword)
+        // Imported or synced workflows can share a keyword. Leave ambiguous commands out.
+        let unique = candidates.filter { grouped[$0.keyword]?.count == 1 && !$0.workflow.actions.isEmpty }
+        return (unique.filter { $0.keyword == token } + unique.filter { $0.keyword != token }).map(\.workflow)
     }
 }
 
@@ -270,19 +305,22 @@ public struct PersistedState: Codable, Sendable {
     public var templates: [RichTemplate]
     public var layouts: [WindowLayout]
     public var applicationShortcuts: [ApplicationShortcut]
+    public var searchShortcut: ShortcutGesture?
 
     public init(
         schemaVersion: Int = 1,
         workflows: [Workflow] = [],
         templates: [RichTemplate] = [],
         layouts: [WindowLayout] = [],
-        applicationShortcuts: [ApplicationShortcut] = []
+        applicationShortcuts: [ApplicationShortcut] = [],
+        searchShortcut: ShortcutGesture? = nil
     ) {
         self.schemaVersion = schemaVersion
         self.workflows = workflows
         self.templates = templates
         self.layouts = layouts
         self.applicationShortcuts = applicationShortcuts
+        self.searchShortcut = searchShortcut
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -291,6 +329,7 @@ public struct PersistedState: Codable, Sendable {
         case templates
         case layouts
         case applicationShortcuts
+        case searchShortcut
     }
 
     public init(from decoder: Decoder) throws {
@@ -303,6 +342,7 @@ public struct PersistedState: Codable, Sendable {
             [ApplicationShortcut].self,
             forKey: .applicationShortcuts
         ) ?? []
+        searchShortcut = try container.decodeIfPresent(ShortcutGesture.self, forKey: .searchShortcut)
     }
 }
 

@@ -48,7 +48,7 @@ struct WikeyApp: App {
         }
 
         MenuBarExtra("Wikey", systemImage: menuBarSymbol, isInserted: .constant(true)) {
-            MenuBarContentView()
+            MenuBarContentView(showSearch: appDelegate.toggleSearch)
                 .environment(runtime)
                 .environment(updates)
                 .tint(.wikeyAccent)
@@ -122,18 +122,31 @@ private struct WorkspaceCommands: Commands {
     }
 }
 
+@MainActor
 final class WikeyAppDelegate: NSObject, NSApplicationDelegate {
+    private lazy var searchPanel = WorkspaceSearchPanel(runtime: WikeyAppRuntime.shared)
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination("Wikey menu bar runtime")
         let activationPolicy = DockIconService.activationPolicy(for: DockIconService.savedVisibility())
         if NSApp.activationPolicy() != activationPolicy {
             NSApp.setActivationPolicy(activationPolicy)
         }
+        let runtime = WikeyAppRuntime.shared
+        runtime.hotkeys.onSearch = { [weak self] in self?.toggleSearch() }
+        runtime.start()
         if ProcessInfo.processInfo.arguments.contains("--background") {
-            DispatchQueue.main.async { NSApp.hide(nil) }
+            DispatchQueue.main.async {
+                // Keep the app available to the launcher while leaving its main window out of view.
+                for window in NSApp.windows where window.canBecomeMain { window.orderOut(nil) }
+            }
         } else {
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    func toggleSearch() {
+        searchPanel.toggle()
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

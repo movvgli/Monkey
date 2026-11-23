@@ -200,6 +200,35 @@ struct WikeySettingsView: View {
                         }
                     }
                     .padding(.vertical, 12)
+
+                    Divider()
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("검색창 단축키").font(.headline)
+                        Text("다른 앱을 사용 중에도 Wikey 검색창을 엽니다.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        HStack {
+                            CompactShortcutRecorderView(shortcut: Binding(
+                                get: { runtime.store.searchShortcut },
+                                set: {
+                                    runtime.store.searchShortcut = $0
+                                    runtime.saveAndReloadHotkeys()
+                                }
+                            ))
+                            Button("기본값") {
+                                runtime.store.searchShortcut = .defaultSearch
+                                runtime.saveAndReloadHotkeys()
+                            }
+                            .disabled(runtime.store.searchShortcut == .defaultSearch)
+                        }
+                        if let error = runtime.hotkeys.searchRegistrationError {
+                            Label(error, systemImage: "exclamationmark.triangle.fill")
+                                .font(.caption)
+                                .foregroundStyle(WikeyActionTint.rose.ink(in: colorScheme))
+                        }
+                    }
+                    .padding(.vertical, 12)
                 }
             }
         }

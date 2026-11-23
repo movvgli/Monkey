@@ -30,6 +30,11 @@ public final class WikeyStore {
         set { state.applicationShortcuts = newValue }
     }
 
+    public var searchShortcut: ShortcutGesture {
+        get { state.searchShortcut ?? .defaultSearch }
+        set { state.searchShortcut = newValue }
+    }
+
     private let rootURL: URL
     private let stateURL: URL
     private let templatesURL: URL
