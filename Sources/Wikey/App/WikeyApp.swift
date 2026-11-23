@@ -13,6 +13,8 @@ extension Color {
 @main
 struct WikeyApp: App {
     @NSApplicationDelegateAdaptor(WikeyAppDelegate.self) private var appDelegate
+    @AppStorage(MonkeyMenuBarIcon.visibilityKey) private var showsMenuBarIcon = true
+    @AppStorage(MonkeyMenuBarIcon.styleKey) private var menuBarIcon = MonkeyMenuBarIcon.monkey
     @State private var runtime = WikeyAppRuntime.shared
     @State private var updates = UpdateController()
 
@@ -47,12 +49,21 @@ struct WikeyApp: App {
             }
         }
 
-        MenuBarExtra("Monkey", systemImage: menuBarSymbol, isInserted: .constant(true)) {
+        MenuBarExtra(isInserted: $showsMenuBarIcon) {
             MenuBarContentView(showSearch: appDelegate.toggleSearch)
                 .environment(runtime)
                 .environment(updates)
                 .tint(.wikeyAccent)
                 .task { runtime.start() }
+        } label: {
+            Label {
+                Text(menuBarActivity?.label ?? "Monkey")
+            } icon: {
+                menuBarIcon.image(
+                    activity: menuBarActivity,
+                    accessibilityLabel: menuBarActivity?.label ?? "Monkey"
+                )
+            }
         }
         .menuBarExtraStyle(.window)
 
@@ -65,10 +76,10 @@ struct WikeyApp: App {
         }
     }
 
-    private var menuBarSymbol: String {
-        if runtime.lastRun?.failures.isEmpty == false { return "bolt.trianglebadge.exclamationmark" }
-        if runtime.runner.runningWorkflowID != nil { return "bolt.badge.clock" }
-        return "bolt.circle"
+    private var menuBarActivity: MonkeyMenuBarIcon.Activity? {
+        if runtime.lastRun?.failures.isEmpty == false { return .failed }
+        if runtime.runner.runningWorkflowID != nil { return .running }
+        return nil
     }
 }
 

@@ -5,6 +5,8 @@ struct WikeySettingsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(WikeyRuntime.self) private var runtime
     @Environment(UpdateController.self) private var updates
+    @AppStorage(MonkeyMenuBarIcon.visibilityKey) private var showsMenuBarIcon = true
+    @AppStorage(MonkeyMenuBarIcon.styleKey) private var menuBarIcon = MonkeyMenuBarIcon.monkey
 
     private enum Page: String, CaseIterable {
         case general = "일반"
@@ -144,13 +146,8 @@ struct WikeySettingsView: View {
                             .foregroundStyle(.secondary)
                             .font(.title3)
                             .frame(width: 30)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("Dock에 Monkey 표시")
-                                .font(.headline)
-                            Text("끄면 메뉴 막대에만 아이콘을 표시합니다.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
+                        Text("Dock에 Monkey 표시")
+                            .font(.headline)
                         Spacer()
                         Toggle(
                             "Dock에 Monkey 표시",
@@ -164,14 +161,18 @@ struct WikeySettingsView: View {
                     }
                     .padding(.vertical, 12)
 
-                    Divider().padding(.leading, 42)
+                    Divider()
+
+                    menuBarSettings
+
+                    Divider()
 
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("로그인 시 Monkey 실행")
                                     .font(.headline)
-                                Text("메인 창은 열지 않고 메뉴 막대와 단축키만 준비합니다.")
+                                Text("메인 창은 열지 않고 단축키를 준비합니다.")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }
@@ -232,6 +233,51 @@ struct WikeySettingsView: View {
                 }
             }
         }
+    }
+
+    private var menuBarSettings: some View {
+        VStack(alignment: .leading, spacing: 11) {
+            HStack(spacing: 12) {
+                Image(systemName: "menubar.rectangle")
+                    .foregroundStyle(.secondary)
+                    .font(.title3)
+                    .frame(width: 30)
+                Text("메뉴 막대에 Monkey 표시")
+                    .font(.headline)
+                Spacer()
+                Toggle("메뉴 막대에 Monkey 표시", isOn: $showsMenuBarIcon)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            HStack(spacing: 12) {
+                Text("메뉴 막대 아이콘")
+                    .font(.subheadline)
+                Spacer()
+                Picker("메뉴 막대 아이콘", selection: $menuBarIcon) {
+                    ForEach(MonkeyMenuBarIcon.allCases) { icon in
+                        Label {
+                            Text(icon.title)
+                        } icon: {
+                            icon.image()
+                        }
+                        .tag(icon)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .frame(width: 180)
+            }
+            .padding(.leading, 42)
+
+            if !showsMenuBarIcon && !runtime.dockIcon.isVisible {
+                Text("Finder의 응용 프로그램에서 Monkey를 다시 열 수 있습니다.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 42)
+            }
+        }
+        .padding(.vertical, 12)
     }
 
     private var updateSettings: some View {
