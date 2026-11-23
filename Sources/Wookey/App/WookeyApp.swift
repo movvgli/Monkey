@@ -135,7 +135,7 @@ private struct WorkspaceCommands: Commands {
 @MainActor
 final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
     private lazy var searchPanel = WorkspaceSearchPanel(runtime: WookeyAppRuntime.shared)
-    private lazy var imageDropShelf = ImageDropShelf(history: WookeyAppRuntime.history)
+    private lazy var fileDropShelf = FileDropShelf(history: WookeyAppRuntime.history)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         ProcessInfo.processInfo.disableAutomaticTermination("Wookey menu bar runtime")
@@ -147,7 +147,7 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
         runtime.hotkeys.onSearch = { [weak self] in self?.toggleSearch() }
         runtime.start()
         WookeyAppRuntime.history.start()
-        imageDropShelf.start()
+        fileDropShelf.start()
         if ProcessInfo.processInfo.arguments.contains("--background") {
             DispatchQueue.main.async {
                 // Keep the app available to the launcher while leaving its main window out of view.

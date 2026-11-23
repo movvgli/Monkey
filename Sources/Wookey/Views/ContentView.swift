@@ -15,7 +15,7 @@ enum SidebarSelection: Hashable {
     case newLayout
     case layout(UUID)
     case clipboard
-    case images
+    case files
 
     var section: Self {
         switch self {
@@ -29,7 +29,7 @@ enum SidebarSelection: Hashable {
     }
 
     static let sections: [Self] = [
-        .workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection, .clipboard, .images
+        .workflowCollection, .linkCollection, .applications, .templateCollection, .layoutCollection, .clipboard, .files
     ]
 
     var title: String {
@@ -40,7 +40,7 @@ enum SidebarSelection: Hashable {
         case .templateCollection: "템플릿"
         case .layoutCollection: "레이아웃"
         case .clipboard: "클립보드"
-        case .images: "이미지"
+        case .files: HistoryKind.files.title
         default: ""
         }
     }
@@ -53,7 +53,7 @@ enum SidebarSelection: Hashable {
         case .templateCollection: wookeyTemplateSymbol
         case .layoutCollection: "rectangle.3.group"
         case .clipboard: HistoryKind.clipboard.symbol
-        case .images: HistoryKind.images.symbol
+        case .files: HistoryKind.files.symbol
         default: ""
         }
     }
@@ -287,9 +287,9 @@ struct ContentView: View {
         case .clipboard:
             LocalHistoryView(kind: .clipboard)
                 .id(HistoryKind.clipboard)
-        case .images:
-            LocalHistoryView(kind: .images)
-                .id(HistoryKind.images)
+        case .files:
+            LocalHistoryView(kind: .files)
+                .id(HistoryKind.files)
         case .templateCollection:
             TemplateLibraryView(
                 templates: runtime.store.templates,

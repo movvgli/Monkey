@@ -6,14 +6,15 @@ import UniformTypeIdentifiers
 struct LocalHistoryView: View {
     @Environment(LocalHistoryStore.self) private var history
     @State private var showsImporter = false
+    @State private var isImporting = false
     let kind: HistoryKind
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
                 header
-                if kind == .images {
-                    ImageDropTarget(history: history)
+                if kind == .files {
+                    FileDropTarget(history: history)
                         .frame(height: 146)
                 }
                 if let error = history.errors[kind] {
@@ -24,7 +25,7 @@ struct LocalHistoryView: View {
                 if entries.isEmpty {
                     ContentUnavailableView {
                         WookeyEmptyStateLabel(
-                            title: kind == .clipboard ? "클립보드 기록이 없습니다" : "보관한 이미지가 없습니다",
+                            title: kind == .clipboard ? "클립보드 기록이 없습니다" : "보관한 파일이나 링크가 없습니다",
                             symbol: kind.symbol
                         )
                     } description: {
@@ -43,7 +44,7 @@ struct LocalHistoryView: View {
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
                         ForEach(entries) { entry in
-                            imageCard(entry)
+                            fileCard(entry)
                         }
                     }
                 }
@@ -53,22 +54,26 @@ struct LocalHistoryView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .navigationTitle(kind.title)
-        .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.image], allowsMultipleSelection: true) { result in
+        .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
             switch result {
             case .success(let urls):
-                for url in urls {
-                    let scoped = url.startAccessingSecurityScopedResource()
-                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                    if !history.importImage(at: url) { history.showImageImportError() }
+                isImporting = true
+                Task {
+                    var failed = false
+                    for url in urls {
+                        if await history.importFile(at: url) == nil { failed = true }
+                    }
+                    if failed { history.showFileImportError() }
+                    isImporting = false
                 }
             case .failure:
-                history.showImageImportError()
+                history.showFileImportError()
             }
         }
     }
 
     private var emptyDescription: String {
-        if kind == .images { return "위에 사진을 놓거나 ‘이미지 추가’를 사용하세요." }
+        if kind == .files { return "파일이나 링크를 위에 놓거나 ‘파일 추가’를 사용하세요." }
         return history.recordsClipboard
             ? "텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다."
             : "설정의 보관 기간 탭에서 클립보드 기록을 켤 수 있습니다."
@@ -77,12 +82,13 @@ struct LocalHistoryView: View {
     private var header: some View {
         let subtitle = kind == .clipboard
             ? "최근 복사한 내용을 찾아 다시 복사합니다."
-            : "보관한 사진을 모아 보고 열 수 있습니다."
+            : "우키 서랍에 담은 파일과 웹 링크를 열 수 있습니다."
         return WookeyPageHeader(title: kind.title, subtitle: subtitle) {
-            if kind == .images {
-                Button("이미지 추가", wookeyIcon: "plus") { showsImporter = true }
+            if kind == .files {
+                Button(isImporting ? "가져오는 중…" : "파일 추가", wookeyIcon: "plus") { showsImporter = true }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
+                    .disabled(isImporting)
             }
         }
     }
@@ -105,14 +111,13 @@ struct LocalHistoryView: View {
         .padding(.vertical, 8)
     }
 
-    private func imageCard(_ entry: LocalHistoryStore.Entry) -> some View {
-        let url = history.fileURL(for: entry, kind: .images)
-        return PlainPanel {
+    private func fileCard(_ entry: LocalHistoryStore.Entry) -> some View {
+        PlainPanel {
             VStack(alignment: .leading, spacing: 8) {
                 Button {
-                    if !NSWorkspace.shared.open(url) { history.showImageImportError() }
+                    history.openFile(entry)
                 } label: {
-                    HistoryImageThumbnail(url: url)
+                    filePreview(entry)
                         .frame(maxWidth: .infinity)
                         .frame(height: 100)
                         .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 6))
@@ -131,6 +136,28 @@ struct LocalHistoryView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func filePreview(_ entry: LocalHistoryStore.Entry) -> some View {
+        let url = history.fileURL(for: entry, kind: .files)
+        if let webURL = entry.webURL {
+            VStack(spacing: 5) {
+                WookeyActionIcon(symbol: "link", tint: .graphite, size: 42)
+                Text(webURL.host ?? "")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 8)
+        } else if entry.symbol == "photo" {
+            HistoryImageThumbnail(url: url)
+        } else {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
+                .resizable()
+                .scaledToFit()
+                .frame(width: 52, height: 52)
         }
     }
 
@@ -174,11 +201,11 @@ func historyImageThumbnail(at url: URL, maxPixelSize: Int) -> CGImage? {
     return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
 }
 
-struct ImageDropSurface: View {
+struct FileDropSurface: View {
     @Environment(\.wookeyTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var biteStage: BiteStage = .idle
-    let feedback: ImageDropFeedback
+    let feedback: FileDropFeedback
     let floating: Bool
 
     private enum BiteStage { case idle, offered, swallowed, saved }
@@ -194,7 +221,7 @@ struct ImageDropSurface: View {
             character
             message
             if !floating {
-                Text("다른 앱에서 사진을 끌다가 두 번 흔들면 드롭박스가 열려요.")
+                Text("파일이나 링크를 끌다가 두 번 흔들면 우키 서랍이 열려요.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -236,7 +263,7 @@ struct ImageDropSurface: View {
             .scaleEffect(reduceMotion ? 1 : wookeyScale)
 
             if !reduceMotion, let receipt = feedback.receipt {
-                photoCard(receipt.photo)
+                receiptCard(receipt)
                     .rotationEffect(.degrees(biteStage == .offered ? -14 : 0))
                     .scaleEffect(biteStage == .offered ? 1 : 0.13)
                     .offset(biteStage == .offered ? CGSize(width: -46, height: 12) : mouthOffset)
@@ -254,10 +281,10 @@ struct ImageDropSurface: View {
     }
 
     private var message: some View {
-        let title = if isSaved { "이미지를 보관했어요" }
-        else if feedback.isReceiving { "이미지를 가져오는 중…" }
+        let title = if isSaved { "서랍에 담았어요" }
+        else if feedback.isReceiving { "가져오는 중…" }
         else if feedback.isTargeted { "여기에 놓으세요" }
-        else { "우키에게 사진을 주세요" }
+        else { "파일이나 링크를 놓으세요" }
         return HStack(spacing: 5) {
             if isSaved { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
             Text(title)
@@ -267,14 +294,14 @@ struct ImageDropSurface: View {
         .lineLimit(1)
     }
 
-    private func photoCard(_ photo: CGImage?) -> some View {
+    private func receiptCard(_ receipt: FileDropFeedback.Receipt) -> some View {
         Group {
-            if let photo {
+            if let photo = receipt.photo {
                 Image(decorative: photo, scale: 1)
                     .resizable()
                     .scaledToFill()
             } else {
-                Image(systemName: "photo").foregroundStyle(theme.accent)
+                WookeyActionIcon(symbol: receipt.symbol, tint: WookeyActionTint(symbol: receipt.symbol), size: 20)
             }
         }
         .frame(width: 28, height: 24)
@@ -361,8 +388,8 @@ struct HistorySettingsView: View {
             history.recordsClipboard
                 ? "복사한 텍스트, 이미지, 파일을 기록합니다."
                 : "새로 복사한 내용은 기록하지 않습니다."
-        case .images:
-            "이미지 보관함에 추가한 사진을 저장합니다."
+        case .files:
+            "우키 서랍에 추가한 파일과 웹 링크를 저장합니다."
         }
     }
 }

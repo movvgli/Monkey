@@ -4,7 +4,7 @@ import WookeyCore
 
 enum WookeyTheme: String, CaseIterable {
     static let storageKey = "appearanceTheme"
-    static let defaultTheme = Self.yellow
+    static let defaultTheme = Self.white
 
     case white, yellow, brown, dark
 

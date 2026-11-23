@@ -41,7 +41,7 @@
 		8C4980DCEAB4DBFB4490CF2A /* TemplateEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5D474D7A2FE6E9C6853A5B0 /* TemplateEditorView.swift */; };
 		927F0D80C51F1791461D8FEA /* WookeyRuntime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F8F86E61039D8E0A96453B2 /* WookeyRuntime.swift */; };
 		9321B69E644F99C715153975 /* InstalledApplicationCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A9022F68765B1273395BCD /* InstalledApplicationCatalog.swift */; };
-		132AC6809C524620F64C2A02 /* ImageDropShelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132AC6809C524620F64C1A02 /* ImageDropShelf.swift */; };
+		132AC6809C524620F64C2A02 /* FileDropShelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132AC6809C524620F64C1A02 /* FileDropShelf.swift */; };
 		132AC6809C524620F64C2A01 /* LocalHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132AC6809C524620F64C1A01 /* LocalHistoryStore.swift */; };
 		9326BA0B076DD5284458D227 /* WookeyRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51FDEC8A0E2FCB4DFE3AF16D /* WookeyRuntimeTests.swift */; };
 		A29D31B4C0383875CBDE463E /* ApplicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8650191882F2C13EE06D44 /* ApplicationsView.swift */; };
@@ -170,7 +170,7 @@
 		B7262FE82D70589434BC129D /* HotkeyRegistrar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRegistrar.swift; sourceTree = "<group>"; };
 		B8A71BEF5729FB22DA320117 /* SequenceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SequenceMonitor.swift; sourceTree = "<group>"; };
 		B9A9022F68765B1273395BCD /* InstalledApplicationCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledApplicationCatalog.swift; sourceTree = "<group>"; };
-		132AC6809C524620F64C1A02 /* ImageDropShelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageDropShelf.swift; sourceTree = "<group>"; };
+		132AC6809C524620F64C1A02 /* FileDropShelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDropShelf.swift; sourceTree = "<group>"; };
 		132AC6809C524620F64C1A01 /* LocalHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalHistoryStore.swift; sourceTree = "<group>"; };
 		C4F766E91A1B80A9C12FBAEC /* WookeySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WookeySettingsView.swift; sourceTree = "<group>"; };
 		C5C17D07296F5224CC879898 /* WindowLayoutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutController.swift; sourceTree = "<group>"; };
@@ -244,7 +244,7 @@
 			isa = PBXGroup;
 			children = (
 				B9A9022F68765B1273395BCD /* InstalledApplicationCatalog.swift */,
-				132AC6809C524620F64C1A02 /* ImageDropShelf.swift */,
+				132AC6809C524620F64C1A02 /* FileDropShelf.swift */,
 				132AC6809C524620F64C1A01 /* LocalHistoryStore.swift */,
 			);
 			path = Services;
@@ -580,7 +580,7 @@
 				0C7CCEF891E33A41F59495E8 /* ContentView.swift in Sources */,
 				A5CDA3E6904085F9FAEA757B /* ICloudSyncSettingsSection.swift in Sources */,
 				9321B69E644F99C715153975 /* InstalledApplicationCatalog.swift in Sources */,
-				132AC6809C524620F64C2A02 /* ImageDropShelf.swift in Sources */,
+				132AC6809C524620F64C2A02 /* FileDropShelf.swift in Sources */,
 				132AC6809C524620F64C2A01 /* LocalHistoryStore.swift in Sources */,
 				764F388AE8FB73D0D099FA32 /* LayoutEditorView.swift in Sources */,
 				590245A0CFE67869BF4CF7D9 /* MenuBarContentView.swift in Sources */,

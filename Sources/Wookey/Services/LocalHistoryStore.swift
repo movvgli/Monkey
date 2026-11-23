@@ -4,10 +4,11 @@ import Observation
 import UniformTypeIdentifiers
 
 enum HistoryKind: String, CaseIterable {
-    case clipboard, images
+    case clipboard
+    case files = "images" // Retain the on-disk directory name for existing shelves.
 
-    var title: String { self == .clipboard ? "클립보드" : "이미지" }
-    var symbol: String { self == .clipboard ? "doc.on.clipboard" : "photo" }
+    var title: String { self == .clipboard ? "클립보드" : "파일" }
+    var symbol: String { self == .clipboard ? "doc.on.clipboard" : "doc" }
 }
 
 struct HistoryRetention: Codable, Equatable {
@@ -42,18 +43,24 @@ struct HistoryRetention: Codable, Equatable {
 @MainActor
 @Observable
 final class LocalHistoryStore {
-    struct Entry: Codable, Identifiable {
+    struct Entry: Codable, Identifiable, Sendable {
         let id: UUID
         let date: Date
         let name: String
         let symbol: String
         let fileName: String
+        var webURL: URL? = nil
     }
 
     private struct Settings: Codable {
         var clipboard = HistoryRetention()
-        var images = HistoryRetention()
+        var files = HistoryRetention()
         var recordsClipboard = true
+
+        enum CodingKeys: String, CodingKey {
+            case clipboard, recordsClipboard
+            case files = "images"
+        }
     }
 
     private struct ClipboardPayload: Codable {
@@ -80,7 +87,7 @@ final class LocalHistoryStore {
     func entries(_ kind: HistoryKind) -> [Entry] { history[kind] ?? [] }
 
     func retention(_ kind: HistoryKind) -> HistoryRetention {
-        kind == .clipboard ? settings.clipboard : settings.images
+        kind == .clipboard ? settings.clipboard : settings.files
     }
 
     func start() {
@@ -90,7 +97,7 @@ final class LocalHistoryStore {
                 settings = try PropertyListDecoder().decode(Settings.self, from: Data(contentsOf: settingsURL))
             } catch {
                 report(error, kind: .clipboard, message: "보관 설정을 읽지 못했습니다")
-                report(error, kind: .images, message: "보관 설정을 읽지 못했습니다")
+                report(error, kind: .files, message: "보관 설정을 읽지 못했습니다")
             }
         }
         for kind in HistoryKind.allCases {
@@ -100,6 +107,7 @@ final class LocalHistoryStore {
                 guard let data = try? Data(contentsOf: record),
                       let entry = try? PropertyListDecoder().decode(Entry.self, from: data),
                       entry.id.uuidString == folder.lastPathComponent,
+                      !["", ".", ".."].contains(entry.fileName),
                       (entry.fileName as NSString).lastPathComponent == entry.fileName,
                       files.fileExists(atPath: fileURL(for: entry, kind: kind).path) else { return nil }
                 return entry
@@ -117,7 +125,7 @@ final class LocalHistoryStore {
     func setRetention(_ value: HistoryRetention, for kind: HistoryKind) {
         var updated = settings
         if kind == .clipboard { updated.clipboard = value }
-        else { updated.images = value }
+        else { updated.files = value }
         if save(updated, kind: kind) { pruneExpired() }
     }
 
@@ -155,27 +163,62 @@ final class LocalHistoryStore {
         }
     }
 
-    @discardableResult
-    func importImage(at url: URL) -> Bool {
-        guard url.isFileURL,
-              (try? url.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
-              let source = CGImageSourceCreateWithURL(url as CFURL, nil),
-              CGImageSourceGetCount(source) > 0 else { return false }
-        let type = CGImageSourceGetType(source).flatMap { UTType($0 as String) }
-        let fileName = "image.\(type?.preferredFilenameExtension ?? url.pathExtension)"
-        return insert(kind: .images, name: url.lastPathComponent, symbol: "photo", fileName: fileName) {
-            try files.copyItem(at: url.resolvingSymlinksInPath(), to: $0)
+    func importFile(at url: URL) async -> Entry? {
+        guard url.isFileURL else { return nil }
+        let directory = directory(.files)
+        do {
+            let entry = try await Task.detached(priority: .userInitiated) {
+                let scoped = url.startAccessingSecurityScopedResource()
+                defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                let source = url.resolvingSymlinksInPath()
+                let values = try source.resourceValues(forKeys: [.isRegularFileKey, .contentTypeKey])
+                guard values.isRegularFile == true else { throw CocoaError(.fileReadUnsupportedScheme) }
+                let name = url.lastPathComponent
+                let fileName = name.caseInsensitiveCompare("record.plist") == .orderedSame ? "file.plist" : name
+                let isImage = values.contentType?.conforms(to: .image) == true
+                let entry = Entry(id: UUID(), date: Date(), name: name, symbol: isImage ? "photo" : "doc", fileName: fileName)
+                try Self.write(entry, in: directory) { try FileManager.default.copyItem(at: source, to: $0) }
+                return entry
+            }.value
+            record(entry, kind: .files)
+            return entry
+        } catch {
+            report(error, kind: .files, message: "파일을 가져오지 못했습니다")
+            return nil
         }
     }
 
-    @discardableResult
-    func importImage(data: Data, type: UTType) -> Bool {
+    func importImage(data: Data, type: UTType) -> Entry? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              CGImageSourceGetCount(source) > 0 else { return false }
+              CGImageSourceGetCount(source) > 0 else { return nil }
         let name = "이미지.\(type.preferredFilenameExtension ?? "img")"
-        return insert(kind: .images, name: name, symbol: "photo", fileName: name) {
+        return insert(kind: .files, name: name, symbol: "photo", fileName: name) {
             try data.write(to: $0)
         }
+    }
+
+    func importLink(_ url: URL, title: String?) -> Entry? {
+        guard Self.isWebURL(url) else { return nil }
+        let title = title?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let name = title.flatMap { $0.isEmpty ? nil : $0 } ?? url.absoluteString
+        return insert(kind: .files, name: String(name.prefix(250)), symbol: "link", fileName: "link.webloc", webURL: url) {
+            try PropertyListEncoder().encode(["URL": url.absoluteString]).write(to: $0)
+        }
+    }
+
+    func openFile(_ entry: Entry) {
+        let url = entry.webURL ?? fileURL(for: entry, kind: .files)
+        guard entry.webURL.map(Self.isWebURL) ?? true, NSWorkspace.shared.open(url) else {
+            errors[.files] = "‘\(entry.name)’을 열지 못했습니다."
+            return
+        }
+        errors[.files] = nil
+    }
+
+    static func isWebURL(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host, !host.isEmpty else { return false }
+        return url.user == nil && url.password == nil
     }
 
     func remove(_ entry: Entry, kind: HistoryKind) {
@@ -189,8 +232,8 @@ final class LocalHistoryStore {
         }
     }
 
-    func showImageImportError() {
-        if errors[.images] == nil { errors[.images] = "이미지 파일을 가져오지 못했습니다." }
+    func showFileImportError() {
+        if errors[.files] == nil { errors[.files] = "일부 항목을 보관하지 못했습니다. 개별 파일과 웹 링크를 추가할 수 있습니다." }
     }
 
     private var settingsURL: URL { root.appendingPathComponent("settings.plist") }
@@ -212,24 +255,39 @@ final class LocalHistoryStore {
         }
     }
 
-    private func insert(kind: HistoryKind, name: String, symbol: String, fileName: String, write: (URL) throws -> Void) -> Bool {
-        let entry = Entry(id: UUID(), date: Date(), name: name, symbol: symbol, fileName: fileName)
-        let url = fileURL(for: entry, kind: kind)
-        let folder = url.deletingLastPathComponent()
+    private func insert(
+        kind: HistoryKind, name: String, symbol: String, fileName: String,
+        webURL: URL? = nil, write: (URL) throws -> Void
+    ) -> Entry? {
+        let entry = Entry(id: UUID(), date: Date(), name: name, symbol: symbol, fileName: fileName, webURL: webURL)
         do {
-            try createRoot()
-            try files.createDirectory(at: folder, withIntermediateDirectories: true)
-            try write(url)
-            let record = folder.appendingPathComponent("record.plist")
-            try PropertyListEncoder().encode(entry).write(to: record, options: .atomic)
-            history[kind, default: []].insert(entry, at: 0)
-            errors[kind] = nil
-            return true
+            try Self.write(entry, in: directory(kind), content: write)
+            record(entry, kind: kind)
+            return entry
+        } catch {
+            report(error, kind: kind, message: "기록을 저장하지 못했습니다")
+            return nil
+        }
+    }
+
+    private nonisolated static func write(_ entry: Entry, in directory: URL, content: (URL) throws -> Void) throws {
+        let files = FileManager.default
+        try files.createDirectory(at: directory.deletingLastPathComponent(),
+                                  withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        let folder = directory.appendingPathComponent(entry.id.uuidString, isDirectory: true)
+        try files.createDirectory(at: folder, withIntermediateDirectories: true)
+        do {
+            try content(folder.appendingPathComponent(entry.fileName))
+            try PropertyListEncoder().encode(entry).write(to: folder.appendingPathComponent("record.plist"), options: .atomic)
         } catch {
             try? files.removeItem(at: folder)
-            report(error, kind: kind, message: "기록을 저장하지 못했습니다")
-            return false
+            throw error
         }
+    }
+
+    private func record(_ entry: Entry, kind: HistoryKind) {
+        history[kind, default: []].insert(entry, at: 0)
+        errors[kind] = nil
     }
 
     private func report(_ error: Error, kind: HistoryKind, message: String) {
