@@ -7,7 +7,7 @@ enum WikeyPageMetrics {
     static let maximumWidth: CGFloat = 1000
 }
 
-private var wikeyAssetBundle: Bundle {
+var wikeyAssetBundle: Bundle {
     #if SWIFT_PACKAGE
     .module
     #else

@@ -56,6 +56,7 @@
 		C8F8C8ACF5F699D21CB5F3D0 /* ClipboardServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A09383B53E374BC48B26ACE /* ClipboardServiceTests.swift */; };
 		CF2B941163616EA8EBA6622D /* WindowLayoutController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5C17D07296F5224CC879898 /* WindowLayoutController.swift */; };
 		D1366FE939AEAC7723F2DF18 /* DockIconServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AD25086AB769827C29D0C69 /* DockIconServiceTests.swift */; };
+		DB1EFA8AD70B6C1297ACA30F /* MonkeyMenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A43F513A3F7069746489229 /* MonkeyMenuBarIcon.swift */; };
 		DB1F394805DE2D7195B28F28 /* WikeyCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 40179216A1772150F1719EAC /* WikeyCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DD5B1C0F78ADC5846938C905 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CFCF42AC1BEA3A2CEFF6D14 /* UpdateController.swift */; };
 		E24573A2C1C0FF57A601F03A /* ShortcutModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A806BBE6571A9A314CA4626 /* ShortcutModels.swift */; };
@@ -130,6 +131,7 @@
 		374E241E259897380A8DAA90 /* WorkflowRunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowRunnerTests.swift; sourceTree = "<group>"; };
 		3AA2E33F5834328B1676075C /* WorkflowEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowEditorView.swift; sourceTree = "<group>"; };
 		40179216A1772150F1719EAC /* WikeyCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WikeyCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		4A43F513A3F7069746489229 /* MonkeyMenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonkeyMenuBarIcon.swift; sourceTree = "<group>"; };
 		4E4044A7589BCC13D42395C5 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		51FDEC8A0E2FCB4DFE3AF16D /* WikeyRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikeyRuntimeTests.swift; sourceTree = "<group>"; };
 		5F4990EEC00AC07B7CA7D2E0 /* SearchCalculation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCalculation.swift; sourceTree = "<group>"; };
@@ -316,6 +318,7 @@
 		B92CAD5775CD37E519C65D37 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				4A43F513A3F7069746489229 /* MonkeyMenuBarIcon.swift */,
 				8CFCF42AC1BEA3A2CEFF6D14 /* UpdateController.swift */,
 				B1EF5D86CA973B6444063C36 /* WikeyApp.swift */,
 				E70E14CFE1AE8F0FFA728406 /* WorkflowIntent.swift */,
@@ -566,6 +569,7 @@
 				9321B69E644F99C715153975 /* InstalledApplicationCatalog.swift in Sources */,
 				764F388AE8FB73D0D099FA32 /* LayoutEditorView.swift in Sources */,
 				590245A0CFE67869BF4CF7D9 /* MenuBarContentView.swift in Sources */,
+				DB1EFA8AD70B6C1297ACA30F /* MonkeyMenuBarIcon.swift in Sources */,
 				57FCA4BFF1808A3845F2E6B2 /* OnboardingView.swift in Sources */,
 				252E22DA34A53779604FEB37 /* QuickWorkflowView.swift in Sources */,
 				854F4322866212E982763957 /* RichTextEditor.swift in Sources */,
@@ -707,7 +711,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002025;
+				CURRENT_PROJECT_VERSION = 1002026;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -727,7 +731,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.25;
+				MARKETING_VERSION = 1.2.26;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -774,7 +778,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002025;
+				CURRENT_PROJECT_VERSION = 1002026;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -788,7 +792,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.25;
+				MARKETING_VERSION = 1.2.26;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
