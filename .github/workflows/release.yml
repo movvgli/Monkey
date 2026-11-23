@@ -60,8 +60,8 @@ jobs:
           printf '%s\n' "Monkey $WIKEY_VERSION" > "$feed_dir/release-notes.txt"
           printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$appcast_tool" \
             --ed-key-file - \
-            --download-url-prefix "https://github.com/movvgli/Wikey/releases/download/$GITHUB_REF_NAME/" \
-            --link "https://github.com/movvgli/Wikey" \
+            --download-url-prefix "https://github.com/movvgli/Monkey/releases/download/$GITHUB_REF_NAME/" \
+            --link "https://github.com/movvgli/Monkey" \
             -o "$GITHUB_WORKSPACE/dist/appcast.xml" \
             "$feed_dir"
 
