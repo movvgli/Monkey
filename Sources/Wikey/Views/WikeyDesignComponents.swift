@@ -137,6 +137,8 @@ struct WikeyDeleteButton: View {
 }
 
 struct WikeyEditorHeader<Actions: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var isEditingName: Bool
     @Binding var title: String
     var subtitle: String
     var onBack: (() -> Void)? = nil
@@ -148,8 +150,11 @@ struct WikeyEditorHeader<Actions: View>: View {
                 Button(action: onBack) {
                     Label("목록", systemImage: "chevron.left")
                         .font(.subheadline.weight(.medium))
+                        .foregroundStyle(Color.wikeyInk(in: colorScheme))
+                        .padding(.horizontal, 8)
+                        .frame(height: 26)
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(WikeyHoverButtonStyle())
                 .help("목록으로 돌아가기 (⌘[)")
                 .accessibilityLabel("목록으로 돌아가기")
                 .keyboardShortcut("[", modifiers: [.command])
@@ -157,13 +162,17 @@ struct WikeyEditorHeader<Actions: View>: View {
 
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 5) {
-                    HStack(spacing: 7) {
-                        Image(systemName: "pencil")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
+                    HStack(spacing: 9) {
+                        Button { isEditingName = true } label: {
+                            WikeyActionIcon(symbol: "pencil", tint: .lavender)
+                        }
+                        .buttonStyle(WikeyHoverButtonStyle())
+                        .accessibilityLabel("이름 수정")
+                        .help("이름 수정")
+
                         TextField("이름", text: $title)
                             .textFieldStyle(.plain)
+                            .focused($isEditingName)
                             .font(.system(size: 25, weight: .semibold, design: .rounded))
                             .accessibilityLabel("이름")
                             .help("이름 편집")

@@ -3,6 +3,7 @@ import WikeyCore
 
 struct TemplateEditorView: View {
     @Environment(WikeyRuntime.self) private var runtime
+    @Environment(\.colorScheme) private var colorScheme
     @Binding var template: RichTemplate
     var onBack: () -> Void
     var onDelete: () -> Void
@@ -43,29 +44,28 @@ struct TemplateEditorView: View {
 
             Divider()
 
-            HStack(spacing: 8) {
-                ControlGroup {
-                    Button(action: editor.toggleBold) { Image(systemName: "bold") }
-                        .help("굵게")
-                    Button(action: editor.toggleItalic) { Image(systemName: "italic") }
-                        .help("기울임")
-                    Button(action: editor.toggleUnderline) { Image(systemName: "underline") }
-                        .help("밑줄")
+            HStack(spacing: 12) {
+                HStack(spacing: 5) {
+                    toolButton("굵게", symbol: "bold", action: editor.toggleBold)
+                    toolButton("기울임", symbol: "italic", action: editor.toggleItalic)
+                    toolButton("밑줄", symbol: "underline", action: editor.toggleUnderline)
                 }
-                .fixedSize()
-                ControlGroup {
-                    Button(action: editor.addLink) { Image(systemName: "link") }
-                        .help("선택한 글자에 링크 추가")
-                    Button(action: editor.insertBullet) { Image(systemName: "list.bullet") }
-                        .help("목록 항목 추가")
-                    Button(action: editor.insertImage) { Image(systemName: "photo") }
-                        .help("이미지 넣기")
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("글자 서식")
+
+                Divider().frame(height: 22)
+
+                HStack(spacing: 5) {
+                    toolButton("링크 추가", symbol: "link", tint: .periwinkle, action: editor.addLink)
+                    toolButton("목록 항목 추가", symbol: "list.bullet", tint: .mint, action: editor.insertBullet)
+                    toolButton("이미지 넣기", symbol: "photo", tint: .peach, action: editor.insertImage)
                 }
-                .fixedSize()
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel("삽입")
                 Spacer()
                 WikeySaveStatus()
             }
-            .padding(.horizontal, 20)
+            .padding(.horizontal, WikeyPageMetrics.padding)
             .padding(.vertical, 10)
             .background(.bar)
 
@@ -83,15 +83,23 @@ struct TemplateEditorView: View {
                 Color(nsColor: .windowBackgroundColor)
                 RichTextEditor(controller: editor)
                     .frame(maxWidth: 760)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 16)
+                            .strokeBorder(.quaternary)
+                            .allowsHitTesting(false)
+                    }
                     .padding(.horizontal, 28)
                     .padding(.vertical, 24)
             }
         }
         .navigationTitle(template.name)
         .task(id: template.id) {
-            editor.load(runtime.store.templateDocument(id: template.id))
-            editor.onDocumentChange = { [weak runtime] document in
-                runtime?.store.saveTemplateDocument(document, for: template.id)
+            let templateID = template.id
+            let store = runtime.store
+            editor.load(store.templateDocument(id: templateID))
+            editor.onDocumentChange = { [weak store] document in
+                store?.saveTemplateDocument(document, for: templateID)
             }
         }
         .alert("템플릿을 삭제할까요?", isPresented: $showsDeleteConfirmation) {
@@ -100,6 +108,24 @@ struct TemplateEditorView: View {
         } message: {
             Text("‘\(template.name)’과 이 템플릿을 사용하는 워크플로 동작이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
         }
+    }
+
+    private func toolButton(
+        _ title: String,
+        symbol: String,
+        tint: WikeyActionTint = .lavender,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(tint.ink(in: colorScheme))
+                .frame(width: 36, height: 36)
+                .background(tint.ink(in: colorScheme).opacity(0.09), in: RoundedRectangle(cornerRadius: 10))
+        }
+        .buttonStyle(WikeyHoverButtonStyle(cornerRadius: 10))
+        .accessibilityLabel(title)
+        .help(title)
     }
 
     private func copyTemplate() {

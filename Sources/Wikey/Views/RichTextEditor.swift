@@ -94,7 +94,8 @@ final class RichTextEditorController {
     }
 
     func emitChange() {
-        guard let storage = textView?.textStorage else { return }
+        guard let textView, let storage = textView.textStorage else { return }
+        (textView as? TemplateTextView)?.refreshPreviewContrast()
         onDocumentChange?(NSAttributedString(attributedString: storage))
     }
 
@@ -134,7 +135,55 @@ final class RichTextEditorController {
         if storage.length == 0 {
             textView.typingAttributes = [.font: NSFont.systemFont(ofSize: 14)]
         }
+        (textView as? TemplateTextView)?.refreshPreviewContrast()
         self.pendingDocument = nil
+    }
+}
+
+final class TemplateTextView: NSTextView {
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        refreshPreviewContrast()
+    }
+
+    func refreshPreviewContrast() {
+        guard let storage = textStorage, storage.length > 0, let layout = layoutManager else { return }
+        let document = NSRange(location: 0, length: storage.length)
+        layout.removeTemporaryAttribute(.foregroundColor, forCharacterRange: document)
+        guard effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua else { return }
+
+        // Temporary attributes affect drawing without changing the RTFD or its clipboard representation.
+        effectiveAppearance.performAsCurrentDrawingAppearance {
+            let page = luminance(of: backgroundColor, over: 0) ?? 0
+            storage.enumerateAttributes(in: document) { attributes, range, _ in
+                let highlight = attributes[.backgroundColor] as? NSColor
+                let backdrop = highlight.flatMap { luminance(of: $0, over: page) } ?? page
+                let text = attributes[.foregroundColor] as? NSColor
+                let isLink = attributes[.link] != nil
+                let defaultInk: NSColor = isLink ? .linkColor : .textColor
+                guard let ink = luminance(of: isLink ? defaultInk : text ?? defaultInk, over: backdrop) else { return }
+
+                let contrast = (max(ink, backdrop) + 0.05) / (min(ink, backdrop) + 0.05)
+                if contrast < 4.5 || (text == nil && !isLink) {
+                    let readableInk: NSColor = contrast >= 4.5 ? defaultInk : backdrop > 0.18 ? .black : .white
+                    layout.addTemporaryAttribute(.foregroundColor, value: readableInk, forCharacterRange: range)
+                }
+            }
+        }
+    }
+
+    private func luminance(of color: NSColor, over backdrop: CGFloat) -> CGFloat? {
+        guard let rgb = color.usingColorSpace(.sRGB) else { return nil }
+
+        func linear(_ value: CGFloat) -> CGFloat {
+            let channel = max(0, min(1, value))
+            return channel <= 0.04045 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+        }
+
+        let value = 0.2126 * linear(rgb.redComponent)
+            + 0.7152 * linear(rgb.greenComponent)
+            + 0.0722 * linear(rgb.blueComponent)
+        return value * rgb.alphaComponent + backdrop * (1 - rgb.alphaComponent)
     }
 }
 
@@ -150,13 +199,8 @@ struct RichTextEditor: NSViewRepresentable {
         scroll.borderType = .noBorder
         scroll.drawsBackground = true
         scroll.backgroundColor = .textBackgroundColor
-        scroll.wantsLayer = true
-        scroll.layer?.cornerRadius = 10
-        scroll.layer?.cornerCurve = .continuous
-        scroll.layer?.borderWidth = 1
-        scroll.layer?.borderColor = NSColor.separatorColor.cgColor
 
-        let textView = NSTextView(frame: .zero)
+        let textView = TemplateTextView(usingTextLayoutManager: false)
         textView.isRichText = true
         textView.importsGraphics = true
         textView.allowsUndo = true
@@ -167,6 +211,8 @@ struct RichTextEditor: NSViewRepresentable {
         textView.textContainer?.widthTracksTextView = true
         textView.drawsBackground = true
         textView.backgroundColor = .textBackgroundColor
+        textView.insertionPointColor = .textColor
+        textView.setAccessibilityLabel("템플릿 본문")
         textView.textContainerInset = NSSize(width: 22, height: 20)
         textView.typingAttributes = [.font: NSFont.systemFont(ofSize: 15)]
         textView.delegate = context.coordinator
