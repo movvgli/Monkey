@@ -36,14 +36,7 @@ struct WorkflowLibraryView: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 18) {
-                WikeyPageHeader(
-                    title: "워크플로",
-                    subtitle: "동작을 연결하고 단축키 하나로 실행하세요."
-                ) {
-                    Button("새 워크플로", systemImage: "plus", action: createWorkflow)
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                }
+                libraryHeader
 
                 if !runtime.store.workflows.isEmpty {
                     HStack(spacing: 16) {
@@ -100,6 +93,37 @@ struct WorkflowLibraryView: View {
         .navigationTitle("워크플로")
     }
 
+    private var libraryHeader: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("워크플로")
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .accessibilityAddTraits(.isHeader)
+                Text("자주 하는 일을 단축키 하나로 실행하세요.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Button("새 워크플로", systemImage: "plus", action: createWorkflow)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.top, 3)
+            }
+            Spacer(minLength: 0)
+            WikeyMascot(size: 122)
+                .background {
+                    Circle()
+                        .fill(.white.opacity(0.28))
+                        .frame(width: 100, height: 100)
+                }
+                .padding(.trailing, 6)
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(WikeyLavenderPanel())
+    }
+
     private func latestRun(_ summary: RunSummary) -> some View {
         WikeySection(title: "최근 실행") {
             PlainPanel { RunSummaryView(summary: summary) }
@@ -117,7 +141,7 @@ struct WorkflowLibraryView: View {
             .foregroundStyle(.secondary)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(.quaternary.opacity(0.35))
+            .background(Color.wikeyAccent.opacity(0.063))
 
             ForEach(workflows) { workflow in
                 Divider()
@@ -128,16 +152,17 @@ struct WorkflowLibraryView: View {
                 )
             }
         }
-        .background(.background, in: RoundedRectangle(cornerRadius: 12))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(.background, in: RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay {
-            RoundedRectangle(cornerRadius: 12).strokeBorder(.quaternary)
+            RoundedRectangle(cornerRadius: 16).strokeBorder(.quaternary)
         }
     }
 }
 
 private struct WorkflowLibraryRow: View {
     @Environment(WikeyRuntime.self) private var runtime
+    @Environment(\.colorScheme) private var colorScheme
     @State private var isHovering = false
     var workflow: Workflow
     var conflict: String?
@@ -149,15 +174,25 @@ private struct WorkflowLibraryRow: View {
         return nil
     }
 
+    private var iconForeground: Color {
+        guard workflow.isEnabled else { return .secondary }
+        return colorScheme == .dark ? Color(red: 0.80, green: 0.71, blue: 1) : .wikeyAccent
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             Button(action: open) {
                 HStack(spacing: 12) {
                     Image(systemName: workflow.isEnabled ? "bolt.fill" : "pause.fill")
                         .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(workflow.isEnabled ? Color.accentColor : Color.secondary)
-                        .frame(width: 30, height: 30)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 7))
+                        .foregroundStyle(iconForeground)
+                        .frame(width: 34, height: 34)
+                        .background(
+                            workflow.isEnabled
+                                ? Color.wikeyAccent.opacity(colorScheme == .dark ? 0.30 : 0.11)
+                                : Color.secondary.opacity(0.10),
+                            in: RoundedRectangle(cornerRadius: 10)
+                        )
                     VStack(alignment: .leading, spacing: 3) {
                         Text(workflow.name)
                             .font(.body.weight(.semibold))
@@ -195,13 +230,14 @@ private struct WorkflowLibraryRow: View {
                     .frame(width: 24)
             }
             .buttonStyle(.bordered)
+            .buttonBorderShape(.capsule)
             .disabled(workflow.actions.isEmpty || executionStatus != nil)
             .help("워크플로 실행")
             .accessibilityLabel("\(workflow.name) 실행")
             .frame(width: 56)
         }
         .padding(.horizontal, 16)
-        .background(isHovering ? Color.accentColor.opacity(0.055) : .clear)
+        .background(isHovering ? Color.wikeyAccent.opacity(0.075) : .clear)
         .onHover { isHovering = $0 }
     }
 }

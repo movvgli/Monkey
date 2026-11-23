@@ -7,6 +7,48 @@ enum WikeyPageMetrics {
     static let maximumWidth: CGFloat = 1000
 }
 
+struct WikeyMascot: View {
+    var size: CGFloat
+
+    var body: some View {
+        Image("LightningMascot", bundle: assetBundle)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    private var assetBundle: Bundle {
+        #if SWIFT_PACKAGE
+        .module
+        #else
+        .main
+        #endif
+    }
+}
+
+struct WikeyLavenderPanel: View {
+    @Environment(\.colorScheme) private var colorScheme
+    var radius: CGFloat = 20
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: radius)
+        let isDark = colorScheme == .dark
+        shape.fill(
+            LinearGradient(
+                colors: isDark
+                    ? [Color(red: 0.20, green: 0.15, blue: 0.29), Color(red: 0.26, green: 0.18, blue: 0.32)]
+                    : [Color(red: 0.94, green: 0.91, blue: 1), Color(red: 0.99, green: 0.94, blue: 0.98)],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .overlay {
+            shape.strokeBorder(isDark ? Color.white.opacity(0.10) : Color.wikeyAccent.opacity(0.13))
+        }
+    }
+}
+
 struct WikeyPageHeader<Actions: View>: View {
     var title: String
     var subtitle: String
@@ -16,7 +58,7 @@ struct WikeyPageHeader<Actions: View>: View {
         HStack(alignment: .center, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
                 Text(subtitle)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -53,9 +95,9 @@ struct WikeySearchField: View {
         }
         .padding(.horizontal, 13)
         .frame(height: 40)
-        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 12))
         .overlay {
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(nsColor: .separatorColor).opacity(0.35), lineWidth: 1)
         }
     }
@@ -122,7 +164,7 @@ struct WikeyEditorHeader<Actions: View>: View {
                             .accessibilityHidden(true)
                         TextField("이름", text: $title)
                             .textFieldStyle(.plain)
-                            .font(.system(size: 25, weight: .semibold))
+                            .font(.system(size: 25, weight: .semibold, design: .rounded))
                             .accessibilityLabel("이름")
                             .help("이름 편집")
                     }

@@ -273,7 +273,7 @@ struct WorkflowEditorView: View {
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 20)
-        .background(FlowCardBackground())
+        .background(WikeyLavenderPanel(radius: 16))
     }
 
     private var validWebURL: String? {
@@ -502,10 +502,10 @@ private struct TemplateActionSetupView: View {
 
 private struct FlowCardBackground: View {
     var body: some View {
-        RoundedRectangle(cornerRadius: 14, style: .continuous)
+        RoundedRectangle(cornerRadius: 17, style: .continuous)
             .fill(Color(nsColor: .controlBackgroundColor))
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 17, style: .continuous)
                     .stroke(Color(nsColor: .separatorColor).opacity(0.34), lineWidth: 1)
             }
             .shadow(color: .black.opacity(0.045), radius: 10, y: 3)
@@ -515,9 +515,7 @@ private struct FlowCardBackground: View {
 private struct EmptyActionsView: View {
     var body: some View {
         HStack(spacing: 14) {
-            Image(systemName: "list.number")
-                .font(.title2)
-                .foregroundStyle(.secondary)
+            WikeyMascot(size: 66)
             VStack(alignment: .leading, spacing: 3) {
                 Text("첫 동작을 추가해 보세요")
                     .font(.headline)
@@ -528,7 +526,7 @@ private struct EmptyActionsView: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(FlowCardBackground())
+        .background(WikeyLavenderPanel(radius: 17))
     }
 }
 

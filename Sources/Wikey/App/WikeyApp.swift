@@ -3,7 +3,7 @@ import SwiftUI
 import WikeyCore
 
 extension Color {
-    static let wikeyAccent = Color(red: 0.31, green: 0.29, blue: 0.93)
+    static let wikeyAccent = Color(red: 0.40, green: 0.26, blue: 0.73)
 }
 
 @main
@@ -30,6 +30,7 @@ struct WikeyApp: App {
                 .environment(runtime)
                 .environment(updates)
                 .tint(.wikeyAccent)
+                .accentColor(.wikeyAccent)
                 .task { runtime.start() }
                 .frame(minWidth: 920, minHeight: 620)
         }
@@ -66,6 +67,7 @@ struct WikeyApp: App {
                 .environment(runtime)
                 .environment(updates)
                 .tint(.wikeyAccent)
+                .accentColor(.wikeyAccent)
         }
     }
 
