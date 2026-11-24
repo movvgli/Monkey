@@ -3,6 +3,16 @@
     <channel>
         <title>Wikey</title>
         <item>
+            <title>1.2.52</title>
+            <pubDate>Tue, 24 Nov 2026 03:50:15 +0000</pubDate>
+            <link>https://github.com/movvgli/Wookey</link>
+            <sparkle:version>1002052</sparkle:version>
+            <sparkle:shortVersionString>1.2.52</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://raw.githubusercontent.com/movvgli/Wookey/update-feed/Wookey-1.2.52.md</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/movvgli/Wookey/releases/download/v1.2.52/Wookey-1.2.52.dmg" length="17320744" type="application/octet-stream" sparkle:edSignature="85B0vS+BPT3q+M/sziAwmxyNybeMm/MZ5fSBB84cpVPMkrmCJdE0FBVSrWrKIPwvjwb2SCrgXBMhK8Imd48yBQ=="/>
+        </item>
+        <item>
             <title>1.2.51</title>
             <pubDate>Tue, 24 Nov 2026 03:45:45 +0000</pubDate>
             <link>https://github.com/movvgli/Wookey</link>
@@ -21,16 +31,6 @@
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:releaseNotesLink>https://raw.githubusercontent.com/movvgli/Wookey/update-feed/Wookey-1.2.50.md</sparkle:releaseNotesLink>
             <enclosure url="https://github.com/movvgli/Wookey/releases/download/v1.2.50/Wookey-1.2.50.dmg" length="12748412" type="application/octet-stream" sparkle:edSignature="cSBXRi6EhBOBJbo04PTNTHvaLK4BydKYUIfc5ksFGpK4H8ctfL4ShlhnwjbxqJTi9X/RJZg3PvDhRdg7L4knCw=="/>
-        </item>
-        <item>
-            <title>1.2.49</title>
-            <pubDate>Tue, 24 Nov 2026 02:40:41 +0000</pubDate>
-            <link>https://github.com/movvgli/Wookey</link>
-            <sparkle:version>1002049</sparkle:version>
-            <sparkle:shortVersionString>1.2.49</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <sparkle:releaseNotesLink>https://raw.githubusercontent.com/movvgli/Wookey/update-feed/Wookey-1.2.49.md</sparkle:releaseNotesLink>
-            <enclosure url="https://github.com/movvgli/Wookey/releases/download/v1.2.49/Wookey-1.2.49.dmg" length="12748612" type="application/octet-stream" sparkle:edSignature="chWv9ac90NRW5hqPiwIlDoVSdF4reeFZU/5XHEzdgcUurf47V7/G1IkSsIWkAAxtAa4zJiGMsMMDKVbYIyv6Dw=="/>
         </item>
         <item>
             <title>1.2.4</title>
