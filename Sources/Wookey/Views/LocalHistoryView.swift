@@ -127,8 +127,9 @@ struct LocalHistoryView: View {
     }
 
     private func clipboardRow(_ entry: LocalHistoryStore.Entry) -> some View {
-        HStack(spacing: 10) {
-            WookeyActionIcon(symbol: entry.symbol, tint: WookeyActionTint(symbol: entry.symbol), size: 20)
+        let symbol = entry.symbol == "text.alignleft" ? HistoryKind.clipboard.symbol : entry.symbol
+        return HStack(spacing: 10) {
+            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
             VStack(alignment: .leading, spacing: 3) {
                 Text(entry.name).lineLimit(2)
                 Text(entry.date, format: .dateTime.month().day().hour().minute())
@@ -379,7 +380,7 @@ struct FloatingShelfView: View {
     }
 
     private var mascot: some View {
-        FileDropSurface(feedback: feedback, floating: true, isMirrored: session.isExpanded)
+        FileDropSurface(feedback: feedback, floating: true)
             .frame(width: FloatingShelfSession.mascotSize.width, height: FloatingShelfSession.mascotSize.height)
             .contentShape(Rectangle())
     }
@@ -614,7 +615,6 @@ struct FileDropSurface: View {
     @State private var biteStage: BiteStage = .idle
     let feedback: FileDropFeedback
     let floating: Bool
-    var isMirrored = false
 
     private enum BiteStage { case idle, offered, swallowed, saved }
 
@@ -694,7 +694,6 @@ struct FileDropSurface: View {
             }
         }
         .frame(width: 124, height: 90)
-        .scaleEffect(x: isMirrored ? -1 : 1, y: 1, anchor: .center)
         .accessibilityHidden(true)
     }
 
