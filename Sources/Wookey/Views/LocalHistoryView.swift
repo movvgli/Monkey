@@ -5,18 +5,17 @@ import UniformTypeIdentifiers
 
 struct LocalHistoryView: View {
     @Environment(LocalHistoryStore.self) private var history
-    @Environment(\.wookeyTheme) private var theme
     @State private var showsImporter = false
     @State private var isImporting = false
-    @State private var selectsFiles = false
-    @State private var fileSelection = ShelfSelection()
-    @State private var deletion: FileDeletion?
-    @State private var confirmsDeletion = false
+    @State private var fileToDelete: LocalHistoryStore.Entry?
     @Binding var kind: HistoryKind
 
-    private struct FileDeletion {
-        let ids: Set<UUID>
-        let title: String
+    private var confirmsFileDeletion: Binding<Bool> {
+        Binding {
+            fileToDelete != nil
+        } set: { isPresented in
+            if !isPresented { fileToDelete = nil }
+        }
     }
 
     var body: some View {
@@ -35,16 +34,10 @@ struct LocalHistoryView: View {
             historyList.id(kind)
         }
         .navigationTitle(HistoryKind.files.title)
-        .onChange(of: kind) { clearFileSelection() }
-        .onChange(of: files.map(\.id)) { _, ids in
-            fileSelection.retain(ids)
-            if ids.isEmpty { clearFileSelection() }
-        }
-        .alert(deletion?.title ?? "폴더 항목을 삭제할까요?", isPresented: $confirmsDeletion, presenting: deletion) { request in
-            Button("취소", role: .cancel) { deletion = nil }
+        .alert("‘\(fileToDelete?.name ?? "")’을 삭제할까요?", isPresented: confirmsFileDeletion, presenting: fileToDelete) { entry in
+            Button("취소", role: .cancel) {}
             Button("삭제", role: .destructive) {
-                history.removeFiles(request.ids)
-                deletion = nil
+                history.remove(entry, kind: .files)
             }
         } message: { _ in
             Text("우키 폴더에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다.")
@@ -99,7 +92,6 @@ struct LocalHistoryView: View {
                         }
                     }
                 } else {
-                    fileToolbar
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
                         ForEach(entries) { entry in
                             fileCard(entry)
@@ -111,58 +103,6 @@ struct LocalHistoryView: View {
             .frame(maxWidth: WookeyPageMetrics.maximumWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-    }
-
-    private var files: [LocalHistoryStore.Entry] { history.entries(.files) }
-
-    private var fileToolbar: some View {
-        HStack(spacing: 8) {
-            Button(selectsFiles ? "선택 끝내기" : "항목 선택", wookeyIcon: selectsFiles ? "checkmark" : "checkmark.circle") {
-                if selectsFiles { clearFileSelection() }
-                else { selectsFiles = true }
-            }
-            .buttonStyle(WookeyGlossyButtonStyle())
-            if selectsFiles {
-                Button("선택 삭제…", wookeyIcon: "trash") {
-                    let ids = fileSelection.ids
-                    askToDelete(ids, title: "선택한 \(ids.count)개 항목을 삭제할까요?")
-                }
-                .buttonStyle(WookeyGlossyButtonStyle(tint: .rose))
-                .disabled(fileSelection.ids.isEmpty)
-                Text("\(fileSelection.ids.count)개 선택")
-                    .font(.pretendard(.caption))
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-            Button("전체 삭제…", wookeyIcon: "trash") {
-                let ids = Set(files.map(\.id))
-                askToDelete(ids, title: "폴더의 \(ids.count)개 항목을 모두 삭제할까요?")
-            }
-            .buttonStyle(WookeyGlossyButtonStyle(tint: .rose))
-        }
-        .controlSize(.small)
-    }
-
-    private func clearFileSelection() {
-        fileSelection = ShelfSelection()
-        selectsFiles = false
-    }
-
-    private func clickFile(_ entry: LocalHistoryStore.Entry, modifiers: NSEvent.ModifierFlags = []) {
-        let extendsRange = modifiers.contains(.shift)
-        let toggles = modifiers.contains(.command)
-        guard selectsFiles || extendsRange || toggles else {
-            history.openFile(entry)
-            return
-        }
-        selectsFiles = true
-        fileSelection.click(entry.id, in: files.map(\.id), extending: extendsRange, toggling: toggles || !extendsRange)
-    }
-
-    private func askToDelete(_ ids: Set<UUID>, title: String) {
-        guard !ids.isEmpty else { return }
-        deletion = FileDeletion(ids: ids, title: title)
-        confirmsDeletion = true
     }
 
     private var emptyDescription: String {
@@ -197,55 +137,37 @@ struct LocalHistoryView: View {
             }
             Spacer()
             Button("다시 복사", wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
-            removeButton(entry)
+            removeButton(entry) { history.remove(entry, kind: .clipboard) }
         }
         .padding(.vertical, 8)
     }
 
     private func fileCard(_ entry: LocalHistoryStore.Entry) -> some View {
-        let selected = fileSelection.ids.contains(entry.id)
-        return PlainPanel {
+        PlainPanel {
             VStack(alignment: .leading, spacing: 8) {
                 Button {
-                    clickFile(entry)
+                    history.openFile(entry)
                 } label: {
                     filePreview(entry)
                         .frame(maxWidth: .infinity)
                         .frame(height: 100)
                         .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 6))
-                        .overlay(alignment: .topLeading) {
-                            if selectsFiles {
-                                Image(systemName: selected ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(selected ? theme.accent : Color.secondary)
-                                    .padding(8)
-                            }
-                        }
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 6)
-                                .strokeBorder(selected ? theme.accent : .clear, lineWidth: 2)
-                        }
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(selectsFiles ? "선택: \(entry.name)" : "\(entry.name) 열기")
-                .accessibilityAddTraits(selected ? .isSelected : [])
+                .accessibilityLabel("\(entry.name) 열기")
                 .overlay {
                     let file = history.fileURL(for: entry, kind: .files)
-                    ShelfDragSource(
-                        entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path),
-                        onClick: { _, modifiers in clickFile(entry, modifiers: modifiers) }
-                    )
-                    .accessibilityHidden(true)
+                    ShelfDragSource(entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path))
+                        .accessibilityHidden(true)
                 }
-                .help(selectsFiles ? "클릭하여 선택 · Shift로 범위 선택" : "클릭해서 열기 · Command를 눌러 선택 · 다른 앱으로 드래그")
+                .help("클릭해서 열거나 다른 앱으로 드래그")
                 HStack(spacing: 5) {
                     Text(entry.name)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .help(entry.name)
                     Spacer(minLength: 0)
-                    removeButton(entry) {
-                        askToDelete([entry.id], title: "‘\(entry.name)’을 삭제할까요?")
-                    }
+                    removeButton(entry) { fileToDelete = entry }
                 }
                 Text(entry.date, format: .dateTime.month().day().hour().minute())
                     .font(.pretendard(.caption))
@@ -276,11 +198,8 @@ struct LocalHistoryView: View {
         }
     }
 
-    private func removeButton(_ entry: LocalHistoryStore.Entry, action: (() -> Void)? = nil) -> some View {
-        Button("삭제", wookeyIcon: "trash") {
-            if let action { action() }
-            else { history.remove(entry, kind: kind) }
-        }
+    private func removeButton(_ entry: LocalHistoryStore.Entry, action: @escaping () -> Void) -> some View {
+        Button("삭제", wookeyIcon: "trash", action: action)
             .labelStyle(.iconOnly)
             .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
             .controlSize(.small)
