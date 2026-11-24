@@ -8,7 +8,7 @@ enum HistoryKind: String, CaseIterable {
     case files = "images" // Retain the on-disk directory name for existing shelves.
 
     var title: String { self == .clipboard ? "클립보드" : "폴더" }
-    var symbol: String { self == .clipboard ? "doc.on.clipboard" : "folder" }
+    var symbol: String { self == .clipboard ? "doc.on.clipboard" : "archivebox" }
 }
 
 struct HistoryRetention: Codable, Equatable {

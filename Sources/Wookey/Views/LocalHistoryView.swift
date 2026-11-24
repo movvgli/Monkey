@@ -488,6 +488,7 @@ struct FloatingShelfView: View {
         let selectedCount = session.selection.ids.count
         return VStack(spacing: 0) {
             HStack(spacing: 4) {
+                WookeyActionIcon(symbol: HistoryKind.files.symbol, tint: .amber, size: 16)
                 Text(selectedCount == 0 ? "서랍" : "\(selectedCount)개 선택")
                     .font(.pretendard(.caption, weight: .semibold))
                     .lineLimit(1)

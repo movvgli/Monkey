@@ -506,7 +506,7 @@ enum WookeyActionTint {
         case "link": self = .graphite
         case "rectangle.3.group": self = .blue
         case "app", "arrow.left.arrow.right": self = .teal
-        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder": self = .amber
+        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder", "archivebox": self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
         default: self = .accent
         }
@@ -575,6 +575,7 @@ struct WookeyActionIcon: View {
         case "app", "macwindow", "dock.rectangle": "WorkflowActionApplication"
         case "doc": "WorkflowActionDocument"
         case "folder": "WookeyShelfFolder"
+        case "archivebox": "WookeyShelfDrawer"
         case "rectangle.3.group": "WorkflowActionLayout"
         case "keyboard": "WorkflowActionKeyboard"
         case "clock": "WorkflowActionWait"
