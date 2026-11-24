@@ -97,7 +97,7 @@ struct WookeySettingsView: View {
                     PermissionSettingRow(
                         symbol: "accessibility",
                         title: "손쉬운 사용",
-                        detail: "창 배치·자동 붙여넣기·두 단계 단축키에 사용",
+                        detail: "창 배치·자동 붙여넣기·두 단계 단축키·Hyper 키에 사용",
                         granted: runtime.permissions.accessibilityGranted,
                         request: runtime.permissions.requestAccessibility,
                         open: runtime.permissions.openAccessibilitySettings
@@ -106,7 +106,7 @@ struct WookeySettingsView: View {
                     PermissionSettingRow(
                         symbol: "keyboard",
                         title: "입력 모니터링",
-                        detail: "두 단계 단축키에 사용 · 손쉬운 사용도 필요",
+                        detail: "두 단계 단축키와 Hyper 키에 사용 · 손쉬운 사용도 필요",
                         granted: runtime.permissions.inputMonitoringGranted,
                         request: runtime.permissions.requestInputMonitoring,
                         open: runtime.permissions.openInputMonitoringSettings
@@ -216,6 +216,8 @@ struct WookeySettingsView: View {
                         loginSetting
                         generalDivider
                         searchShortcutSetting
+                        generalDivider
+                        hyperKeySetting
                     }
                 }
             }
@@ -316,6 +318,49 @@ struct WookeySettingsView: View {
                     .padding(.bottom, 8)
             }
         }
+    }
+
+    private var hyperKeySetting: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            GeneralSettingRow(
+                symbol: "keyboard",
+                title: "Hyper 키",
+                detail: "누르는 동안 왼쪽 ⌃⌥⇧를 함께 누릅니다."
+            ) {
+                WookeyFilterPicker(
+                    title: "Hyper 키",
+                    selection: Binding(
+                        get: { runtime.hyperKey.source },
+                        set: { runtime.hyperKey.setSource($0) }
+                    ),
+                    options: HyperKeySource.allCases
+                ) { $0.title }
+            }
+            switch runtime.hyperKey.status {
+            case .off, .active:
+                EmptyView()
+            case .permissionRequired:
+                hyperKeyStatus("손쉬운 사용과 입력 모니터링을 허용해 주세요.", button: "권한 설정") {
+                    page = .permissions
+                }
+            case .unavailable:
+                hyperKeyStatus("Hyper 키를 시작하지 못했습니다.", button: "다시 시도") {
+                    runtime.permissions.refresh()
+                }
+            }
+        }
+    }
+
+    private func hyperKeyStatus(_ message: String, button: String, action: @escaping () -> Void) -> some View {
+        HStack(spacing: 8) {
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button(button, action: action)
+                .controlSize(.small)
+        }
+        .padding(.leading, GeneralSettingsLayout.titleInset)
+        .padding(.bottom, 8)
     }
 
     private func generalSwitch(_ title: String, isOn: Binding<Bool>) -> some View {

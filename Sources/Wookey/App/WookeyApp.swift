@@ -197,6 +197,10 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        WookeyAppRuntime.shared.hyperKey.stop()
+    }
+
     func toggleSearch() {
         searchPanel.toggle()
     }

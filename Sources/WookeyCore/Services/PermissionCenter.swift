@@ -10,6 +10,7 @@ public final class PermissionCenter {
     public private(set) var accessibilityGranted = false
     public private(set) var inputMonitoringGranted = false
     public private(set) var inputMonitoringRestartRecommended = false
+    @ObservationIgnored var onRefresh: (() -> Void)?
     @ObservationIgnored private var activationObserver: NSObjectProtocol?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
 
@@ -39,6 +40,7 @@ public final class PermissionCenter {
         if inputMonitoringGranted {
             inputMonitoringRestartRecommended = false
         }
+        onRefresh?()
     }
 
     public func requestAccessibility() {

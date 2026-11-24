@@ -35,7 +35,8 @@ public final class SequenceMonitor {
         let mask = CGEventMask((1 << CGEventType.keyDown.rawValue) | (1 << CGEventType.keyUp.rawValue))
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
-            place: .headInsertEventTap,
+            // The Hyper key tap rewrites the chord before the sequence matcher receives it.
+            place: .tailAppendEventTap,
             options: .defaultTap,
             eventsOfInterest: mask,
             callback: sequenceEventCallback,

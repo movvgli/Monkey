@@ -13,6 +13,7 @@ public final class WookeyRuntime {
     public let keyboard: KeyboardService
     public let layoutController: WindowLayoutController
     public let hotkeys: HotkeyRegistrar
+    public let hyperKey: HyperKeyService
     public let runner: WorkflowRunner
     public let iCloudSync: ICloudSyncService
 
@@ -29,6 +30,7 @@ public final class WookeyRuntime {
         let keyboard = KeyboardService()
         let layoutController = WindowLayoutController(applications: applications)
         let hotkeys = HotkeyRegistrar()
+        let hyperKey = HyperKeyService()
 
         self.store = store
         self.iCloudSync = ICloudSyncService(store: store)
@@ -40,6 +42,7 @@ public final class WookeyRuntime {
         self.keyboard = keyboard
         self.layoutController = layoutController
         self.hotkeys = hotkeys
+        self.hyperKey = hyperKey
         self.runner = WorkflowRunner(
             store: store,
             applications: applications,
@@ -47,6 +50,7 @@ public final class WookeyRuntime {
             keyboard: keyboard,
             layouts: layoutController
         )
+        permissions.onRefresh = { [weak hyperKey] in hyperKey?.refresh() }
 
         hotkeys.onWorkflow = { [weak runner = self.runner] id in
             Task { @MainActor in runner?.submit(workflowID: id) }
