@@ -625,7 +625,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
     func makeNSView(context: Context) -> NSSearchField {
         let field = AutofocusingSearchField()
         field.font = WookeyTypography.native(size: 16)
-        field.placeholderString = prompt
+        updatePlaceholder(in: field)
         field.setAccessibilityLabel("Wookey 검색어")
         field.controlSize = .large
         field.delegate = context.coordinator
@@ -634,7 +634,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
 
     func updateNSView(_ field: NSSearchField, context: Context) {
         context.coordinator.parent = self
-        if field.placeholderString != prompt { field.placeholderString = prompt }
+        updatePlaceholder(in: field)
         let editor = field.currentEditor() as? NSTextView
         guard editor?.hasMarkedText() != true else { return }
         if field.stringValue != text { field.stringValue = text }
@@ -642,6 +642,16 @@ private struct WorkspaceSearchField: NSViewRepresentable {
             editor.string = text
             editor.setSelectedRange(NSRange(location: text.utf16.count, length: 0))
         }
+    }
+
+    private func updatePlaceholder(in field: NSSearchField) {
+        guard field.placeholderAttributedString?.string != prompt, let font = field.font else { return }
+        // Match the Pretendard baseline to the one AppKit uses for typed text.
+        field.placeholderAttributedString = NSAttributedString(string: prompt, attributes: [
+            .font: font,
+            .foregroundColor: NSColor.placeholderTextColor,
+            .baselineOffset: -2,
+        ])
     }
 
     final class Coordinator: NSObject, NSSearchFieldDelegate {
