@@ -3,6 +3,16 @@
     <channel>
         <title>Wikey</title>
         <item>
+            <title>1.2.49</title>
+            <pubDate>Tue, 24 Nov 2026 02:40:41 +0000</pubDate>
+            <link>https://github.com/movvgli/Wookey</link>
+            <sparkle:version>1002049</sparkle:version>
+            <sparkle:shortVersionString>1.2.49</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <sparkle:releaseNotesLink>https://raw.githubusercontent.com/movvgli/Wookey/update-feed/Wookey-1.2.49.md</sparkle:releaseNotesLink>
+            <enclosure url="https://github.com/movvgli/Wookey/releases/download/v1.2.49/Wookey-1.2.49.dmg" length="12748612" type="application/octet-stream" sparkle:edSignature="chWv9ac90NRW5hqPiwIlDoVSdF4reeFZU/5XHEzdgcUurf47V7/G1IkSsIWkAAxtAa4zJiGMsMMDKVbYIyv6Dw=="/>
+        </item>
+        <item>
             <title>1.2.48</title>
             <pubDate>Tue, 24 Nov 2026 02:10:57 +0000</pubDate>
             <link>https://github.com/movvgli/Wookey</link>
@@ -21,16 +31,6 @@
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <sparkle:releaseNotesLink>https://raw.githubusercontent.com/movvgli/Wookey/update-feed/Wookey-1.2.47.md</sparkle:releaseNotesLink>
             <enclosure url="https://github.com/movvgli/Wookey/releases/download/v1.2.47/Wookey-1.2.47.dmg" length="12640182" type="application/octet-stream" sparkle:edSignature="43+x3B4B+uNVeqt5HDzjY3Ef3yRUW9qBFOyN3f/QOjNAB4efdjczpghjvD++KQegGnMAtbwcJ02jrjDxfvtIDQ=="/>
-        </item>
-        <item>
-            <title>1.2.27</title>
-            <pubDate>Mon, 23 Nov 2026 10:31:57 +0000</pubDate>
-            <link>https://github.com/movvgli/Wikey</link>
-            <sparkle:version>1002027</sparkle:version>
-            <sparkle:shortVersionString>1.2.27</sparkle:shortVersionString>
-            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <sparkle:releaseNotesLink>https://raw.githubusercontent.com/movvgli/Wikey/update-feed/Monkey-1.2.27.md</sparkle:releaseNotesLink>
-            <enclosure url="https://github.com/movvgli/Wikey/releases/download/v1.2.27/Monkey-1.2.27.dmg" length="6870414" type="application/octet-stream" sparkle:edSignature="L+zhhDuSEUyYUHHaJq2QyxTxyBSt8xFgELT8CnOD/wIVtrtGEYwVBN9mwTE8ZnlB/9M+9hC3Ix7JxE/SvwmLDA=="/>
         </item>
         <item>
             <title>1.2.4</title>
