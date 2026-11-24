@@ -5,12 +5,12 @@ public enum SyncError: LocalizedError {
     case invalidArchive, oversized, missingFile, notCloudFolder, busy, editing
     public var errorDescription: String? {
         switch self {
-        case .invalidArchive: "백업이 손상되었거나 지원하지 않는 형식입니다. 기존 설정은 유지됩니다."
-        case .oversized: "백업은 총 50MB, 첨부 파일은 각각 20MB까지 지원합니다."
-        case .missingFile: "첨부 파일을 읽을 수 없습니다. 파일의 위치와 다운로드 상태를 확인해 주세요. 폴더 첨부는 지원하지 않습니다."
-        case .notCloudFolder: "iCloud Drive 안의 개인 폴더를 선택해 주세요. Finder에서 폴더 다운로드가 완료됐는지도 확인해 주세요."
-        case .busy: "워크플로우 실행이 끝난 후 다시 시도해 주세요."
-        case .editing: "열려 있는 워크플로·템플릿·레이아웃 편집 화면에서 뒤로 이동한 후 다시 적용해 주세요."
+        case .invalidArchive: L10n.text("백업이 손상되었거나 지원하지 않는 형식입니다. 기존 설정은 유지됩니다.")
+        case .oversized: L10n.text("백업은 총 50MB, 첨부 파일은 각각 20MB까지 지원합니다.")
+        case .missingFile: L10n.text("첨부 파일을 읽을 수 없습니다. 파일의 위치와 다운로드 상태를 확인해 주세요. 폴더 첨부는 지원하지 않습니다.")
+        case .notCloudFolder: L10n.text("iCloud Drive 안의 개인 폴더를 선택해 주세요. Finder에서 폴더 다운로드가 완료됐는지도 확인해 주세요.")
+        case .busy: L10n.text("워크플로우 실행이 끝난 후 다시 시도해 주세요.")
+        case .editing: L10n.text("열려 있는 워크플로·템플릿·레이아웃 편집 화면에서 뒤로 이동한 후 다시 적용해 주세요.")
         }
     }
 }

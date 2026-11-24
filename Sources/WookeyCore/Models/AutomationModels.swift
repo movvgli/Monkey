@@ -20,7 +20,7 @@ public struct Workflow: Identifiable, Codable, Hashable, Sendable {
 
     public init(
         id: UUID = UUID(),
-        name: String = "새 워크플로",
+        name: String = L10n.text("새 워크플로"),
         isEnabled: Bool = true,
         shortcut: ShortcutGesture = .init(),
         actions: [WorkflowAction] = [],
@@ -66,16 +66,16 @@ public enum WorkflowKeyword {
         for text: String, excluding id: UUID? = nil, in workflows: [Workflow],
         templates: [RichTemplate] = [], excludingTemplate templateID: UUID? = nil
     ) -> String? {
-        guard let tokens = parseList(text) else { return "키워드마다 공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요." }
+        guard let tokens = parseList(text) else { return L10n.text("키워드마다 공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요.") }
         let requested = Set(tokens)
         for workflow in workflows where workflow.id != id {
             if let conflict = workflow.keywords.compactMap(normalized).first(where: requested.contains) {
-                return "‘\(conflict)’ 키워드는 ‘\(workflow.name)’에서 이미 사용 중입니다."
+                return L10n.text("‘\(conflict)’ 키워드는 ‘\(workflow.name)’에서 이미 사용 중입니다.")
             }
         }
         for template in templates where template.id != templateID {
             if let conflict = (template.keywords ?? []).compactMap(normalized).first(where: requested.contains) {
-                return "‘\(conflict)’ 키워드는 ‘\(template.name)’에서 이미 사용 중입니다."
+                return L10n.text("‘\(conflict)’ 키워드는 ‘\(template.name)’에서 이미 사용 중입니다.")
             }
         }
         return nil
@@ -160,8 +160,8 @@ public enum TemplateDeliveryMode: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .copyOnly: "클립보드에 복사"
-        case .copyAndPaste: "복사 후 자동 붙여넣기"
+        case .copyOnly: L10n.text("클립보드에 복사")
+        case .copyAndPaste: L10n.text("복사 후 자동 붙여넣기")
         }
     }
 }
@@ -207,16 +207,16 @@ public enum WorkflowAction: Identifiable, Codable, Hashable, Sendable {
 
     public var title: String {
         switch self {
-        case .launchApplication(_, let name): "앱 실행 · \(name)"
-        case .copyTemplate: "템플릿 붙여넣기"
-        case .openURL: "링크 열기"
-        case .openFile: "파일 열기"
-        case .applyLayout: "창 레이아웃 적용"
-        case .pressKey(let key): "\(key.title) 입력"
-        case .runWorkflow: "다른 워크플로 실행"
-        case .pasteImages: "이미지 붙여넣기"
-        case .pasteFiles: "파일 붙여넣기"
-        case .wait: "잠시 기다리기"
+        case .launchApplication(_, let name): L10n.text("앱 실행 · \(name)")
+        case .copyTemplate: L10n.text("템플릿 붙여넣기")
+        case .openURL: L10n.text("링크 열기")
+        case .openFile: L10n.text("파일 열기")
+        case .applyLayout: L10n.text("창 레이아웃 적용")
+        case .pressKey(let key): L10n.text("\(key.title) 입력")
+        case .runWorkflow: L10n.text("다른 워크플로 실행")
+        case .pasteImages: L10n.text("이미지 붙여넣기")
+        case .pasteFiles: L10n.text("파일 붙여넣기")
+        case .wait: L10n.text("잠시 기다리기")
         }
     }
 }
@@ -261,7 +261,7 @@ public struct RichTemplate: Identifiable, Codable, Hashable, Sendable {
         .copyTemplate(templateID: id, mode: deliveryMode ?? .copyOnly)
     }
 
-    public init(id: UUID = UUID(), name: String = "새 템플릿", plainText: String = "") {
+    public init(id: UUID = UUID(), name: String = L10n.text("새 템플릿"), plainText: String = "") {
         self.id = id
         self.name = name
         self.fileName = "\(id.uuidString).rtfd"
@@ -281,20 +281,20 @@ public enum LayoutZone: String, Codable, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .full: "전체"
-        case .leftHalf: "왼쪽 1/2"
-        case .rightHalf: "오른쪽 1/2"
-        case .leftThird: "왼쪽 1/3"
-        case .centerThird: "가운데 1/3"
-        case .rightThird: "오른쪽 1/3"
-        case .leftTwoThirds: "왼쪽 2/3"
-        case .rightTwoThirds: "오른쪽 2/3"
-        case .leftOneThird: "왼쪽 1/3"
-        case .rightOneThird: "오른쪽 1/3"
-        case .topLeft: "왼쪽 위 1/4"
-        case .topRight: "오른쪽 위 1/4"
-        case .bottomLeft: "왼쪽 아래 1/4"
-        case .bottomRight: "오른쪽 아래 1/4"
+        case .full: L10n.text("전체")
+        case .leftHalf: L10n.text("왼쪽 1/2")
+        case .rightHalf: L10n.text("오른쪽 1/2")
+        case .leftThird: L10n.text("왼쪽 1/3")
+        case .centerThird: L10n.text("가운데 1/3")
+        case .rightThird: L10n.text("오른쪽 1/3")
+        case .leftTwoThirds: L10n.text("왼쪽 2/3")
+        case .rightTwoThirds: L10n.text("오른쪽 2/3")
+        case .leftOneThird: L10n.text("왼쪽 1/3")
+        case .rightOneThird: L10n.text("오른쪽 1/3")
+        case .topLeft: L10n.text("왼쪽 위 1/4")
+        case .topRight: L10n.text("오른쪽 위 1/4")
+        case .bottomLeft: L10n.text("왼쪽 아래 1/4")
+        case .bottomRight: L10n.text("오른쪽 아래 1/4")
         }
     }
 
@@ -364,7 +364,7 @@ public struct WindowLayout: Identifiable, Codable, Hashable, Sendable {
     public var placements: [AppWindowPlacement]
     public var shortcut: ShortcutGesture
 
-    public init(id: UUID = UUID(), name: String = "새 레이아웃", placements: [AppWindowPlacement] = [], shortcut: ShortcutGesture = .init()) {
+    public init(id: UUID = UUID(), name: String = L10n.text("새 레이아웃"), placements: [AppWindowPlacement] = [], shortcut: ShortcutGesture = .init()) {
         self.id = id
         self.name = name
         self.placements = placements
@@ -445,6 +445,6 @@ public struct RunSummary: Hashable, Sendable {
     public var failures: [ActionFailure]
 
     public var menuTitle: String {
-        failures.isEmpty ? "최근 실행 성공 · \(workflowName)" : "최근 실행 실패 \(failures.count)건 · \(workflowName)"
+        failures.isEmpty ? L10n.text("최근 실행 성공 · \(workflowName)") : L10n.text("최근 실행 실패 \(failures.count)건 · \(workflowName)")
     }
 }

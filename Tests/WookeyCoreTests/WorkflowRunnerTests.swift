@@ -118,7 +118,7 @@ struct WorkflowRunnerTests {
 
         #expect(fixture.events.values == ["launch.begin:missing"])
         #expect(fixture.summaries.first?.failures.count == 1)
-        #expect(fixture.summaries.first?.failures.first?.actionTitle == "앱 실행 · Missing")
+        #expect(fixture.summaries.first?.failures.first?.actionTitle == L10n.text("앱 실행 · \("Missing")"))
     }
 
     @Test func nestedFailureStopsOuterActionsAndReportsNestedName() async {
@@ -131,7 +131,7 @@ struct WorkflowRunnerTests {
         await done.wait()
 
         #expect(fixture.events.values.isEmpty)
-        #expect(fixture.summaries.first?.failures.first?.actionTitle == "내용 붙여넣기 · 템플릿 붙여넣기")
+        #expect(fixture.summaries.first?.failures.first?.actionTitle == "내용 붙여넣기 · \(L10n.text("템플릿 붙여넣기"))")
     }
 
     @Test func pasteMustFinishBeforeEnterAndNextClipboardWrite() async {
@@ -175,7 +175,7 @@ struct WorkflowRunnerTests {
         #expect(fixture.events.values == ["copy.files", "paste.begin"])
         #expect(fixture.runner.queuedWorkflowIDs.isEmpty)
         #expect(fixture.runner.runningWorkflowID == nil)
-        #expect(fixture.summaries.first?.failures.first?.message == "실행을 중단했습니다.")
+        #expect(fixture.summaries.first?.failures.first?.message == L10n.text("실행을 중단했습니다."))
     }
 
     @Test func cyclicWorkflowStopsWithoutRecursingOrSendingInput() async {
@@ -216,7 +216,7 @@ struct WorkflowRunnerTests {
         await done.wait()
 
         #expect(fixture.events.values.isEmpty)
-        #expect(fixture.summaries.first?.failures.first?.message == "실행을 중단했습니다.")
+        #expect(fixture.summaries.first?.failures.first?.message == L10n.text("실행을 중단했습니다."))
     }
 
     @Test func invalidWaitStopsBeforeEnter() async {

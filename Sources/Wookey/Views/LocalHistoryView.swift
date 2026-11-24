@@ -2,6 +2,7 @@ import AppKit
 import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
+import WookeyCore
 
 struct LocalHistoryView: View {
     @Environment(LocalHistoryStore.self) private var history
@@ -23,9 +24,9 @@ struct LocalHistoryView: View {
             VStack(alignment: .leading, spacing: 12) {
                 header
                 WookeyFilterPicker(
-                    title: "우키 폴더", selection: $kind, options: [.files, .clipboard],
+                    title: L10n.text("우키 폴더"), selection: $kind, options: [.files, .clipboard],
                     icon: { $0 == .files ? wookeyDrawerSymbol : $0.symbol }
-                ) { $0 == .files ? "서랍" : "클립보드" }
+                ) { $0 == .files ? L10n.text("서랍") : L10n.text("클립보드") }
             }
             .padding(WookeyPageMetrics.padding)
             .frame(maxWidth: WookeyPageMetrics.maximumWidth, alignment: .leading)
@@ -34,13 +35,13 @@ struct LocalHistoryView: View {
             historyList.id(kind)
         }
         .navigationTitle(HistoryKind.files.title)
-        .alert("‘\(fileToDelete?.name ?? "")’을 삭제할까요?", isPresented: confirmsFileDeletion, presenting: fileToDelete) { entry in
-            Button("취소", role: .cancel) {}
-            Button("삭제", role: .destructive) {
+        .alert(L10n.text("‘\(fileToDelete?.name ?? "")’을 삭제할까요?"), isPresented: confirmsFileDeletion, presenting: fileToDelete) { entry in
+            Button(L10n.text("취소"), role: .cancel) {}
+            Button(L10n.text("삭제"), role: .destructive) {
                 history.remove(entry, kind: .files)
             }
         } message: { _ in
-            Text("우키 폴더에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다.")
+            Text(L10n.text("우키 폴더에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다."))
         }
         .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
             switch result {
@@ -75,7 +76,7 @@ struct LocalHistoryView: View {
                 if entries.isEmpty {
                     ContentUnavailableView {
                         WookeyEmptyStateLabel(
-                            title: kind == .clipboard ? "클립보드 기록이 없습니다" : "보관한 파일이나 링크가 없습니다",
+                            title: kind == .clipboard ? L10n.text("클립보드 기록이 없습니다") : L10n.text("보관한 파일이나 링크가 없습니다"),
                             symbol: kind.symbol
                         )
                     } description: {
@@ -106,19 +107,19 @@ struct LocalHistoryView: View {
     }
 
     private var emptyDescription: String {
-        if kind == .files { return "파일이나 링크를 위에 놓거나 ‘파일 추가’를 사용하세요." }
+        if kind == .files { return L10n.text("파일이나 링크를 위에 놓거나 ‘파일 추가’를 사용하세요.") }
         return history.recordsClipboard
-            ? "텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다."
-            : "설정의 보관 기간 탭에서 클립보드 기록을 켤 수 있습니다."
+            ? L10n.text("텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다.")
+            : L10n.text("설정의 보관 기간 탭에서 클립보드 기록을 켤 수 있습니다.")
     }
 
     private var header: some View {
         let subtitle = kind == .clipboard
-            ? "최근 복사한 내용을 찾아 다시 복사합니다."
-            : "우키 서랍에 담은 파일과 웹 링크를 열 수 있습니다."
+            ? L10n.text("최근 복사한 내용을 찾아 다시 복사합니다.")
+            : L10n.text("우키 서랍에 담은 파일과 웹 링크를 열 수 있습니다.")
         return WookeyPageHeader(title: HistoryKind.files.title, subtitle: subtitle) {
             if kind == .files {
-                Button(isImporting ? "가져오는 중…" : "파일 추가", wookeyIcon: "plus") { showsImporter = true }
+                Button(isImporting ? L10n.text("가져오는 중…") : L10n.text("파일 추가"), wookeyIcon: "plus") { showsImporter = true }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
                     .disabled(isImporting)
@@ -137,7 +138,7 @@ struct LocalHistoryView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("다시 복사", wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
+            Button(L10n.text("다시 복사"), wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
             removeButton(entry) { history.remove(entry, kind: .clipboard) }
         }
         .padding(.vertical, 8)
@@ -155,13 +156,13 @@ struct LocalHistoryView: View {
                         .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 6))
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("\(entry.name) 열기")
+                .accessibilityLabel(L10n.text("\(entry.name) 열기"))
                 .overlay {
                     let file = history.fileURL(for: entry, kind: .files)
                     ShelfDragSource(entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path))
                         .accessibilityHidden(true)
                 }
-                .help("클릭해서 열거나 다른 앱으로 드래그")
+                .help(L10n.text("클릭해서 열거나 다른 앱으로 드래그"))
                 HStack(spacing: 5) {
                     Text(entry.name)
                         .lineLimit(1)
@@ -200,11 +201,11 @@ struct LocalHistoryView: View {
     }
 
     private func removeButton(_ entry: LocalHistoryStore.Entry, action: @escaping () -> Void) -> some View {
-        Button("삭제", wookeyIcon: "trash", action: action)
+        Button(L10n.text("삭제"), wookeyIcon: "trash", action: action)
             .labelStyle(.iconOnly)
             .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
             .controlSize(.small)
-            .accessibilityLabel("\(entry.name) 삭제")
+            .accessibilityLabel(L10n.text("\(entry.name) 삭제"))
     }
 }
 
@@ -358,12 +359,12 @@ struct FloatingShelfView: View {
         Group {
             if session.entries.isEmpty {
                 mascot
-                    .accessibilityLabel(feedback.isReceiving ? "가져오는 중" : "파일이나 링크를 놓으세요")
+                    .accessibilityLabel(feedback.isReceiving ? L10n.text("가져오는 중") : L10n.text("파일이나 링크를 놓으세요"))
             } else {
                 Button(action: onToggle) { mascot }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(session.isExpanded ? "서랍 목록 접기" : "서랍 목록 열기")
-                    .accessibilityValue("\(session.entries.count)개 항목")
+                    .accessibilityLabel(session.isExpanded ? L10n.text("서랍 목록 접기") : L10n.text("서랍 목록 열기"))
+                    .accessibilityValue(L10n.text("\(session.entries.count)개 항목"))
             }
         }
         .overlay {
@@ -392,8 +393,8 @@ struct FloatingShelfView: View {
                 .contentShape(Rectangle())
         }
             .buttonStyle(.plain)
-            .accessibilityLabel("서랍 닫기")
-            .help("서랍 닫기")
+            .accessibilityLabel(L10n.text("서랍 닫기"))
+            .help(L10n.text("서랍 닫기"))
             .keyboardShortcut(.cancelAction)
     }
 
@@ -410,7 +411,7 @@ struct FloatingShelfView: View {
         return VStack(spacing: 0) {
             HStack(spacing: 4) {
                 WookeyActionIcon(symbol: wookeyDrawerSymbol, tint: .amber, size: 16)
-                Text(selectedCount == 0 ? "서랍" : "\(selectedCount)개 선택")
+                Text(selectedCount == 0 ? L10n.text("서랍") : L10n.text("\(selectedCount)개 선택"))
                     .font(.pretendard(.caption, weight: .semibold))
                     .lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
@@ -440,7 +441,7 @@ struct FloatingShelfView: View {
         .environment(\.colorScheme, theme.colorScheme)
         .frame(width: session.bubbleWidth, height: session.bubbleHeight)
         .padding(.top, session.bubbleTopInset)
-        .accessibilityLabel("서랍에 담은 항목")
+        .accessibilityLabel(L10n.text("서랍에 담은 항목"))
     }
 
     private func thoughtBubbleBackground(_ shape: RoundedRectangle) -> some View {
@@ -515,7 +516,7 @@ struct FloatingShelfView: View {
         .buttonStyle(WookeyHoverButtonStyle())
         .accessibilityLabel(entry.name)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
-        .accessibilityAction(named: "열기") { history.openFile(entry) }
+        .accessibilityAction(named: L10n.text("열기")) { history.openFile(entry) }
         .overlay {
             ShelfDragSource(
                 entry: entry, file: file, history: history, icon: icon,
@@ -530,7 +531,7 @@ struct FloatingShelfView: View {
             )
             .accessibilityHidden(true)
         }
-        .help("클릭하여 선택 · 두 번 클릭하여 열기 · 선택 항목을 드래그하여 이동")
+        .help(L10n.text("클릭하여 선택 · 두 번 클릭하여 열기 · 선택 항목을 드래그하여 이동"))
     }
 }
 
@@ -636,7 +637,7 @@ struct FileDropSurface: View {
             character
             if !floating {
                 message
-                Text("파일을 끌다가 두 번 흔들면 우키 서랍이 열려요.")
+                Text(L10n.text("파일을 끌다가 두 번 흔들면 우키 서랍이 열려요."))
                     .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -704,10 +705,10 @@ struct FileDropSurface: View {
     }
 
     private var message: some View {
-        let title = if isSaved { "서랍에 담았어요" }
-        else if feedback.isReceiving { "가져오는 중…" }
-        else if feedback.isTargeted { "여기에 놓으세요" }
-        else { "파일이나 링크를 놓으세요" }
+        let title = if isSaved { L10n.text("서랍에 담았어요") }
+        else if feedback.isReceiving { L10n.text("가져오는 중…") }
+        else if feedback.isTargeted { L10n.text("여기에 놓으세요") }
+        else { L10n.text("파일이나 링크를 놓으세요") }
         return HStack(spacing: 5) {
             if isSaved { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
             Text(title)
@@ -759,8 +760,8 @@ struct HistorySettingsView: View {
 
     var body: some View {
         WookeySection(
-            title: "보관 기간",
-            detail: "기록은 이 Mac에만 저장되며, 보관 기간이 지나면 자동으로 삭제됩니다."
+            title: L10n.text("보관 기간"),
+            detail: L10n.text("기록은 이 Mac에만 저장되며, 보관 기간이 지나면 자동으로 삭제됩니다.")
         ) {
             ForEach(HistoryKind.allCases, id: \.self) { kind in
                 PlainPanel {
@@ -795,7 +796,7 @@ struct HistorySettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             if kind == .clipboard {
-                Toggle("클립보드 기록", isOn: Binding(
+                Toggle(L10n.text("클립보드 기록"), isOn: Binding(
                     get: { history.recordsClipboard },
                     set: { history.setRecordsClipboard($0) }
                 ))
@@ -810,10 +811,10 @@ struct HistorySettingsView: View {
         switch kind {
         case .clipboard:
             history.recordsClipboard
-                ? "복사한 텍스트, 이미지, 파일을 기록합니다."
-                : "새로 복사한 내용은 기록하지 않습니다."
+                ? L10n.text("복사한 텍스트, 이미지, 파일을 기록합니다.")
+                : L10n.text("새로 복사한 내용은 기록하지 않습니다.")
         case .files:
-            "우키 서랍에 추가한 파일과 웹 링크를 저장합니다."
+            L10n.text("우키 서랍에 추가한 파일과 웹 링크를 저장합니다.")
         }
     }
 }
@@ -828,11 +829,11 @@ private struct HistoryRetentionControls: View {
         let saved = history.retention(kind)
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("보관 기간")
+                Text(L10n.text("보관 기간"))
                 Spacer()
-                Picker("\(kind.title) 보관 기간", selection: $draft.period) {
+                Picker(L10n.text("\(kind.title) 보관 기간"), selection: $draft.period) {
                     ForEach(HistoryRetention.Period.allCases, id: \.self) { period in
-                        Text(period.rawValue).tag(period)
+                        Text(L10n.label(period.rawValue)).tag(period)
                     }
                 }
                 .labelsHidden()
@@ -841,15 +842,15 @@ private struct HistoryRetentionControls: View {
 
             if draft.period == .custom {
                 HStack {
-                    Text("직접 설정한 기간")
+                    Text(L10n.text("직접 설정한 기간"))
                     Spacer()
-                    TextField("기간", text: $amount)
+                    TextField(L10n.text("기간"), text: $amount)
                         .textFieldStyle(.roundedBorder)
                         .frame(width: 64)
-                        .accessibilityLabel("\(kind.title) 보관 기간 값")
-                    Picker("기간 단위", selection: $draft.unit) {
+                        .accessibilityLabel(L10n.text("\(kind.title) 보관 기간 값"))
+                    Picker(L10n.text("기간 단위"), selection: $draft.unit) {
                         ForEach(HistoryRetention.Unit.allCases, id: \.self) { unit in
-                            Text(unit.rawValue).tag(unit)
+                            Text(L10n.label(unit.rawValue)).tag(unit)
                         }
                     }
                     .labelsHidden()
@@ -860,17 +861,17 @@ private struct HistoryRetentionControls: View {
             if hasChanges(from: saved) {
                 HStack(spacing: 12) {
                     if proposedRetention == nil {
-                        Text("1 이상의 정수를 입력하세요.")
+                        Text(L10n.text("1 이상의 정수를 입력하세요."))
                             .font(.pretendard(.caption))
                             .foregroundStyle(.secondary)
                     } else if let seconds = proposedRetention?.seconds,
                               seconds < (saved.seconds ?? .infinity) {
-                        Text("새 보관 기간이 지난 기록은 적용 즉시 삭제됩니다.")
+                        Text(L10n.text("새 보관 기간이 지난 기록은 적용 즉시 삭제됩니다."))
                             .font(.pretendard(.caption))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button("적용", wookeyIcon: "checkmark.circle.fill") {
+                    Button(L10n.text("적용"), wookeyIcon: "checkmark.circle.fill") {
                         if let proposedRetention {
                             history.setRetention(proposedRetention, for: kind)
                         }

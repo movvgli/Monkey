@@ -81,12 +81,12 @@ public struct ShortcutGesture: Codable, Hashable, Sendable {
     }
 
     public var displayName: String {
-        steps.isEmpty ? "단축키 없음" : steps.map(\.displayName).joined(separator: " → ")
+        steps.isEmpty ? L10n.text("단축키 없음") : steps.map(\.displayName).joined(separator: " → ")
     }
 
     public var validationMessage: String? {
-        guard (1...2).contains(steps.count) else { return "단축키는 한 단계 또는 두 단계여야 합니다." }
-        guard !steps[0].modifiers.isEmpty else { return "첫 단계에는 보조키가 하나 이상 필요합니다." }
+        guard (1...2).contains(steps.count) else { return L10n.text("단축키는 한 단계 또는 두 단계여야 합니다.") }
+        guard !steps[0].modifiers.isEmpty else { return L10n.text("첫 단계에는 보조키가 하나 이상 필요합니다.") }
         return nil
     }
 }
@@ -155,12 +155,12 @@ public enum ShortcutConflictDetector {
                 let lhsMessage: String?
                 let rhsMessage: String?
                 if lhs.shortcut == rhs.shortcut {
-                    lhsMessage = "‘\(rhs.name)’과 단축키가 같습니다."
-                    rhsMessage = "‘\(lhs.name)’과 단축키가 같습니다."
+                    lhsMessage = L10n.text("‘\(rhs.name)’과 단축키가 같습니다.")
+                    rhsMessage = L10n.text("‘\(lhs.name)’과 단축키가 같습니다.")
                 } else if lhs.shortcut.steps.first == rhs.shortcut.steps.first,
                           lhs.shortcut.steps.count != rhs.shortcut.steps.count {
-                    lhsMessage = "단일 단축키와 연속 단축키의 첫 단계가 겹칩니다."
-                    rhsMessage = "단일 단축키와 연속 단축키의 첫 단계가 겹칩니다."
+                    lhsMessage = L10n.text("단일 단축키와 연속 단축키의 첫 단계가 겹칩니다.")
+                    rhsMessage = L10n.text("단일 단축키와 연속 단축키의 첫 단계가 겹칩니다.")
                 } else {
                     lhsMessage = nil
                     rhsMessage = nil

@@ -1,4 +1,5 @@
 import SwiftUI
+import WookeyCore
 
 struct WorkflowActionPicker: View {
     enum Group: String, CaseIterable {
@@ -57,14 +58,18 @@ struct WorkflowActionPicker: View {
 
     private func filteredOptions(_ group: Group) -> [Option] {
         let search = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        return group.options.filter { search.isEmpty || $0.rawValue.localizedCaseInsensitiveContains(search) }
+        return group.options.filter { option in
+            search.isEmpty
+                || L10n.label(option.rawValue).localizedCaseInsensitiveContains(search)
+                || option.rawValue.localizedCaseInsensitiveContains(search)
+        }
     }
 
     private func unavailableReason(_ option: Option) -> String? {
         switch option {
-        case .template where !templatesAvailable: "템플릿 보관함에서 먼저 만들어 주세요"
-        case .layout where !layoutsAvailable: "레이아웃 보관함에서 먼저 만들어 주세요"
-        case .workflow where !workflowsAvailable: "연결할 수 있는 다른 워크플로가 없습니다"
+        case .template where !templatesAvailable: L10n.text("템플릿 보관함에서 먼저 만들어 주세요")
+        case .layout where !layoutsAvailable: L10n.text("레이아웃 보관함에서 먼저 만들어 주세요")
+        case .workflow where !workflowsAvailable: L10n.text("연결할 수 있는 다른 워크플로가 없습니다")
         default: nil
         }
     }
@@ -72,10 +77,10 @@ struct WorkflowActionPicker: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("동작 추가").font(.pretendard(.title2, weight: .semibold))
+                Text(L10n.text("동작 추가")).font(.pretendard(.title2, weight: .semibold))
                 HStack(spacing: 8) {
                     WookeyActionIcon(symbol: "magnifyingglass", tint: .neutral, size: 16)
-                    TextField("동작 검색", text: $query)
+                    TextField(L10n.text("동작 검색"), text: $query)
                         .textFieldStyle(.roundedBorder)
                         .focused($searchFocused)
                         .onSubmit(addSelection)
@@ -91,12 +96,12 @@ struct WorkflowActionPicker: View {
                 List(selection: $selected) {
                     ForEach(Group.allCases, id: \.self) { group in
                         if !filteredOptions(group).isEmpty {
-                            Section(group.rawValue) {
+                            Section(L10n.label(group.rawValue)) {
                                 ForEach(filteredOptions(group), id: \.self) { option in
                                     HStack(spacing: 9) {
                                         WookeyActionIcon(symbol: option.icon.symbol, tint: option.icon.tint)
                                         VStack(alignment: .leading, spacing: 3) {
-                                            Text(option.rawValue)
+                                            Text(L10n.label(option.rawValue))
                                             if let reason = unavailableReason(option) {
                                                 Text(reason)
                                                     .font(.pretendard(.caption))
@@ -117,10 +122,10 @@ struct WorkflowActionPicker: View {
             Divider()
             HStack {
                 Spacer()
-                Button("취소") { dismiss() }
+                Button(L10n.text("취소")) { dismiss() }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.cancelAction)
-                Button("선택", action: addSelection)
+                Button(L10n.text("선택"), action: addSelection)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selected == nil || selected.flatMap(unavailableReason) != nil)
@@ -159,10 +164,10 @@ struct WorkflowActionSetupSheet<Content: View>: View {
             content
             HStack {
                 Spacer()
-                Button("취소", action: cancel)
+                Button(L10n.text("취소"), action: cancel)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.cancelAction)
-                Button("동작 추가", action: add)
+                Button(L10n.text("동작 추가"), action: add)
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .disabled(!canAdd)

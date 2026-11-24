@@ -74,7 +74,7 @@ public final class ApplicationController {
         guard let url = URL(string: value), let scheme = url.scheme, ["http", "https"].contains(scheme.lowercased()) else {
             throw AutomationError.invalidURL(value)
         }
-        return try await open(url, fallbackName: "웹 브라우저")
+        return try await open(url, fallbackName: L10n.text("웹 브라우저"))
     }
 
     @discardableResult
@@ -107,7 +107,7 @@ public final class ApplicationController {
 
     static func activateAndWait(_ application: NSRunningApplication) async throws {
         try Task.checkCancellation()
-        let name = application.localizedName ?? application.bundleIdentifier ?? "앱"
+        let name = application.localizedName ?? application.bundleIdentifier ?? L10n.text("앱")
         guard !application.isTerminated else {
             throw AutomationError.applicationDidNotLaunch(name)
         }
@@ -159,28 +159,28 @@ public enum AutomationError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .applicationNotFound(let id): "설치된 앱을 찾을 수 없습니다: \(id)"
-        case .applicationDidNotLaunch(let id): "앱을 실행하지 못했습니다: \(id)"
-        case .applicationDidNotActivate(let name): "‘\(name)’ 앱으로 전환하지 못했습니다. 앱을 연 뒤 다시 실행해 주세요."
-        case .inputTargetNotFound: "입력할 앱을 찾지 못했습니다. 대상 앱을 열거나 워크플로 첫 단계에 앱 실행을 추가해 주세요."
-        case .shortcutKeysStillPressed: "단축키에서 손을 뗀 뒤 다시 실행해 주세요."
-        case .invalidURL(let url): "유효한 HTTP/HTTPS 주소가 아닙니다: \(url)"
-        case .templateNotFound: "템플릿을 찾을 수 없습니다."
-        case .layoutNotFound: "레이아웃을 찾을 수 없습니다."
-        case .permissionRequired(let name): "\(name) 권한이 필요합니다."
-        case .clipboardWriteFailed: "클립보드에 내용을 기록하지 못했습니다."
-        case .imageNotFound(let name): "이미지를 찾거나 열 수 없습니다: \(name)"
-        case .fileNotFound(let name): "파일을 찾을 수 없습니다: \(name)"
-        case .keyboardEventCreationFailed: "키 입력을 만들지 못했습니다."
-        case .workflowNotFound: "연결된 워크플로를 찾을 수 없습니다."
-        case .workflowAlreadyRunning: "이 워크플로가 이미 실행 또는 대기 중입니다."
-        case .workflowIsEmpty: "워크플로에 실행할 동작을 먼저 추가해 주세요."
-        case .invalidWaitDuration: "대기 시간은 0초보다 길고 30초 이하여야 합니다."
-        case .workflowCycleDetected: "워크플로가 서로 반복 실행되도록 연결되어 중단했습니다."
-        case .displayNotFound(let name): "연결된 모니터를 찾을 수 없습니다: \(name)"
-        case .windowNotFound(let app): "10초 안에 ‘\(app)’ 창을 찾지 못했습니다."
-        case .windowIsFullScreen(let app): "‘\(app)’의 전체 화면 창은 이동하지 않았습니다."
-        case .windowMoveFailed(let app): "‘\(app)’ 창의 크기나 위치를 변경할 수 없습니다."
+        case .applicationNotFound(let id): L10n.text("설치된 앱을 찾을 수 없습니다: \(id)")
+        case .applicationDidNotLaunch(let id): L10n.text("앱을 실행하지 못했습니다: \(id)")
+        case .applicationDidNotActivate(let name): L10n.text("‘\(name)’ 앱으로 전환하지 못했습니다. 앱을 연 뒤 다시 실행해 주세요.")
+        case .inputTargetNotFound: L10n.text("입력할 앱을 찾지 못했습니다. 대상 앱을 열거나 워크플로 첫 단계에 앱 실행을 추가해 주세요.")
+        case .shortcutKeysStillPressed: L10n.text("단축키에서 손을 뗀 뒤 다시 실행해 주세요.")
+        case .invalidURL(let url): L10n.text("유효한 HTTP/HTTPS 주소가 아닙니다: \(url)")
+        case .templateNotFound: L10n.text("템플릿을 찾을 수 없습니다.")
+        case .layoutNotFound: L10n.text("레이아웃을 찾을 수 없습니다.")
+        case .permissionRequired(let name): L10n.text("\(name) 권한이 필요합니다.")
+        case .clipboardWriteFailed: L10n.text("클립보드에 내용을 기록하지 못했습니다.")
+        case .imageNotFound(let name): L10n.text("이미지를 찾거나 열 수 없습니다: \(name)")
+        case .fileNotFound(let name): L10n.text("파일을 찾을 수 없습니다: \(name)")
+        case .keyboardEventCreationFailed: L10n.text("키 입력을 만들지 못했습니다.")
+        case .workflowNotFound: L10n.text("연결된 워크플로를 찾을 수 없습니다.")
+        case .workflowAlreadyRunning: L10n.text("이 워크플로가 이미 실행 또는 대기 중입니다.")
+        case .workflowIsEmpty: L10n.text("워크플로에 실행할 동작을 먼저 추가해 주세요.")
+        case .invalidWaitDuration: L10n.text("대기 시간은 0초보다 길고 30초 이하여야 합니다.")
+        case .workflowCycleDetected: L10n.text("워크플로가 서로 반복 실행되도록 연결되어 중단했습니다.")
+        case .displayNotFound(let name): L10n.text("연결된 모니터를 찾을 수 없습니다: \(name)")
+        case .windowNotFound(let app): L10n.text("10초 안에 ‘\(app)’ 창을 찾지 못했습니다.")
+        case .windowIsFullScreen(let app): L10n.text("‘\(app)’의 전체 화면 창은 이동하지 않았습니다.")
+        case .windowMoveFailed(let app): L10n.text("‘\(app)’ 창의 크기나 위치를 변경할 수 없습니다.")
         }
     }
 }

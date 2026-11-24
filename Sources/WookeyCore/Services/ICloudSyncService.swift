@@ -6,7 +6,7 @@ import Observation
 public final class ICloudSyncService {
     public private(set) var isEnabled = false
     public private(set) var isBusy = false
-    public private(set) var status = "꺼짐 · 설정은 이 Mac에만 저장됩니다."
+    public private(set) var status = L10n.text("꺼짐 · 설정은 이 Mac에만 저장됩니다.")
     public private(set) var errorMessage: String?
     public private(set) var versions: [SyncBackup] = []
     public private(set) var conflicts: [SyncBackup] = []
@@ -66,7 +66,7 @@ public final class ICloudSyncService {
             try await io.write(SyncBackup(payload: payload, device: metadata.device), folder: backupsURL)
             await refreshBackups()
             errorMessage = nil
-            status = "이 Mac에 복원용 백업을 저장했습니다."
+            status = L10n.text("이 Mac에 복원용 백업을 저장했습니다.")
         } catch { errorMessage = error.localizedDescription }
     }
 
@@ -84,7 +84,7 @@ public final class ICloudSyncService {
                 scopedAccess = url.startAccessingSecurityScopedResource()
                 folder = url; folderName = url.lastPathComponent; isEnabled = true
             }
-        } catch { errorMessage = "동기화 폴더를 다시 연결해 주세요. \(error.localizedDescription)" }
+        } catch { errorMessage = L10n.text("동기화 폴더를 다시 연결해 주세요. \(error.localizedDescription)") }
         timer = Task { [weak self] in
             while !Task.isCancelled {
                 await self?.maintainBackupsIfDue()
@@ -129,7 +129,7 @@ public final class ICloudSyncService {
             metadata = next; isEnabled = false
             if scopedAccess { folder?.stopAccessingSecurityScopedResource() }
             folder = nil; scopedAccess = false; conflicts = []; pendingVersion = nil
-            status = "꺼짐 · 기존 설정과 백업은 삭제하지 않았습니다."
+            status = L10n.text("꺼짐 · 기존 설정과 백업은 삭제하지 않았습니다.")
             errorMessage = nil
         } catch { errorMessage = error.localizedDescription }
     }
@@ -165,7 +165,7 @@ public final class ICloudSyncService {
             // An absent ancestor may still be downloading; never resolve incomplete history.
             let ids = Set(remote.map(\.id))
             guard remote.flatMap(\.parents).allSatisfy({ ids.contains($0) }) else {
-                status = "이전 버전의 다운로드를 기다리는 중입니다."; return
+                status = L10n.text("이전 버전의 다운로드를 기다리는 중입니다."); return
             }
             let heads = SyncBackup.heads(in: remote)
             try SyncBackup.validateGraph(remote)
@@ -175,27 +175,27 @@ public final class ICloudSyncService {
             conflicts = heads.count > 1 ? heads : []
             pendingVersion = nil
             if heads.count > 1 {
-                status = "서로 다른 설정이 있습니다. 사용할 버전을 선택해 주세요."
+                status = L10n.text("서로 다른 설정이 있습니다. 사용할 버전을 선택해 주세요.")
             } else if let head = heads.first, try await io.fingerprint(head.payload) != metadata.fingerprint {
                 pendingVersion = head
                 if !NSApplication.shared.isActive && editingSessions.isEmpty && canApply() && generation == capturedGeneration,
                    try SyncPayload.encoder().encode(store.state) == capturedState {
                     try await apply(head, parents: [head.id], publish: false, automatic: true)
                 } else {
-                    status = "다른 Mac의 설정이 도착했습니다. 편집·실행이 끝나면 적용합니다."
+                    status = L10n.text("다른 Mac의 설정이 도착했습니다. 편집·실행이 끝나면 적용합니다.")
                 }
             } else {
                 if let head = heads.first {
                     var next = metadata; next.parents = [head.id]
                     try saveMetadata(next); metadata = next
                 }
-                status = "폴더 확인 완료 · 인터넷 전송은 iCloud Drive가 처리합니다."
+                status = L10n.text("폴더 확인 완료 · 인터넷 전송은 iCloud Drive가 처리합니다.")
             }
             lastChecked = Date(); errorMessage = nil
             await refreshBackups()
         } catch {
             errorMessage = error.localizedDescription
-            status = "동기화 대기 · 이 Mac의 설정은 유지됩니다."
+            status = L10n.text("동기화 대기 · 이 Mac의 설정은 유지됩니다.")
             await refreshBackups()
         }
     }
@@ -241,7 +241,7 @@ public final class ICloudSyncService {
         try saveMetadata(next); metadata = next
         stagedBackup = nil
         pendingVersion = nil
-        status = "설정을 적용했습니다. 앱 설치·권한·모니터 연결은 이 Mac에서 확인해 주세요."
+        status = L10n.text("설정을 적용했습니다. 앱 설치·권한·모니터 연결은 이 Mac에서 확인해 주세요.")
     }
 
     public func refreshBackups() async {
@@ -249,7 +249,7 @@ public final class ICloudSyncService {
         do {
             let remaining = try await io.pruneLocalBackups(in: backupsURL, expiringThrough: backupCutoff)
             versions = remaining.sorted { $0.createdAt > $1.createdAt }
-        } catch { errorMessage = "백업 목록을 읽거나 정리하지 못했습니다: \(error.localizedDescription)" }
+        } catch { errorMessage = L10n.text("백업 목록을 읽거나 정리하지 못했습니다: \(error.localizedDescription)") }
     }
 
     private func maintainBackupsIfDue() async {

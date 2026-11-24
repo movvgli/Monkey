@@ -220,7 +220,7 @@ public final class WorkflowRunner {
         executionStack: [UUID]
     ) async -> [ActionFailure] {
         guard !actions.isEmpty else {
-            return [ActionFailure(actionTitle: "워크플로 실행", message: AutomationError.workflowIsEmpty.localizedDescription)]
+            return [ActionFailure(actionTitle: L10n.text("워크플로 실행"), message: AutomationError.workflowIsEmpty.localizedDescription)]
         }
         for action in actions {
             currentActionTitle = action.title
@@ -297,7 +297,7 @@ public final class WorkflowRunner {
             } catch {
                 // Later actions depend on the preceding target, clipboard and focus.
                 // In particular, never send Enter after a failed launch or paste.
-                let message = error is CancellationError ? "실행을 중단했습니다." : error.localizedDescription
+                let message = error is CancellationError ? L10n.text("실행을 중단했습니다.") : error.localizedDescription
                 return [ActionFailure(actionTitle: action.title, message: message)]
             }
         }

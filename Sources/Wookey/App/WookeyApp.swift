@@ -32,20 +32,20 @@ struct WookeyApp: App {
         .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
             CommandGroup(after: .appInfo) {
-                Button("업데이트 확인…") {
+                Button(L10n.text("업데이트 확인…")) {
                     updates.checkForUpdates()
                 }
                 .disabled(!updates.canCheckForUpdates)
             }
 
             CommandGroup(replacing: .appSettings) {
-                Button("설정…", action: appDelegate.showSettings)
+                Button(L10n.text("설정…"), action: appDelegate.showSettings)
                     .keyboardShortcut(",", modifiers: .command)
             }
 
             WorkspaceCommands()
 
-            CommandMenu("워크플로") {
+            CommandMenu(L10n.text("워크플로")) {
                 ForEach(runtime.store.workflows.filter(\.isEnabled)) { workflow in
                     Button(shortMenuTitle(workflow.name)) {
                         runtime.run(workflowID: workflow.id)
@@ -122,12 +122,12 @@ private struct WorkspaceCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("새 워크플로") { actions?.createWorkflow() }
+            Button(L10n.text("새 워크플로")) { actions?.createWorkflow() }
                 .keyboardShortcut("n", modifiers: .command)
                 .disabled(actions == nil)
         }
         CommandGroup(after: .textEditing) {
-            Button("Wookey 검색…") { actions?.search() }
+            Button(L10n.text("Wookey 검색…")) { actions?.search() }
                 .keyboardShortcut("k", modifiers: .command)
                 .disabled(actions == nil)
         }
@@ -178,12 +178,12 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
             window = settingsWindow
         } else {
             let panel = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 620, height: 490),
+                contentRect: NSRect(origin: .zero, size: WookeySettingsView.windowSize),
                 styleMask: [.titled, .closable],
                 backing: .buffered,
                 defer: false
             )
-            panel.title = "Wookey 설정"
+            panel.title = L10n.text("Wookey 설정")
             panel.isReleasedWhenClosed = false
             panel.hidesOnDeactivate = false
             panel.contentView = NSHostingView(rootView:
@@ -193,7 +193,11 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
                     .environment(WookeyAppRuntime.updates)
                     .modifier(WookeyThemeScope())
             )
-            if !panel.setFrameUsingName("WookeySettings") { panel.center() }
+            if panel.setFrameUsingName("WookeySettings") {
+                panel.setContentSize(WookeySettingsView.windowSize)
+            } else {
+                panel.center()
+            }
             panel.setFrameAutosaveName("WookeySettings")
             settingsWindow = panel
             window = panel

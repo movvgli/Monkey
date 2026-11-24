@@ -59,18 +59,18 @@ struct ApplicationsView: View {
                         HStack(spacing: 10) {
                             ProgressView()
                                 .controlSize(.small)
-                            Text("설치된 앱을 불러오는 중입니다.")
+                            Text(L10n.text("설치된 앱을 불러오는 중입니다."))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity, minHeight: 180)
                     } else if filteredApplications.isEmpty && missingApplications.isEmpty {
                         ContentUnavailableView {
                             WookeyEmptyStateLabel(
-                                title: showsAssignedOnly && searchText.isEmpty ? "지정된 단축키가 없습니다" : "앱을 찾을 수 없습니다",
+                                title: showsAssignedOnly && searchText.isEmpty ? L10n.text("지정된 단축키가 없습니다") : L10n.text("앱을 찾을 수 없습니다"),
                                 symbol: SidebarSelection.applications.symbol
                             )
                         } description: {
-                            Text(showsAssignedOnly ? "‘전체 앱’에서 앱을 선택해 단축키를 지정하세요." : "다른 이름으로 검색하거나 앱 목록을 새로고침해 주세요.")
+                            Text(showsAssignedOnly ? L10n.text("‘전체 앱’에서 앱을 선택해 단축키를 지정하세요.") : L10n.text("다른 이름으로 검색하거나 앱 목록을 새로고침해 주세요."))
                         }
                             .frame(maxWidth: .infinity, minHeight: 240)
                     } else if !filteredApplications.isEmpty {
@@ -78,7 +78,7 @@ struct ApplicationsView: View {
                     }
 
                     if !isLoading && !missingApplications.isEmpty {
-                        WookeySection(title: "설치 위치를 찾을 수 없는 앱", detail: "앱을 다시 설치하거나 사용하지 않는 단축키를 지워 주세요.") {
+                        WookeySection(title: L10n.text("설치 위치를 찾을 수 없는 앱"), detail: L10n.text("앱을 다시 설치하거나 사용하지 않는 단축키를 지워 주세요.")) {
                             PlainPanel {
                                 VStack(spacing: 12) {
                                     ForEach(missingApplications) { application in
@@ -87,7 +87,7 @@ struct ApplicationsView: View {
                                                 .foregroundStyle(.orange)
                                             Spacer()
                                             ShortcutBadge(text: application.shortcut.displayName)
-                                            Button("단축키 삭제") {
+                                            Button(L10n.text("단축키 삭제")) {
                                                 runtime.setApplicationShortcut(
                                                     bundleIdentifier: application.bundleIdentifier,
                                                     displayName: application.displayName,
@@ -106,7 +106,7 @@ struct ApplicationsView: View {
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
-        .navigationTitle("앱")
+        .navigationTitle(L10n.text("앱"))
         .task {
             await reloadApplications()
         }
@@ -114,8 +114,8 @@ struct ApplicationsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
-            WookeyPageHeader(title: "앱", subtitle: "설치된 앱에 단축키를 지정하고 바로 실행합니다.") {
-                Button("새로고침", wookeyIcon: "arrow.clockwise") {
+            WookeyPageHeader(title: L10n.text("앱"), subtitle: L10n.text("설치된 앱에 단축키를 지정하고 바로 실행합니다.")) {
+                Button(L10n.text("새로고침"), wookeyIcon: "arrow.clockwise") {
                     Task { await reloadApplications() }
                 }
                 .buttonStyle(WookeyGlossyButtonStyle())
@@ -123,14 +123,14 @@ struct ApplicationsView: View {
                 .disabled(isLoading)
             }
 
-            WookeySearchField(prompt: "앱 이름·단축키 검색", text: $searchText)
+            WookeySearchField(prompt: L10n.text("앱 이름·단축키 검색"), text: $searchText)
             HStack {
-                Text("설치된 앱 \(applications.count)개 · 단축키 \(runtime.store.applicationShortcuts.count)개")
+                Text(L10n.text("설치된 앱 \(applications.count)개 · 단축키 \(runtime.store.applicationShortcuts.count)개"))
                     .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                 Spacer()
-                WookeyFilterPicker(title: "앱 필터", selection: $showsAssignedOnly, options: [false, true]) {
-                    $0 ? "단축키 지정됨" : "전체 앱"
+                WookeyFilterPicker(title: L10n.text("앱 필터"), selection: $showsAssignedOnly, options: [false, true]) {
+                    $0 ? L10n.text("단축키 지정됨") : L10n.text("전체 앱")
                 }
             }
         }
@@ -139,11 +139,11 @@ struct ApplicationsView: View {
     private func applicationList(_ applications: [InstalledApplication]) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 16) {
-                Text("앱")
+                Text(L10n.text("앱"))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("단축키")
+                Text(L10n.text("단축키"))
                     .frame(width: 228, alignment: .leading)
-                Text("실행")
+                Text(L10n.text("실행"))
                     .frame(width: 32)
             }
             .font(.pretendard(.subheadline, weight: .medium))
@@ -246,7 +246,7 @@ private struct ApplicationShortcutRow: View {
                         .font(.pretendard(size: 15, weight: .medium))
                         .lineLimit(1)
                     if conflictMessage != nil {
-                        Text("단축키 확인 필요")
+                        Text(L10n.text("단축키 확인 필요"))
                             .font(.pretendard(.caption))
                             .foregroundStyle(.orange)
                     }
@@ -269,8 +269,8 @@ private struct ApplicationShortcutRow: View {
                 .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                 .disabled(isRunning)
                 .foregroundStyle(Color.wookeyInk(in: colorScheme))
-                .help("\(application.displayName) 열기")
-                .accessibilityLabel("\(application.displayName) 열기")
+                .help(L10n.text("\(application.displayName) 열기"))
+                .accessibilityLabel(L10n.text("\(application.displayName) 열기"))
             }
             if let launchError {
                 Label(launchError, systemImage: "exclamationmark.triangle.fill")

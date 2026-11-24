@@ -76,7 +76,7 @@ public final class WookeyStore {
         } catch {
             backUpCorruptStateIfPresent()
             state = PersistedState()
-            lastPersistenceError = "설정을 불러오지 못해 안전한 빈 상태로 시작했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("설정을 불러오지 못해 안전한 빈 상태로 시작했습니다: \(error.localizedDescription)")
         }
     }
 
@@ -91,7 +91,7 @@ public final class WookeyStore {
             onSave?()
             return true
         } catch {
-            lastPersistenceError = "설정을 저장하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("설정을 저장하지 못했습니다: \(error.localizedDescription)")
             return false
         }
     }
@@ -116,7 +116,7 @@ public final class WookeyStore {
     public func addTemplate() -> UUID {
         let template = RichTemplate()
         state.templates.append(template)
-        let initial = NSAttributedString(string: "새 템플릿")
+        let initial = NSAttributedString(string: L10n.text("새 템플릿"))
         saveTemplateDocument(initial, for: template.id)
         save()
         return template.id
@@ -128,7 +128,7 @@ public final class WookeyStore {
         do {
             try writeTemplateDocument(document, to: url)
         } catch {
-            lastPersistenceError = "템플릿을 저장하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("템플릿을 저장하지 못했습니다: \(error.localizedDescription)")
             return nil
         }
         state.templates.append(template)
@@ -236,7 +236,7 @@ public final class WookeyStore {
             state.templates[index].plainText = document.string
             save()
         } catch {
-            lastPersistenceError = "템플릿을 저장하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("템플릿을 저장하지 못했습니다: \(error.localizedDescription)")
         }
     }
 
@@ -320,8 +320,8 @@ public enum StoreError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unsupportedSchema(let version): "지원하지 않는 설정 버전입니다: \(version)"
-        case .couldNotEncodeTemplate: "서식 템플릿을 RTFD로 변환할 수 없습니다."
+        case .unsupportedSchema(let version): L10n.text("지원하지 않는 설정 버전입니다: \(version)")
+        case .couldNotEncodeTemplate: L10n.text("서식 템플릿을 RTFD로 변환할 수 없습니다.")
         }
     }
 }

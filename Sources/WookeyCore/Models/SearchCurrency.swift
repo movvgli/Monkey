@@ -12,17 +12,17 @@ public enum SearchCurrency: String, CaseIterable, Identifiable, Sendable {
 
     public var name: String {
         switch self {
-        case .usd: "미국 달러"
-        case .jpy: "일본 엔"
-        case .krw: "한국 원"
-        case .eur: "유로"
-        case .gbp: "영국 파운드"
-        case .cny: "중국 위안"
-        case .aud: "호주 달러"
-        case .cad: "캐나다 달러"
-        case .chf: "스위스 프랑"
-        case .hkd: "홍콩 달러"
-        case .sgd: "싱가포르 달러"
+        case .usd: L10n.text("미국 달러")
+        case .jpy: L10n.text("일본 엔")
+        case .krw: L10n.text("한국 원")
+        case .eur: L10n.text("유로")
+        case .gbp: L10n.text("영국 파운드")
+        case .cny: L10n.text("중국 위안")
+        case .aud: L10n.text("호주 달러")
+        case .cad: L10n.text("캐나다 달러")
+        case .chf: L10n.text("스위스 프랑")
+        case .hkd: L10n.text("홍콩 달러")
+        case .sgd: L10n.text("싱가포르 달러")
         }
     }
 

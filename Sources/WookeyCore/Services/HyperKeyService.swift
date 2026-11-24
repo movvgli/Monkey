@@ -12,10 +12,10 @@ public enum HyperKeySource: String, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .off: "끔"
+        case .off: L10n.text("끔")
         case .function: "fn"
-        case .rightCommand: "오른쪽 ⌘"
-        case .rightOption: "오른쪽 ⌥"
+        case .rightCommand: L10n.text("오른쪽 ⌘")
+        case .rightOption: L10n.text("오른쪽 ⌥")
         }
     }
 

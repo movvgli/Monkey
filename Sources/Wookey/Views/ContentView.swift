@@ -35,11 +35,11 @@ enum SidebarSelection: Hashable {
 
     var title: String {
         switch section {
-        case .workflowCollection: "워크플로"
-        case .linkCollection: "링크"
-        case .applications: "앱"
-        case .templateCollection: "템플릿"
-        case .layoutCollection: "레이아웃"
+        case .workflowCollection: L10n.text("워크플로")
+        case .linkCollection: L10n.text("링크")
+        case .applications: L10n.text("앱")
+        case .templateCollection: L10n.text("템플릿")
+        case .layoutCollection: L10n.text("레이아웃")
         case .files: HistoryKind.files.title
         default: ""
         }
@@ -67,7 +67,7 @@ private struct WookeySidebar: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
-                Text("보관함")
+                Text(L10n.text("보관함"))
                     .font(.pretendard(.caption, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 11)
@@ -82,7 +82,7 @@ private struct WookeySidebar: View {
             .padding(.vertical, 10)
         }
         .background(theme.sidebar)
-        .accessibilityLabel("사이드바")
+        .accessibilityLabel(L10n.text("사이드바"))
     }
 
     private func row(_ section: SidebarSelection) -> some View {
@@ -154,7 +154,7 @@ struct ContentView: View {
                             .font(.pretendard(.subheadline))
                             .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                         Spacer()
-                        Button("다시 저장") { runtime.saveAndReloadHotkeys() }
+                        Button(L10n.text("다시 저장")) { runtime.saveAndReloadHotkeys() }
                     }
                     .padding(16)
                     .background(WookeyActionTint.rose.ink(in: colorScheme).opacity(0.08))
@@ -164,16 +164,16 @@ struct ContentView: View {
                     Divider()
                     HStack(spacing: 10) {
                         ProgressView().controlSize(.small)
-                        Text(runtime.runner.currentActionTitle ?? "실행 준비 중")
+                        Text(runtime.runner.currentActionTitle ?? L10n.text("실행 준비 중"))
                             .font(.pretendard(.subheadline))
                             .lineLimit(1)
                         if !runtime.runner.queuedWorkflowIDs.isEmpty {
-                            Text("대기 \(runtime.runner.queuedWorkflowIDs.count)개")
+                            Text(L10n.text("대기 \(runtime.runner.queuedWorkflowIDs.count)개"))
                                 .font(.pretendard(.caption))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
-                        Button("실행 중지", wookeyIcon: "stop.fill") { runtime.runner.cancel() }
+                        Button(L10n.text("실행 중지"), wookeyIcon: "stop.fill") { runtime.runner.cancel() }
                     }
                     .padding(.horizontal, WookeyPageMetrics.padding)
                     .padding(.vertical, 12)
@@ -185,30 +185,30 @@ struct ContentView: View {
         .toolbarBackground(theme.panel, for: .windowToolbar)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Wookey 검색", wookeyIcon: "magnifyingglass") { showsSearch = true }
+                Button(L10n.text("Wookey 검색"), wookeyIcon: "magnifyingglass") { showsSearch = true }
                     .labelStyle(.iconOnly)
-                    .help("Wookey 검색 (⌘K)")
+                    .help(L10n.text("Wookey 검색 (⌘K)"))
             }
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Button("새 워크플로", systemImage: "bolt", action: addWorkflow)
-                    Button("새 링크", systemImage: "link", action: addLink)
-                    Button("새 템플릿", systemImage: wookeyTemplateSymbol, action: addTemplate)
-                    Button("새 레이아웃", systemImage: "rectangle.3.group", action: addLayout)
+                    Button(L10n.text("새 워크플로"), systemImage: "bolt", action: addWorkflow)
+                    Button(L10n.text("새 링크"), systemImage: "link", action: addLink)
+                    Button(L10n.text("새 템플릿"), systemImage: wookeyTemplateSymbol, action: addTemplate)
+                    Button(L10n.text("새 레이아웃"), systemImage: "rectangle.3.group", action: addLayout)
                 } label: {
                     Label {
-                        Text("새로 만들기")
+                        Text(L10n.text("새로 만들기"))
                     } icon: {
                         createMenuIcon
                     }
                     .labelStyle(.iconOnly)
                 }
-                .help("새로 만들기")
+                .help(L10n.text("새로 만들기"))
             }
             ToolbarItem(placement: .primaryAction) {
-                Button("설정", wookeyIcon: "gearshape", action: showSettings)
+                Button(L10n.text("설정"), wookeyIcon: "gearshape", action: showSettings)
                 .labelStyle(.iconOnly)
-                .help("설정 (⌘,)")
+                .help(L10n.text("설정 (⌘,)"))
             }
         }
         .focusedSceneValue(\.workspaceActions, WorkspaceActions(
@@ -301,7 +301,7 @@ struct ContentView: View {
                 )
                 .id(id)
             } else {
-                ContentUnavailableView("워크플로를 찾을 수 없습니다", systemImage: "bolt.slash")
+                ContentUnavailableView(L10n.text("워크플로를 찾을 수 없습니다"), systemImage: "bolt.slash")
             }
         case .applications:
             ApplicationsView()
@@ -333,7 +333,7 @@ struct ContentView: View {
                 )
                 .id(id)
             } else {
-                ContentUnavailableView("템플릿을 찾을 수 없습니다", systemImage: "doc.badge.ellipsis")
+                ContentUnavailableView(L10n.text("템플릿을 찾을 수 없습니다"), systemImage: "doc.badge.ellipsis")
             }
         case .layoutCollection:
             LayoutLibraryView(
@@ -359,7 +359,7 @@ struct ContentView: View {
                 )
                 .id(id)
             } else {
-                ContentUnavailableView("레이아웃을 찾을 수 없습니다", systemImage: "rectangle.3.group")
+                ContentUnavailableView(L10n.text("레이아웃을 찾을 수 없습니다"), systemImage: "rectangle.3.group")
             }
         }
     }
@@ -451,7 +451,7 @@ struct RunSummaryView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Label(
-                    summary.failures.isEmpty ? "완료" : "실행을 완료하지 못했습니다",
+                    summary.failures.isEmpty ? L10n.text("완료") : L10n.text("실행을 완료하지 못했습니다"),
                     systemImage: summary.failures.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                 )
                 .foregroundStyle(summary.failures.isEmpty ? Color.green : Color.orange)
@@ -499,14 +499,14 @@ private struct LinkLibraryView: View {
         }
 
         LibraryLandingView(
-            title: "링크",
-            subtitle: "자주 여는 주소를 저장하고 검색 키워드나 단축키로 실행하세요.",
-            addTitle: "링크 추가",
+            title: L10n.text("링크"),
+            subtitle: L10n.text("자주 여는 주소를 저장하고 검색 키워드나 단축키로 실행하세요."),
+            addTitle: L10n.text("링크 추가"),
             searchText: $searchText,
             isEmpty: links.isEmpty,
             hasSearchResults: !filtered.isEmpty,
             section: .linkCollection,
-            emptyDescription: "자주 방문하는 웹사이트의 주소를 추가해 보세요.",
+            emptyDescription: L10n.text("자주 방문하는 웹사이트의 주소를 추가해 보세요."),
             add: add
         ) {
             ForEach(filtered) { link in
@@ -524,8 +524,8 @@ private struct LinkLibraryView: View {
                         WookeyActionIcon(symbol: "arrow.up.right", tint: .graphite, size: 14)
                     }
                     .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
-                    .accessibilityLabel("\(link.workflow.name) 링크 열기")
-                    .help("링크 열기")
+                    .accessibilityLabel(L10n.text("\(link.workflow.name) 링크 열기"))
+                    .help(L10n.text("링크 열기"))
                     .disabled(runtime.runner.runningWorkflowID == link.id || runtime.runner.queuedWorkflowIDs.contains(link.id))
                     .padding(.trailing, 12)
                 }
@@ -553,20 +553,20 @@ private struct TemplateLibraryView: View {
 
     var body: some View {
         LibraryLandingView(
-            title: "템플릿",
-            subtitle: "자주 쓰는 문장과 이미지를 단축키나 검색 단축어로 불러옵니다.",
-            addTitle: "템플릿 추가",
+            title: L10n.text("템플릿"),
+            subtitle: L10n.text("자주 쓰는 문장과 이미지를 단축키나 검색 단축어로 불러옵니다."),
+            addTitle: L10n.text("템플릿 추가"),
             searchText: $searchText,
             isEmpty: templates.isEmpty,
             hasSearchResults: !filteredTemplates.isEmpty,
             section: .templateCollection,
-            emptyDescription: "자주 쓰는 문장과 이미지를 담은 첫 템플릿을 만들어 보세요.",
+            emptyDescription: L10n.text("자주 쓰는 문장과 이미지를 담은 첫 템플릿을 만들어 보세요."),
             add: add
         ) {
             ForEach(filteredTemplates) { template in
                 LibraryItemButton(
                     title: template.name,
-                    subtitle: template.plainText.isEmpty ? "내용 없음" : template.plainText,
+                    subtitle: template.plainText.isEmpty ? L10n.text("내용 없음") : template.plainText,
                     systemImage: wookeyTemplateSymbol,
                     action: { open(template.id) }
                 )
@@ -590,21 +590,21 @@ private struct LayoutLibraryView: View {
 
     var body: some View {
         LibraryLandingView(
-            title: "레이아웃",
-            subtitle: "앱 창의 위치와 크기를 한 번에 배치합니다.",
-            addTitle: "레이아웃 추가",
+            title: L10n.text("레이아웃"),
+            subtitle: L10n.text("앱 창의 위치와 크기를 한 번에 배치합니다."),
+            addTitle: L10n.text("레이아웃 추가"),
             searchText: $searchText,
             isEmpty: layouts.isEmpty,
             hasSearchResults: !filteredLayouts.isEmpty,
             section: .layoutCollection,
-            emptyDescription: "함께 사용하는 앱을 추가하고 창을 배치할 위치를 정하세요.",
+            emptyDescription: L10n.text("함께 사용하는 앱을 추가하고 창을 배치할 위치를 정하세요."),
             add: add
         ) {
             ForEach(filteredLayouts) { layout in
                 LibraryItemButton(
                     title: layout.name,
-                    subtitle: "\(layout.placements.count)개 앱 배치 · "
-                        + (layout.shortcut.steps.isEmpty ? "단축키 미지정" : layout.shortcut.displayName),
+                    subtitle: L10n.text("\(layout.placements.count)개 앱 배치 · ")
+                        + (layout.shortcut.steps.isEmpty ? L10n.text("단축키 미지정") : layout.shortcut.displayName),
                     systemImage: "rectangle.3.group",
                     warning: runtime.hotkeys.layoutRegistrationErrors[layout.id],
                     action: { open(layout.id) }
@@ -636,11 +636,11 @@ private struct LibraryLandingView<Content: View>: View {
                             .buttonStyle(WookeyGlossyButtonStyle())
                             .controlSize(.large)
                     }
-                    WookeySearchField(prompt: "\(title) 검색", text: $searchText)
+                    WookeySearchField(prompt: L10n.text("\(title) 검색"), text: $searchText)
                 }
                 if isEmpty {
                     ContentUnavailableView {
-                        WookeyEmptyStateLabel(title: "저장한 항목이 없습니다", symbol: section.symbol)
+                        WookeyEmptyStateLabel(title: L10n.text("저장한 항목이 없습니다"), symbol: section.symbol)
                     } description: {
                         Text(emptyDescription)
                     } actions: {

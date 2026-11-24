@@ -111,7 +111,7 @@ public final class HotkeyRegistrar {
         if searchShortcut.steps.count == 1, searchShortcut.validationMessage == nil,
            let searchChord = searchShortcut.steps.first {
             for template in templates where template.shortcut?.steps.first == searchChord {
-                templateRegistrationErrors[template.id] = "검색창 단축키와 겹칩니다."
+                templateRegistrationErrors[template.id] = L10n.text("검색창 단축키와 겹칩니다.")
             }
         }
         applicationRegistrationErrors = conflicts.applications
@@ -171,9 +171,9 @@ public final class HotkeyRegistrar {
         }
         if let chord = searchShortcut.steps.first {
             if searchShortcut.steps.count != 1 || searchShortcut.validationMessage != nil {
-                searchRegistrationError = "검색창 단축키에는 보조키를 포함한 한 단계가 필요합니다."
+                searchRegistrationError = L10n.text("검색창 단축키에는 보조키를 포함한 한 단계가 필요합니다.")
             } else if let candidate = grouped[chord]?.first {
-                searchRegistrationError = "‘\(candidate.name)’의 단축키와 겹칩니다. 검색창 단축키를 변경하세요."
+                searchRegistrationError = L10n.text("‘\(candidate.name)’의 단축키와 겹칩니다. 검색창 단축키를 변경하세요.")
             } else {
                 register(chord, route: .single(.search), affected: [.search])
             }
@@ -260,7 +260,7 @@ public final class HotkeyRegistrar {
             shortcutLogger.error("Global shortcut registration failed: \(status, privacy: .public)")
             for target in targets {
                 setRegistrationError(
-                    "다른 앱 또는 macOS가 이 단축키를 사용 중입니다. (\(status))",
+                    L10n.text("다른 앱 또는 macOS가 이 단축키를 사용 중입니다. (\(status))"),
                     for: target
                 )
             }

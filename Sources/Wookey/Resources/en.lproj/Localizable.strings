@@ -1,0 +1,6 @@
+/* English metadata for macOS Shortcuts. */
+"%@ 실행" = "Run %@";
+"Wookey 워크플로" = "Wookey Workflow";
+"Wookey 워크플로 실행" = "Run Wookey Workflow";
+"Wookey에서 저장한 자동화를 실행합니다." = "Runs an automation saved in Wookey.";
+"워크플로" = "Workflow";

@@ -51,9 +51,9 @@ public enum SearchCalculation: Equatable {
 
         public var errorDescription: String? {
             switch self {
-            case .invalidExpression: "계산식을 확인해 주세요."
-            case .divisionByZero: "0으로 나눌 수 없습니다."
-            case .outOfRange: "계산할 수 있는 숫자 범위를 벗어났습니다."
+            case .invalidExpression: L10n.text("계산식을 확인해 주세요.")
+            case .divisionByZero: L10n.text("0으로 나눌 수 없습니다.")
+            case .outOfRange: L10n.text("계산할 수 있는 숫자 범위를 벗어났습니다.")
             }
         }
     }
