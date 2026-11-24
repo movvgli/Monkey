@@ -184,7 +184,7 @@ struct WookeySettingsView: View {
                 PlainPanel {
                     VStack(alignment: .leading, spacing: 0) {
                         GeneralSettingRow(
-                            symbol: "dial.medium",
+                            symbol: "lightbulb",
                             title: "서랍 열기 감도",
                             detail: "감도가 높을수록 파일을 작게 흔들어도 서랍이 열립니다."
                         ) {

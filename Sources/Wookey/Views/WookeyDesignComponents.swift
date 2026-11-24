@@ -506,8 +506,8 @@ enum WookeyActionTint {
         switch symbol {
         case "link": self = .graphite
         case "rectangle.3.group": self = .blue
-        case "app", "arrow.left.arrow.right", "dial.medium": self = .teal
-        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder", wookeyDrawerSymbol: self = .amber
+        case "app", "arrow.left.arrow.right": self = .teal
+        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder", wookeyDrawerSymbol, "lightbulb": self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
         default: self = .accent
         }
@@ -604,6 +604,7 @@ struct WookeyActionIcon: View {
         case "icloud": "WookeySettingsSync"
         case "stethoscope": "WookeySettingsDiagnostics"
         case "paintpalette": "WookeySettingsPalette"
+        case "lightbulb": "WookeySettingsSensitivity"
         case "face.smiling": "WookeySettingsCharacter"
         case "square.stack.3d.up": "WookeySettingsIconTheme"
         case "menubar.rectangle": "WookeySettingsMenuBar"
