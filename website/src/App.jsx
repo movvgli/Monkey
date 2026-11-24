@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import {
-  AppWindow, ArrowDown, ArrowRight, ClipboardText, FileText, GithubLogo,
+  AppWindow, ArrowRight, ClipboardText, DownloadSimple, FileText, GithubLogo,
   LinkSimple, MagnifyingGlass, Moon, NotePencil, Sun, Lightning,
 } from "@phosphor-icons/react";
 import { searchResults } from "./examples.js";
@@ -8,12 +8,15 @@ import { searchResults } from "./examples.js";
 const github = "https://github.com/movvgli/Wookey";
 const releases = github + "/releases";
 const stable = releases + "/latest";
-const docs = github + "/blob/main/docs/";
+const version = "1.2.58";
+const releaseTag = "v" + version;
+const dmg = releases + "/download/" + releaseTag + "/Wookey-" + version + ".dmg";
+const docs = github + "/blob/" + releaseTag + "/docs/";
 const asset = (file) => "./assets/" + file;
 const searchIcons = { app: AppWindow, note: NotePencil, flow: Lightning };
 
-function Download({ children = "Mac용 프리뷰 받기" }) {
-  return <a className="download" href={releases}>{children}<ArrowDown size={19} weight="bold" /></a>;
+function Download() {
+  return <a className="button download" href={dmg}><DownloadSimple size={21} weight="bold" aria-hidden="true" />Mac용 다운로드</a>;
 }
 
 export function Demo() {
@@ -66,7 +69,7 @@ export function Demo() {
                     onFocus={() => setHighlight(index)} onClick={() => activate(item)}>
                     <span className={"app-symbol " + item.kind}><Icon size={20} weight="bold" aria-hidden="true" /></span>
                     <strong>{item.title}</strong><span className="result-detail">{item.detail}</span>
-                    <kbd aria-label="Enter">↵</kbd>
+                    <kbd aria-hidden="true" className="result-key">↵</kbd>
                   </button>
                 </li>
               );
@@ -83,33 +86,41 @@ export function Demo() {
 function Features() {
   return (
     <section id="features" className="features" aria-labelledby="features-title">
-      <h2 id="features-title">찾고, 꺼내 쓰고,<br className="mobile-break" /> 한 번에 실행.</h2>
+      <h2 id="features-title" className="ruled-heading">키보드에서 바로 시작</h2>
       <div className="feature-grid">
-        <article className="feature-card feature-search">
+        <article className="feature-card">
+          <div className="feature-art feature-search" aria-hidden="true">
+            <div className="mini-window">
+              <div><MagnifyingGlass size={18} /> 회의 <kbd>⌥ Space</kbd></div>
+              <div className="mini-highlight"><NotePencil size={18} /> 회의 노트 <small>템플릿</small></div>
+              <div><LinkSimple size={18} /> 회의실 예약 <small>링크</small></div>
+            </div>
+          </div>
           <h3>빠른 검색</h3>
-          <div className="mini-window mini-search" aria-hidden="true">
-            <div><MagnifyingGlass size={18} /> 회의 <kbd>⌥ Space</kbd></div>
-            <div className="mini-highlight"><NotePencil size={18} /> 회의 노트 <small>템플릿</small></div>
-            <div><LinkSimple size={18} /> 회의실 예약 <small>링크</small></div>
-          </div>
-          <p><b className="shortcut">⌥ Space</b>로 앱·링크·템플릿·워크플로를 찾고, <b className="shortcut">⌘ Enter</b>로 웹을 검색하세요. 계산과 환율 변환도 바로 할 수 있어요.</p>
+          <p><b className="shortcut">⌥ Space</b>로 앱, 링크, 템플릿과 워크플로를 찾아보세요. 최근 클립보드와 폴더 항목도 바로 열 수 있어요. <b className="shortcut">⌘ Enter</b>를 누르면 웹에서 검색합니다.</p>
         </article>
-        <article className="feature-card feature-drawer">
+        <article className="feature-card">
+          <div className="feature-art feature-drawer" aria-hidden="true">
+            <div className="mini-window">
+              <div className="mini-highlight"><ClipboardText size={18} /> 우키 서랍</div>
+              <div><FileText size={18} /> 회의 자료.pdf</div>
+              <div><LinkSimple size={18} /> 참고 링크</div>
+            </div>
+          </div>
           <h3>클립보드와 서랍</h3>
-          <div className="mini-window mini-drawer" aria-hidden="true">
-            <div className="mini-title"><ClipboardText size={18} /> 우키 서랍</div>
-            <div><FileText size={18} /> 회의 자료.pdf</div>
-            <div><LinkSimple size={18} /> 참고 링크</div>
-          </div>
-          <p>이전에 복사한 내용을 다시 꺼내 쓰세요. 파일이나 링크를 끌다가 두 번 흔들면 서랍이 열립니다.</p>
+          <p>복사 기록을 다시 쓰고, 파일이나 링크를 끌다가 두 번 흔들어 서랍에 담으세요. 캐릭터를 잡고 서랍을 옮기거나, 여러 항목을 골라 한꺼번에 꺼낼 수 있어요.</p>
         </article>
-        <article className="feature-card feature-flow">
-          <h3>워크플로와 창 배치</h3>
-          <div className="mini-window mini-flow" aria-hidden="true">
-            <div className="mini-title"><Lightning size={19} weight="fill" /> 작업 시작 <kbd>↵</kbd></div>
-            <div className="mini-layout"><span><AppWindow size={20} /> 브라우저</span><span><NotePencil size={20} /> 메모</span></div>
+        <article className="feature-card">
+          <div className="feature-art feature-flow" aria-hidden="true">
+            <div className="mini-window">
+              <div><Lightning size={18} weight="fill" /> 작업 시작 <kbd>↵</kbd></div>
+              <div className="mini-layout">
+                <span><AppWindow size={20} /> 브라우저</span><span><NotePencil size={20} /> 메모</span>
+              </div>
+            </div>
           </div>
-          <p>앱 열기, 서식 있는 템플릿 붙여넣기, 창 배치를 원하는 순서로 묶어 단축키로 실행하세요.</p>
+          <h3>워크플로와 창 배치</h3>
+          <p>앱 열기, 템플릿 붙여넣기, 창 배치를 묶어 단축키로 실행하세요. 템플릿에 단축키를 바로 지정하거나 설정에서 Hyper 키를 사용할 수 있어요.</p>
         </article>
       </div>
     </section>
@@ -124,8 +135,8 @@ function Appearance() {
   return (
     <section id="appearance" className="appearance" aria-labelledby="appearance-title">
       <div className="appearance-copy">
-        <h2 id="appearance-title">내 취향대로 꾸미기</h2>
-        <p>우키와 바나나, 샤키와 산호 중에서 골라보세요. 아이콘은 3D와 플러피, 화면은 하늘색을 포함한 다섯 가지 테마로 바꿀 수 있어요.</p>
+        <h2 id="appearance-title">나만의 우키</h2>
+        <p>설정의 테마 탭에서 화면 색, 캐릭터 조합, 3D·플러피 아이콘을 각각 고를 수 있어요.</p>
         <div className="segmented" role="group" aria-label="아이콘 테마 미리보기">
           <button type="button" aria-pressed={theme === "3d"} onClick={() => setTheme("3d")}>3D</button>
           <button type="button" aria-pressed={theme === "fluffy"} onClick={() => setTheme("fluffy")}>플러피</button>
@@ -133,9 +144,10 @@ function Appearance() {
       </div>
       <div className="characters">
         {characters.map(([key, name]) => (
-          <div className={"character " + key} key={key}>
-            <img src={asset(key + "-" + theme + ".webp")} alt={name} loading="lazy" />
-          </div>
+          <figure className="character" key={key}>
+            <img src={asset(key + "-" + theme + ".webp")} alt="" loading="lazy" />
+            <figcaption>{name}</figcaption>
+          </figure>
         ))}
       </div>
     </section>
@@ -159,16 +171,16 @@ export function App() {
       <header className="header">
         <a className="brand" href="#top"><img src={asset("wookey-icon.png")} alt="" width="44" height="44" />Wookey</a>
         <nav aria-label="주요 메뉴">
-          <a href="#features">기능</a><a href="#appearance">꾸미기</a><a href="#install">다운로드</a>
-          <a className="github-nav" href={github}><GithubLogo size={24} weight="fill" /><span>GitHub</span></a>
+          <a href="#features">기능</a><a href="#appearance">꾸미기</a><a href="#download">다운로드</a>
         </nav>
+        <a className="button github-nav" href={github}><GithubLogo size={20} weight="fill" aria-hidden="true" /><span>GitHub</span></a>
       </header>
       <main id="main">
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
-            <h1 id="hero-title">Mac에서<br />자주 쓰는 것들을<br />한곳에.</h1>
-            <p>앱과 링크를 검색하고, 복사한 내용과 파일을 꺼내 쓰고, 반복 작업은 단축키로 실행하세요.</p>
-            <div className="hero-actions"><Download /><a href={stable}>정식 버전</a></div>
+            <h1 id="hero-title">Mac에서 자주 쓰는 일, <br />단축키 하나로</h1>
+            <p>앱과 링크를 찾고, 복사한 내용을 꺼내 쓰고, 반복 작업을 실행하세요.</p>
+            <div className="hero-actions"><Download /><a className="button secondary" href="#install">설치 안내</a></div>
             <p className="compatibility">macOS 14 이상 · Apple Silicon 및 Intel</p>
           </div>
           <Demo />
@@ -177,27 +189,38 @@ export function App() {
         <Appearance />
         <div className="details">
           <section id="install" aria-labelledby="install-title">
-            <h2 id="install-title">설치와 다운로드</h2>
-            <p>DMG를 열고 앱을 응용 프로그램 폴더로 옮긴 뒤 <b className="shortcut">⌥ Space</b>로 빠른 검색을 열어보세요.</p>
-            <dl className="channels">
-              <div><dt>프리뷰</dt><dd>이 페이지의 기능을 먼저 써 볼 수 있는 Apple 공증 전 빌드입니다. 릴리스 목록에서 <b>Pre-release</b>가 붙은 Wookey DMG를 받으세요.</dd></div>
-              <div><dt>정식 버전</dt><dd>Apple 공증을 마친 버전입니다.</dd></div>
-            </dl>
-            <div className="detail-actions"><Download /><a className="text-link" href={stable}>정식 버전 <ArrowRight size={16} /></a></div>
-            <p className="small-copy">자동 붙여넣기와 창 배치에는 손쉬운 사용, 두 단계 단축키에는 입력 모니터링도 필요합니다.</p>
-            <a className="text-link" href={docs + "INSTALL.md"}>설치 및 권한 안내 <ArrowRight size={16} /></a>
+            <h2 id="install-title">설치와 권한</h2>
+            <ol className="install-steps">
+              <li>정식 DMG를 다운로드해 엽니다.</li>
+              <li>Wookey를 <b>응용 프로그램</b> 폴더로 옮깁니다.</li>
+              <li>Wookey를 실행하고 <b className="shortcut">⌥ Space</b>를 눌러보세요.</li>
+            </ol>
+            <p>자동 붙여넣기와 창 배치에는 손쉬운 사용 권한이 필요합니다. 두 단계 단축키와 Hyper 키는 입력 모니터링도 사용합니다.</p>
+            <a className="text-link" href={docs + "INSTALL.md"}>설치 안내 <ArrowRight size={16} aria-hidden="true" /></a>
           </section>
           <section id="privacy" aria-labelledby="privacy-title">
             <h2 id="privacy-title">개인정보</h2>
-            <p>워크플로, 템플릿, 클립보드와 서랍은 기본적으로 Mac에 저장됩니다.</p>
-            <p>선택적 동기화를 켜면 워크플로와 템플릿 등의 설정 및 첨부 파일 사본을 개인 iCloud Drive 폴더에 보관할 수 있습니다. 기본값은 꺼짐입니다.</p>
-            <a className="text-link" href={docs + "PRIVACY.md"}>개인정보 및 동기화 안내 <ArrowRight size={16} /></a>
+            <p>워크플로, 템플릿, 클립보드 기록과 서랍 항목은 기본적으로 Mac에 저장됩니다.</p>
+            <p>설정에서 동기화를 켜면 워크플로와 템플릿 등을 개인 iCloud Drive 폴더에 보관할 수 있습니다. 기본값은 꺼짐입니다.</p>
+            <a className="text-link" href={docs + "PRIVACY.md"}>개인정보 및 동기화 안내 <ArrowRight size={16} aria-hidden="true" /></a>
           </section>
         </div>
+        <section id="download" className="download-banner" aria-labelledby="download-title">
+          <div>
+            <h2 id="download-title">Wookey 다운로드</h2>
+            <p>정식 버전 {version} · macOS 14 이상</p>
+            <p>Apple Silicon 및 Intel · 무료 오픈소스</p>
+          </div>
+          <img src={asset("wookey-fluffy.webp")} alt="" loading="lazy" />
+          <div className="download-actions">
+            <Download />
+            <a className="text-link" href={stable}>최신 릴리스 <ArrowRight size={16} aria-hidden="true" /></a>
+          </div>
+        </section>
       </main>
       <footer className="footer">
-        <a className="text-link" href={github}><GithubLogo weight="fill" size={22} /> GitHub</a>
-        <div><a href={releases}>릴리스 내역</a><a href="#privacy">개인정보</a>
+        <a className="footer-brand" href="#top">Wookey</a>
+        <div><a href={github}>GitHub</a><a href={releases}>릴리스 내역</a><a href="#privacy">개인정보</a>
           <button className="mode" type="button" aria-label={dark ? "밝은 화면으로 전환" : "어두운 화면으로 전환"}
             onClick={() => setDark(!dark)}>{dark ? <Sun size={20} /> : <Moon size={20} />}</button></div>
       </footer>

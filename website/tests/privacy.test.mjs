@@ -24,16 +24,20 @@ test("search renders only fictional examples and labels them", () => {
   assert.ok(html.includes('aria-label="기능 예시 검색"'));
 });
 
-test("site renders distinct release channels and privacy details without storage", () => {
+test("site renders a stable download and privacy details without storage", () => {
   const prior = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
   Object.defineProperty(globalThis, "localStorage", { configurable: true, get() { throw new Error("Storage disabled"); } });
   try {
     const html = renderToStaticMarkup(React.createElement(App));
-    for (const text of ["macOS 14 이상", "가상 예시", "손쉬운 사용", "입력 모니터링", "Apple 공증 전 빌드", "Pre-release"]) {
+    for (const text of ["macOS 14 이상", "가상 예시", "손쉬운 사용", "입력 모니터링", "정식 버전", "Mac용 다운로드"]) {
       assert.ok(html.includes(text), text);
     }
     assert.ok(html.includes('href="https://github.com/movvgli/Wookey/releases"'));
     assert.ok(html.includes('href="https://github.com/movvgli/Wookey/releases/latest"'));
+    const version = html.match(/정식 버전 (\d+\.\d+\.\d+)/)?.[1];
+    assert.ok(version);
+    const download = `href="https://github.com/movvgli/Wookey/releases/download/v${version}/Wookey-${version}.dmg"`;
+    assert.equal(html.split(download).length - 1, 2);
     assert.ok(!html.includes("<form"));
     assert.ok(html.includes('src="./assets/wookey-icon.png"'));
     const privacy = html.match(/<section id="privacy"[\s\S]*?<\/section>/)?.[0];
@@ -54,7 +58,7 @@ test("built entry uses relative assets for GitHub Pages project paths", async ()
   assert.ok(/href="\.\/assets\/[^\"]+\.css"/.test(html));
 });
 
-test("only the app icon and public mascot artwork are copied from public assets", async () => {
+test("only approved artwork and the licensed font are copied from public assets", async () => {
   const files = await readdir(new URL("../public/assets/", import.meta.url));
   const approvedFiles = [
     "banana-3d.webp", "banana-fluffy.webp", "coral-3d.webp", "coral-fluffy.webp",
@@ -62,7 +66,9 @@ test("only the app icon and public mascot artwork are copied from public assets"
   ];
   assert.deepEqual(files.sort(), approvedFiles);
   const publicFiles = await readdir(new URL("../public/", import.meta.url));
-  assert.deepEqual(publicFiles, ["assets"]);
+  assert.deepEqual(publicFiles.sort(), ["assets", "fonts"]);
+  const fontFiles = await readdir(new URL("../public/fonts/", import.meta.url));
+  assert.deepEqual(fontFiles.sort(), ["Pretendard-LICENSE.txt", "PretendardVariable.woff2"]);
 });
 
 test("built website contains no old capture, local user path, or private configuration", async () => {

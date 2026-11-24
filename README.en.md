@@ -1,44 +1,51 @@
 <p align="center">
-  <img src="Sources/Wookey/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" width="112" alt="Wookey app icon">
+  <img src="website/public/assets/wookey-icon.png" width="112" alt="Wookey app icon">
 </p>
 
 # Wookey
 
-**Find apps and links, retrieve clipboard items and files, and run recurring tasks with a shortcut.** Wookey is a free, open-source macOS app for Apple Silicon and Intel Macs running macOS 14 or later. You can get started without a Wookey account.
+Wookey is a Mac launcher for **finding apps and links, retrieving clipboard items, and running recurring tasks with a shortcut**. It's free and open source, and runs on Apple Silicon and Intel Macs with macOS 14 or later.
 
-[Preview releases](https://github.com/movvgli/Wookey/releases) · [Stable release](https://github.com/movvgli/Wookey/releases/latest) · [Website](https://movvgli.github.io/Wookey/) · [한국어](README.md)
+[Download the stable release](https://github.com/movvgli/Wookey/releases/latest) · [Website](https://movvgli.github.io/Wookey/) · [Release history](https://github.com/movvgli/Wookey/releases) · [한국어](README.md)
 
-## What you can do
+## Start with quick search
 
-| Feature | How it works |
-| --- | --- |
-| Quick search | Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press Return to open or run the selection, or **Command–Return** to search Google in your default browser. You can also enter web addresses, calculate, and convert currencies. |
-| Apps and links | Assign shortcuts to your favorite apps and links. Give links and workflows multiple comma-separated search keywords. |
-| Clipboard and drawer | Copy an earlier item from clipboard history. While dragging a file, image, or web link, shake the pointer twice to open the drawer. Open saved items later or drag them into another app. |
-| Templates | Save phrases with formatting, links, lists, and inline images. Copy them from search or paste them as part of a workflow. |
-| Workflows | Combine apps, links, files, template pastes, Return keystrokes, delays, and window layouts in a sequence. Run workflows with a global shortcut, from the menu bar, or from Apple Shortcuts. |
-| Window layouts | Save the monitor and screen region for each app window. Restore layouts directly with a shortcut or include them in a workflow. |
-| Appearance | Choose white, yellow, sky blue, brown, or dark. Pick Wookey and Banana or Sharkey and Coral, then choose 3D or Fluffy icons independently. |
+- Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press **Return** to open the selection or **Command–Return** to search Google in your default browser. You can also open a web address, run a calculation, or convert currencies.
+- Search for **Open Clipboard** or **Open Folder** to jump to your history. Recent clipboard and drawer items are also available in search.
+- Give links and workflows search aliases, or assign a global shortcut to an app or link.
 
-## Download and get started
+## Clipboard history and the drawer
 
-The [stable release](https://github.com/movvgli/Wookey/releases/latest) is Developer ID–signed and notarized by Apple.
+Retrieve text and images you've copied before. While dragging a file, image, or web link, shake the pointer twice to open the drawer. Drag the mascot to move the drawer. Use **Shift-click** or **Command-click** to select several items and drag them into another app together.
 
-The features above describe the [preview releases](https://github.com/movvgli/Wookey/releases). To try them, download a Wookey DMG marked **Pre-release** near the top of the list. Preview builds are not notarized by Apple and are distributed separately from stable in-app updates.
+Adjust shake sensitivity in **Settings → General** and change what Wookey retains in **Settings → Retention**. On macOS 26 or later, the drawer's thought bubble uses Liquid Glass.
 
-1. Open the DMG and move the app to **Applications**.
-2. Launch the app and press **Option–Space** to find a familiar app.
-3. To chain multiple actions, create a new workflow and choose the option to combine actions.
+## Templates, workflows, and window layouts
 
-Automated pasting, keystrokes, and window placement require **Accessibility** permission. Two-step shortcuts also require **Input Monitoring**. [Installation, permissions, and updates](docs/INSTALL.md)
+- Save frequently used text, links, lists, and images as **templates**. Assign a search alias or keyboard shortcut in the template editor.
+- Build a **workflow** from steps such as opening apps, links, or files, pasting a template, pressing Return, waiting, and arranging windows. Run it from a global shortcut, the menu bar, or Apple Shortcuts.
+- Save the display and screen region for each app window in a **window layout**. Restore it with a shortcut or add it to a workflow.
+- Map fn, right Command, or right Option to a configurable **Hyper key** for shortcuts.
+
+## Appearance
+
+Open **Settings → Theme** to choose white, yellow, sky blue, brown, or dark. Choose Wookey and Banana or Sharkey and Coral, and independently switch between 3D and Fluffy icons.
+
+## Installation and permissions
+
+Download the Apple-notarized DMG from the [latest stable release](https://github.com/movvgli/Wookey/releases/latest), then move Wookey into **Applications**. Open the app and try **Option–Space**.
+
+Automated pasting and window placement require Accessibility permission. Two-step shortcuts and the Hyper key also require Input Monitoring. [Installation, permissions, and updates](docs/INSTALL.md)
+
+Releases marked **Pre-release** are test builds pending Apple notarization. Stable in-app updates use the stable release channel.
 
 ## Data storage
 
-Settings, templates, clipboard history, and drawer items are stored on your Mac by default. Optional iCloud sync can store workflows, templates, shortcuts, window layouts, and copies of workflow attachments in a private iCloud Drive folder. Clipboard history and drawer items stay on your Mac. [Privacy and sync details](docs/PRIVACY.md)
+Workflows, templates, clipboard history, and drawer items are stored on your Mac by default. With optional iCloud sync, you can store workflows, templates, shortcuts, window layouts, and copies of attachments in a private iCloud Drive folder. Clipboard history and drawer items stay on your Mac. [Privacy and sync details](docs/PRIVACY.md)
 
 ## Development and contributing
 
-Use Xcode and a Swift 6 toolchain. Regenerating the Xcode project requires XcodeGen.
+Use Xcode and a Swift 6 toolchain. Regenerating the Xcode project requires XcodeGen. The release tags identify the source used for the stable installers.
 
 ```sh
 swift test

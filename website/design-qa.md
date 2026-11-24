@@ -1,22 +1,8 @@
-# Wookey landing page validation — 2026-09-06
+# Wookey 배포 사이트 검증
 
-## Direction
+크림색 바탕에 하늘색 소개 영역과 노란 다운로드 버튼을 사용했습니다. 시안의 첫 화면, 기능 예시, 캐릭터 영역, 설치 안내, 다운로드 영역을 데스크톱 화면과 비교했습니다. 캐릭터와 앱 아이콘은 Wookey의 공개 에셋을 사용하고, 검색 예시는 가상 데이터로 구현했습니다.
 
-Quiet editorial layout, restrained violet accent, concise Korean explanations.
-Public examples in `src/examples.js` are fictional. The old product captures and
-design reference were removed from current source and public build inputs because
-they contained personal workflows. No replacement actual-user captures are used.
-
-## Validation
-
-- Production build and Sites worker contract tests.
-- Public-asset allowlist, no private capture filenames or user-directory paths in output.
-- Server-rendered content checks for all three example views and privacy labeling.
-- Theme storage failures do not prevent rendering.
-- Responsive CSS includes narrow-screen layouts, keyboard focus outlines, a skip link,
-  and reduced-motion support.
-- Local HTTP preview handed off at `http://localhost:4173/`.
-
-These are source/build/render checks, not a claim of browser visual or interaction QA.
-The previous screenshot-comparison report does not apply to this redesigned page.
-Deleting files from the current tree does not erase historical Git commits or copies.
+- Aside 브라우저에서 320, 390, 767, 1024, 1440 CSS px을 확인했습니다. 제목은 두 줄로 유지됐고 가로 스크롤과 헤더 겹침이 없었습니다.
+- 본문과 버튼에 Pretendard가 로드되는지 확인했습니다. 본문 자간은 기본값이며 첫 화면의 다운로드와 설치 안내 버튼 높이는 각각 54 px, 52 px입니다.
+- 검색 입력과 Enter, 3D·플러피 전환, 밝은·어두운 화면 전환, 다운로드 위치 이동을 확인했습니다.
+- 사이트 빌드, Sites 워커 테스트, 공개 에셋 및 개인정보 테스트를 통과했습니다. Pages에는 `dist/client`만 게시합니다.

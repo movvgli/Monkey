@@ -10,7 +10,8 @@ Before making substantial visual changes, use the Product Design plugin's `get-c
 
 - Hosting update (2026-09-07): the user requested GitHub Pages instead of Sites. The primary URL is https://movvgli.github.io/Wookey/. Publish only `dist/client` through `.github/workflows/pages.yml`; retain existing Sites metadata as a recovery option, not the primary publishing destination. Keep asset paths relative so the `/Wookey/` prefix works. Do not restore personal screenshots.
 
-- The redesigned product site uses a cream background, sky-blue product previews, and yellow download buttons. Use the current Wookey artwork for the 3D and Fluffy examples. Keep stable and preview download links clearly labeled.
+- The redesigned product site uses a cream background, sky-blue product previews, and yellow download buttons. Use the current Wookey artwork for the 3D and Fluffy examples. Lead with the current stable DMG and show its version in the download section. Keep preview installers in GitHub Releases with their existing release labels.
+- Typesetting uses self-hosted Pretendard. Use normal tracking for body text and controls and subtle tightening for headings. Keep the primary download button at least 52 px tall and verify its placement and line wraps on desktop and mobile.
 - Privacy update (2026-09-06): never publish actual user screenshots, workflows, template content, app lists, names, or local paths. Use clearly labeled fictional examples rendered from static public data. Audit all public assets, not just visible references. Explain workflows and installation in plain Korean; the supported minimum is macOS 14 from version 1.2.6.
 - Use Sukurini only as structural inspiration. Do not copy its content or assets.
 
