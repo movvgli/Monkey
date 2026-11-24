@@ -21,7 +21,7 @@ final class FloatingShelfSession {
     static let cardHeight: CGFloat = 80
     static let cardSpacing: CGFloat = 8
     static let bubblePadding: CGFloat = 12
-    static let thoughtGutterWidth: CGFloat = 24
+    nonisolated static let thoughtGutterWidth: CGFloat = 24
 
     var mascotFrame: NSRect
     var entries: [LocalHistoryStore.Entry] = []
