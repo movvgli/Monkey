@@ -12,7 +12,7 @@
 
 | Feature | How it works |
 | --- | --- |
-| Quick search | Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press Return to open or run the selection, or **Command–Return** to search Google in your default browser. You can also enter web addresses, calculate, and convert currencies. |
+| Quick search | Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press Return to open or run the selection, or **Command–Return** to search the web in your default browser. In **Settings → General**, choose Google, Naver, Daum, or Nate. You can also enter web addresses, calculate, and convert currencies. |
 | Apps and links | Assign shortcuts to your favorite apps and links. Give links and workflows multiple comma-separated search keywords. |
 | Clipboard and drawer | Copy an earlier item from clipboard history. Shake the pointer twice while dragging a file to open the drawer. Open saved items later or drag them into another app. |
 | Templates | Save phrases with formatting, links, lists, and inline images. Copy them from search or paste them as part of a workflow. |

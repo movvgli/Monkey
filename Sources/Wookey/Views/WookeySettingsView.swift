@@ -13,6 +13,7 @@ struct WookeySettingsView: View {
     @AppStorage(WookeyCharacter.storageKey) private var character = WookeyCharacter.wookey
     @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @AppStorage(WookeyTheme.storageKey) private var selectedTheme = WookeyTheme.defaultTheme
+    @AppStorage(SearchWebAddress.Engine.storageKey) private var webSearchEngine = SearchWebAddress.Engine.google
     @AppStorage(ShelfAfterDrop.storageKey) private var shelfAfterDrop = ShelfAfterDrop.defaultValue
     @AppStorage(ShelfShakeSensitivity.storageKey) private var shelfShakeSensitivity = ShelfShakeSensitivity.defaultValue
 
@@ -238,6 +239,8 @@ struct WookeySettingsView: View {
                         generalDivider
                         searchShortcutSetting
                         generalDivider
+                        webSearchEngineSetting
+                        generalDivider
                         hyperKeySetting
                     }
                 }
@@ -305,6 +308,23 @@ struct WookeySettingsView: View {
                 .padding(.leading, GeneralSettingsLayout.titleInset)
                 .padding(.bottom, 8)
             }
+        }
+    }
+
+    private var webSearchEngineSetting: some View {
+        let title = L10n.text("웹 검색 엔진")
+        return GeneralSettingRow(
+            symbol: "magnifyingglass",
+            title: title,
+            detail: L10n.text("검색창에서 ⌘ Enter를 누르면 이 검색 엔진을 사용합니다.")
+        ) {
+            Picker(title, selection: $webSearchEngine) {
+                ForEach(SearchWebAddress.Engine.allCases, id: \.self) { engine in
+                    Text(engine.title).tag(engine)
+                }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
         }
     }
 

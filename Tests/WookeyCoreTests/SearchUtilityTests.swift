@@ -13,6 +13,25 @@ struct SearchUtilityTests {
         #expect(SearchWebAddress.searchURL(for: "  \n") == nil)
     }
 
+    @Test func webSearchUsesTheSelectedEngine() throws {
+        let expected: [(SearchWebAddress.Engine, String, String, String)] = [
+            (.google, "www.google.com", "/search", "q"),
+            (.naver, "search.naver.com", "/search.naver", "query"),
+            (.daum, "search.daum.net", "/search", "q"),
+            (.nate, "search.nate.com", "/search/all.html", "q")
+        ]
+        for (engine, host, path, queryKey) in expected {
+            let url = try #require(SearchWebAddress.searchURL(for: "  우키 C++ & #1  ", engine: engine))
+            let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+            #expect(components.scheme == "https")
+            #expect(components.host == host)
+            #expect(components.path == path)
+            #expect(components.queryItems == [URLQueryItem(name: queryKey, value: "우키 C++ & #1")])
+            #expect(components.percentEncodedQuery?.contains("C%2B%2B") == true)
+            #expect(SearchWebAddress.searchURL(for: " \n ", engine: engine) == nil)
+        }
+    }
+
     @Test func webAddressesSupportPastedLinksAndBareDomains() {
         let full = "http://example.com:8080/path?q=hello%20world#page"
         #expect(SearchWebAddress.parse(" \(full)\n")?.absoluteString == full)

@@ -92,6 +92,7 @@
 "검색창 단축키" = "Search Shortcut";
 "검색창 단축키에는 보조키를 포함한 한 단계가 필요합니다." = "The search shortcut must be a single step with a modifier key.";
 "검색창 단축키와 겹칩니다." = "Conflicts with the search shortcut.";
+"검색창에서 ⌘ Enter를 누르면 이 검색 엔진을 사용합니다." = "Press Command–Return in Wookey Search to use this engine.";
 "계산 결과" = "Calculation Result";
 "계산식을 확인해 주세요." = "Check the expression.";
 "계산할 수 있는 숫자 범위를 벗어났습니다." = "The number is outside the supported range.";
@@ -125,6 +126,8 @@
 "내용을 수정하면 자동으로 저장됩니다." = "Edits are saved automatically.";
 "내용을 입력하거나 붙여넣으세요." = "Type or paste content.";
 "내용을 클립보드에 복사하고 다음 동작으로 넘어갑니다." = "Copy the content to the clipboard, then continue to the next action.";
+"네이버" = "Naver";
+"네이트" = "Nate";
 "높음" = "High";
 "누르는 동안 왼쪽 ⌃⌥⇧를 함께 누릅니다." = "Hold to press left ⌃⌥⇧ together.";
 "다른 Mac의 모니터를 여기서 사용할 화면에 연결하세요. 이 연결은 다른 Mac에 동기화하지 않습니다." = "Match displays from another Mac to displays available here. This mapping stays on this Mac.";
@@ -140,6 +143,7 @@
 "다시 열기" = "Reopen";
 "다시 저장" = "Retry Save";
 "다음" = "Next";
+"다음 검색" = "Daum";
 "다음 동작 추가" = "Add Next Action";
 "다크" = "Dark";
 "단일 단축키, 앱 실행, 웹사이트 열기와 클립보드 복사는 권한 없이도 사용할 수 있습니다." = "Single-step shortcuts, opening apps or websites, and copying to the clipboard work without these permissions.";
@@ -429,6 +433,7 @@
 "워크플로우 실행이 끝난 후 다시 시도해 주세요." = "Try again after the workflow finishes.";
 "웹 검색" = "Search Web";
 "웹 검색  ⌘↵" = "Search Web  ⌘↵";
+"웹 검색 엔진" = "Web Search Engine";
 "웹 브라우저" = "Web Browser";
 "웹사이트" = "Website";
 "웹사이트 열기" = "Open Website";
