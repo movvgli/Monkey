@@ -6,7 +6,7 @@ struct WorkspaceSearchView: View {
     @Environment(\.wookeyTheme) private var theme
     enum Mode {
         case library(open: (SidebarSelection) -> Void)
-        case launcher(close: () -> Void)
+        case launcher(close: () -> Void, open: (SidebarSelection) -> Void)
     }
 
     private enum Destination: Hashable {
@@ -38,6 +38,7 @@ struct WorkspaceSearchView: View {
         var detail: String
         var symbol: String
         var keyword: String? = nil
+        var searchAliases: [String] = []
 
         var isValue: Bool {
             if case .copyValue = id { return true }
@@ -74,7 +75,8 @@ struct WorkspaceSearchView: View {
         let keywordIDs = Set(keywordResults.map(\.id))
         let matchingEntries = entries.filter { result in
             !keywordIDs.contains(result.id) && terms.allSatisfy { term in
-                result.name.localizedCaseInsensitiveContains(term) || result.detail.localizedCaseInsensitiveContains(term)
+                [result.name, result.detail].contains { $0.localizedCaseInsensitiveContains(term) }
+                    || result.searchAliases.contains { $0.localizedCaseInsensitiveContains(term) }
             }
         }
         let applications = isLauncher && !terms.isEmpty ? applicationResults(matching: terms) : []
@@ -124,10 +126,20 @@ struct WorkspaceSearchView: View {
     }
 
     private var launcherResults: [Result] {
+        let historyActions = [
+            Result(
+                id: .library(.clipboard), name: "클립보드 열기", detail: "Wookey",
+                symbol: HistoryKind.clipboard.symbol, searchAliases: ["복사 기록", "open clipboard"]
+            ),
+            Result(
+                id: .library(.files), name: "파일함 열기", detail: "Wookey",
+                symbol: HistoryKind.files.symbol, searchAliases: ["파일 보관함", "서랍", "open files", "drawer"]
+            )
+        ]
         let templates = runtime.store.templates.map {
             Result(id: .copy($0.id), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
         }
-        return templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map { workflowResult($0) }
+        return historyActions + templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map { workflowResult($0) }
     }
 
     private func workflowResult(_ workflow: Workflow, matchingKeyword: String? = nil) -> Result {
@@ -395,7 +407,13 @@ struct WorkspaceSearchView: View {
     private func perform(_ destination: Destination) {
         switch destination {
         case .library(let location):
-            if case .library(let open) = mode { open(location) }
+            switch mode {
+            case .library(let open):
+                open(location)
+            case .launcher(let closePanel, let open):
+                closePanel()
+                open(location)
+            }
         case .openApplication(let application):
             if NSWorkspace.shared.open(URL(fileURLWithPath: application.path)) {
                 close()
@@ -427,7 +445,7 @@ struct WorkspaceSearchView: View {
     }
 
     private func close() {
-        if case .launcher(let closePanel) = mode { closePanel() }
+        if case .launcher(let closePanel, _) = mode { closePanel() }
         else { dismiss() }
     }
 }
@@ -435,10 +453,12 @@ struct WorkspaceSearchView: View {
 @MainActor
 final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
     private let runtime: WookeyRuntime
+    private let openWorkspace: (SidebarSelection) -> Void
     private var window: SearchWindow?
 
-    init(runtime: WookeyRuntime) {
+    init(runtime: WookeyRuntime, openWorkspace: @escaping (SidebarSelection) -> Void) {
         self.runtime = runtime
+        self.openWorkspace = openWorkspace
     }
 
     func toggle() {
@@ -471,7 +491,7 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.contentView = NSHostingView(rootView:
-            WorkspaceSearchView(mode: .launcher(close: { [weak self] in self?.close() }))
+            WorkspaceSearchView(mode: .launcher(close: { [weak self] in self?.close() }, open: openWorkspace))
                 .environment(runtime)
                 .modifier(WookeyThemeScope())
         )

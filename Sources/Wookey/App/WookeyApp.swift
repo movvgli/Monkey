@@ -1,4 +1,5 @@
 import AppKit
+import Observation
 import SwiftUI
 import WookeyCore
 
@@ -20,7 +21,7 @@ struct WookeyApp: App {
 
     var body: some Scene {
         Window("Wookey", id: "main") {
-            ContentView()
+            ContentView(navigation: appDelegate.navigation)
                 .environment(runtime)
                 .environment(WookeyAppRuntime.history)
                 .environment(updates)
@@ -38,7 +39,7 @@ struct WookeyApp: App {
                 .disabled(!updates.canCheckForUpdates)
             }
 
-            WorkspaceCommands()
+            WorkspaceCommands(navigation: appDelegate.navigation)
 
             CommandMenu("워크플로") {
                 ForEach(runtime.store.workflows.filter(\.isEnabled)) { workflow in
@@ -120,9 +121,14 @@ extension FocusedValues {
 }
 
 private struct WorkspaceCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
     @FocusedValue(\.workspaceActions) private var actions
+    let navigation: WorkspaceNavigation
 
     var body: some Commands {
+        let showWindow = openWindow
+        // Menu commands exist even when SwiftUI hasn't created the main window yet.
+        let _ = navigation.setMainWindowOpener { showWindow(id: "main") }
         CommandGroup(replacing: .newItem) {
             Button("새 워크플로") { actions?.createWorkflow() }
                 .keyboardShortcut("n", modifiers: .command)
@@ -137,8 +143,34 @@ private struct WorkspaceCommands: Commands {
 }
 
 @MainActor
+@Observable
+final class WorkspaceNavigation {
+    private(set) var destination: SidebarSelection?
+    @ObservationIgnored private var openMainWindow: (() -> Void)?
+
+    func setMainWindowOpener(_ open: @escaping () -> Void) {
+        openMainWindow = open
+    }
+
+    func open(_ destination: SidebarSelection) {
+        self.destination = destination
+        NSApp.unhide(nil)
+        openMainWindow?()
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func takeDestination() -> SidebarSelection? {
+        defer { destination = nil }
+        return destination
+    }
+}
+
+@MainActor
 final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
-    private lazy var searchPanel = WorkspaceSearchPanel(runtime: WookeyAppRuntime.shared)
+    let navigation = WorkspaceNavigation()
+    private lazy var searchPanel = WorkspaceSearchPanel(runtime: WookeyAppRuntime.shared) { [weak self] destination in
+        self?.navigation.open(destination)
+    }
     private lazy var fileDropShelf = FileDropShelf(history: WookeyAppRuntime.history)
 
     func applicationDidFinishLaunching(_ notification: Notification) {

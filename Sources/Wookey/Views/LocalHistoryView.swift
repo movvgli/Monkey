@@ -7,11 +7,7 @@ struct LocalHistoryView: View {
     @Environment(LocalHistoryStore.self) private var history
     @State private var showsImporter = false
     @State private var isImporting = false
-    @State private var kind: HistoryKind
-
-    init(initialKind: HistoryKind = .files) {
-        _kind = State(initialValue: initialKind)
-    }
+    @Binding var kind: HistoryKind
 
     var body: some View {
         VStack(spacing: 0) {
@@ -197,24 +193,43 @@ struct ShelfDragSource: NSViewRepresentable {
     let file: URL
     let history: LocalHistoryStore
     let icon: NSImage
+    var onClick: ((Int, NSEvent.ModifierFlags) -> Void)?
+    var dragEntries: (() -> [LocalHistoryStore.Entry])?
 
     func makeNSView(context: Context) -> DragView { DragView() }
 
     func updateNSView(_ view: DragView, context: Context) {
-        view.url = entry.webURL ?? file
-        view.icon = icon
-        view.open = { history.openFile(entry) }
-        view.startDrag = { history.beginFileDrag(entry.id) }
-        view.endDrag = { history.endFileDrag(entry.id, delivered: $0) }
+        view.click = onClick ?? { _, _ in history.openFile(entry) }
+        view.prepareDrag = {
+            let entries = dragEntries?() ?? [entry]
+            let items = entries.map { item in
+                let itemFile = item.id == entry.id ? file : history.fileURL(for: item, kind: .files)
+                return DragView.Item(
+                    id: item.id, url: item.webURL ?? itemFile,
+                    icon: item.id == entry.id ? icon : NSWorkspace.shared.icon(forFile: itemFile.path)
+                )
+            }
+            guard !items.isEmpty, items.allSatisfy(\.isAvailable) else { return nil }
+            let ids = Set(items.map(\.id))
+            history.beginFileDrag(ids)
+            return (items, { history.endFileDrag(ids, delivered: $0) })
+        }
     }
 
     final class DragView: NSView, NSDraggingSource {
-        var url: URL?
-        var icon: NSImage?
-        var open: (() -> Void)?
-        var startDrag: (() -> Void)?
-        var endDrag: ((Bool) -> Void)?
+        struct Item {
+            let id: UUID
+            let url: URL
+            let icon: NSImage
+            @MainActor var isAvailable: Bool {
+                url.isFileURL ? FileManager.default.fileExists(atPath: url.path) : LocalHistoryStore.isWebURL(url)
+            }
+        }
+
+        var click: ((Int, NSEvent.ModifierFlags) -> Void)?
+        var prepareDrag: (() -> ([Item], (Bool) -> Void)?)?
         private var mouseDownLocation: NSPoint?
+        private var activeOperation: NSDragOperation = []
         private var finishActiveDrag: ((Bool) -> Void)?
 
         override func mouseDown(with event: NSEvent) {
@@ -226,33 +241,40 @@ struct ShelfDragSource: NSViewRepresentable {
         override func mouseUp(with event: NSEvent) {
             defer { mouseDownLocation = nil }
             if mouseDownLocation != nil, bounds.contains(convert(event.locationInWindow, from: nil)) {
-                open?()
+                click?(event.clickCount, event.modifierFlags)
             }
         }
 
         override func mouseDragged(with event: NSEvent) {
-            guard let start = mouseDownLocation, let url, let icon else { return }
+            guard let start = mouseDownLocation else { return }
             let point = event.locationInWindow
             guard hypot(point.x - start.x, point.y - start.y) >= 4 else { return }
             mouseDownLocation = nil
-            guard url.isFileURL ? FileManager.default.fileExists(atPath: url.path) : LocalHistoryStore.isWebURL(url) else { return }
-
-            let item = NSDraggingItem(pasteboardWriter: url as NSURL)
+            guard let (items, finish) = prepareDrag?() else { return }
             let location = convert(point, from: nil)
-            item.setDraggingFrame(NSRect(x: location.x - 20, y: location.y - 20, width: 40, height: 40), contents: icon)
-            finishActiveDrag = endDrag
-            startDrag?()
-            beginDraggingSession(with: [item], event: event, source: self)
+            let draggingItems = items.enumerated().map { index, item in
+                let draggingItem = NSDraggingItem(pasteboardWriter: item.url as NSURL)
+                let offset = CGFloat(min(index, 4)) * 3
+                draggingItem.setDraggingFrame(
+                    NSRect(x: location.x - 20 + offset, y: location.y - 20 - offset, width: 40, height: 40),
+                    contents: item.icon
+                )
+                return draggingItem
+            }
+            activeOperation = items.contains { $0.url.isFileURL } ? .copy : [.copy, .link]
+            finishActiveDrag = finish
+            let session = beginDraggingSession(with: draggingItems, event: event, source: self)
+            if items.count > 1 { session.draggingFormation = .pile }
         }
 
         func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
-            guard context == .outsideApplication else { return [] }
-            return url?.isFileURL == true ? .copy : [.copy, .link]
+            context == .outsideApplication ? activeOperation : []
         }
 
         func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
             finishActiveDrag?(!operation.intersection([.copy, .link]).isEmpty)
             finishActiveDrag = nil
+            activeOperation = []
         }
     }
 }
@@ -292,6 +314,7 @@ func historyImageThumbnail(at url: URL, maxPixelSize: Int) -> CGImage? {
 struct FloatingShelfView: View {
     @Environment(\.wookeyTheme) private var theme
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @AppStorage(WookeyCharacter.storageKey) private var selectedCharacter = WookeyCharacter.wookey
     let history: LocalHistoryStore
     let session: FloatingShelfSession
     let feedback: FileDropFeedback
@@ -302,10 +325,10 @@ struct FloatingShelfView: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            if session.isExpanded, session.bubbleOnLeft { speechBubble }
+            if session.isExpanded, session.bubbleOnLeft { thoughtBubble }
             mascotControl
                 .padding(.top, session.mascotTopInset)
-            if session.isExpanded, !session.bubbleOnLeft { speechBubble }
+            if session.isExpanded, !session.bubbleOnLeft { thoughtBubble }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onHover { isHovered = $0 }
@@ -328,50 +351,79 @@ struct FloatingShelfView: View {
                 .accessibilityHidden(true)
         }
         .overlay(alignment: .topTrailing) {
-            Button("서랍 닫기", wookeyIcon: "xmark", action: onClose)
-                .labelStyle(.iconOnly)
-                .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
-                .controlSize(.small)
-                .accessibilityLabel("서랍 닫기")
-                .help("서랍 닫기")
-                .padding(8)
-                .opacity(isHovered ? 1 : 0)
-                .allowsHitTesting(isHovered)
-                .keyboardShortcut(.cancelAction)
+            if !session.isExpanded {
+                closeButton.padding(8)
+                    .opacity(isHovered ? 1 : 0)
+                    .allowsHitTesting(isHovered)
+            }
         }
     }
 
     private var mascot: some View {
-        FileDropSurface(feedback: feedback, floating: true)
+        FileDropSurface(feedback: feedback, floating: true, facesRight: session.isExpanded && !session.bubbleOnLeft)
             .frame(width: FloatingShelfSession.mascotSize.width, height: FloatingShelfSession.mascotSize.height)
+            .offset(x: session.isExpanded ? (session.bubbleOnLeft ? -8 : 8) : 0)
             .contentShape(Rectangle())
     }
 
-    private var speechBubble: some View {
+    private var closeButton: some View {
+        Button(action: onClose) {
+            WookeyActionIcon(symbol: "xmark", tint: .neutral, size: 15)
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
+        }
+            .buttonStyle(.plain)
+            .accessibilityLabel("서랍 닫기")
+            .help("서랍 닫기")
+            .keyboardShortcut(.cancelAction)
+    }
+
+    private var thoughtBubble: some View {
         let spacing = FloatingShelfSession.cardSpacing
         let columns = Array(repeating: GridItem(.flexible(minimum: 0), spacing: spacing), count: session.columnCount)
         let edge: Edge.Set = session.bubbleOnLeft ? .trailing : .leading
-        let shape = ShelfThoughtBubble(
+        let trail = ShelfThoughtTrail(
             mascotOnLeft: !session.bubbleOnLeft,
-            dotOriginY: session.mascotTopInset + FloatingShelfSession.mascotSize.height / 3
+            headY: session.mascotTopInset - session.bubbleTopInset + (selectedCharacter == .sharkey ? 51 : 44)
         )
-        return ScrollView {
-            LazyVGrid(columns: columns, spacing: spacing) {
-                ForEach(session.entries) { entry in
-                    entryCard(entry)
-                }
+        let bodyShape = RoundedRectangle(cornerRadius: 26)
+        let selectedCount = session.selection.ids.count
+        return VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                Text(selectedCount == 0 ? "서랍" : "\(selectedCount)개 선택")
+                    .font(.caption.weight(.semibold))
+                    .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 4)
+                closeButton
             }
-            .padding(FloatingShelfSession.bubblePadding)
+            .padding(.horizontal, FloatingShelfSession.bubblePadding)
+            .frame(height: FloatingShelfSession.headerHeight)
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: spacing) {
+                    ForEach(session.entries) { entry in
+                        entryCard(entry)
+                    }
+                }
+                .padding([.horizontal, .bottom], FloatingShelfSession.bubblePadding)
+                .padding(.top, 4)
+            }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .clipShape(bodyShape)
+        .background { thoughtBubbleBackground(bodyShape) }
         .padding(edge, FloatingShelfSession.thoughtGutterWidth)
-        .background { thoughtBubbleBackground(shape) }
+        .background {
+            trail.fill(theme.panel.opacity(reduceTransparency ? 1 : 0.76))
+                .shadow(color: .black.opacity(0.12), radius: 1.5, y: 1)
+                .allowsHitTesting(false)
+        }
         .environment(\.colorScheme, theme.colorScheme)
-        .frame(width: session.bubbleWidth)
+        .frame(width: session.bubbleWidth, height: session.bubbleHeight)
+        .padding(.top, session.bubbleTopInset)
         .accessibilityLabel("서랍에 담은 항목")
     }
 
-    private func thoughtBubbleBackground(_ shape: ShelfThoughtBubble) -> some View {
+    private func thoughtBubbleBackground(_ shape: RoundedRectangle) -> some View {
         let isDark = theme == .dark
         return thoughtBubbleMaterial(shape)
             .overlay {
@@ -381,13 +433,13 @@ struct FloatingShelfView: View {
                 ))
             }
             .overlay {
-                shape.stroke(.white.opacity(isDark ? 0.25 : 0.60), lineWidth: 1)
+                shape.strokeBorder(.white.opacity(isDark ? 0.20 : 0.44), lineWidth: 1)
             }
             .allowsHitTesting(false)
     }
 
     @ViewBuilder
-    private func thoughtBubbleMaterial(_ shape: ShelfThoughtBubble) -> some View {
+    private func thoughtBubbleMaterial(_ shape: RoundedRectangle) -> some View {
         let fallback = reduceTransparency ? AnyShapeStyle(theme.panel) : AnyShapeStyle(.thinMaterial)
         #if compiler(>=6.2)
         if #available(macOS 26.0, *), !reduceTransparency {
@@ -404,9 +456,9 @@ struct FloatingShelfView: View {
 
     private func entryCard(_ entry: LocalHistoryStore.Entry) -> some View {
         let file = history.fileURL(for: entry, kind: .files)
-        let icon = NSWorkspace.shared.icon(forFile: file.path)
+        let isSelected = session.selection.ids.contains(entry.id)
         return Button {
-            history.openFile(entry)
+            session.select(entry.id)
         } label: {
             VStack(spacing: 5) {
                 Group {
@@ -428,21 +480,36 @@ struct FloatingShelfView: View {
             .padding(.horizontal, 8)
             .frame(maxWidth: .infinity)
             .frame(height: FloatingShelfSession.cardHeight)
-            .background(theme.canvas.opacity(reduceTransparency ? 1 : 0.66), in: RoundedRectangle(cornerRadius: 10))
+            .background(theme.canvas.opacity(reduceTransparency ? 1 : 0.75), in: RoundedRectangle(cornerRadius: 12))
             .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(Color.primary.opacity(0.09))
-                    .allowsHitTesting(false)
+                let shape = RoundedRectangle(cornerRadius: 12)
+                ZStack {
+                    shape.fill(isSelected ? theme.selectionTint.opacity(0.15) : .clear)
+                    shape.strokeBorder(isSelected ? theme.accent : Color.primary.opacity(0.10), lineWidth: isSelected ? 2 : 1)
+                }
+                .allowsHitTesting(false)
             }
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(WookeyHoverButtonStyle())
-        .accessibilityLabel("\(entry.name) 열기")
+        .accessibilityLabel(entry.name)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityAction(named: "열기") { history.openFile(entry) }
         .overlay {
-            ShelfDragSource(entry: entry, file: file, history: history, icon: icon)
-                .accessibilityHidden(true)
+            ShelfDragSource(
+                entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path),
+                onClick: { count, modifiers in
+                    if count == 2, modifiers.intersection([.shift, .command]).isEmpty {
+                        history.openFile(entry)
+                    } else {
+                        session.select(entry.id, modifiers: modifiers)
+                    }
+                },
+                dragEntries: { session.entriesForDrag(from: entry) }
+            )
+            .accessibilityHidden(true)
         }
-        .help("클릭해서 열거나 다른 앱으로 드래그")
+        .help("클릭하여 선택 · 두 번 클릭하여 열기 · 선택 항목을 드래그하여 이동")
     }
 }
 
@@ -497,24 +564,24 @@ private struct ShelfMascotInteraction: NSViewRepresentable {
     }
 }
 
-private struct ShelfThoughtBubble: Shape {
+private struct ShelfThoughtTrail: Shape {
     let mascotOnLeft: Bool
-    let dotOriginY: CGFloat
+    let headY: CGFloat
 
     func path(in rect: CGRect) -> Path {
-        let bounds = rect.insetBy(dx: 0.5, dy: 0.5)
-        let width = FloatingShelfSession.thoughtGutterWidth
-        guard bounds.width > width, bounds.height > 1 else { return Path() }
-        let body = CGRect(
-            x: bounds.minX + (mascotOnLeft ? width : 0), y: bounds.minY,
-            width: bounds.width - width, height: bounds.height
-        )
+        let gutter = FloatingShelfSession.thoughtGutterWidth
+        guard rect.width > gutter, rect.height >= 32 else { return Path() }
         let direction: CGFloat = mascotOnLeft ? -1 : 1
-        let edge = mascotOnLeft ? body.minX : body.maxX
-        let y = min(max(dotOriginY, bounds.minY + 10), bounds.maxY - 10)
-        var path = Path(roundedRect: body, cornerRadius: 22)
-        path.addEllipse(in: CGRect(x: edge + direction * 8 - 4, y: y - 9, width: 8, height: 8))
-        path.addEllipse(in: CGRect(x: edge + direction * 18 - 2.5, y: y + 1, width: 5, height: 5))
+        let edge = mascotOnLeft ? rect.minX + gutter : rect.maxX - gutter
+        let y = min(max(headY, rect.minY + 27), rect.maxY - 5)
+        var path = Path()
+        for (distance, rise, width, height): (CGFloat, CGFloat, CGFloat, CGFloat) in [(11, 15, 9, 8), (28, 4, 5, 4)] {
+            path.addEllipse(in: CGRect(
+                x: edge + direction * distance - width / 2,
+                y: y - rise - height / 2,
+                width: width, height: height
+            ))
+        }
         return path
     }
 }
@@ -527,6 +594,7 @@ struct FileDropSurface: View {
     @State private var biteStage: BiteStage = .idle
     let feedback: FileDropFeedback
     let floating: Bool
+    var facesRight = false
 
     private enum BiteStage { case idle, offered, swallowed, saved }
 
@@ -606,6 +674,7 @@ struct FileDropSurface: View {
             }
         }
         .frame(width: 124, height: 90)
+        .scaleEffect(x: selectedCharacter == .sharkey && facesRight ? -1 : 1, y: 1)
         .accessibilityHidden(true)
     }
 

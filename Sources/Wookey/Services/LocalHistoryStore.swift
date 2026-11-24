@@ -77,7 +77,7 @@ final class LocalHistoryStore {
     @ObservationIgnored private var pasteboardChangeCount = 0
     @ObservationIgnored private var nextPrune = Date.distantPast
     @ObservationIgnored private var outgoingFileDrags = Set<UUID>()
-    @ObservationIgnored var onFileTakenFromShelf: ((UUID) -> Void)?
+    @ObservationIgnored var onFilesTakenFromShelf: ((Set<UUID>) -> Void)?
 
     init(root: URL, clipboard: NSPasteboard = .general) {
         self.root = root.appendingPathComponent("LocalHistory", isDirectory: true)
@@ -87,10 +87,10 @@ final class LocalHistoryStore {
     var recordsClipboard: Bool { settings.recordsClipboard }
     var isDraggingFromShelf: Bool { !outgoingFileDrags.isEmpty }
 
-    func beginFileDrag(_ id: UUID) { outgoingFileDrags.insert(id) }
-    func endFileDrag(_ id: UUID, delivered: Bool) {
-        outgoingFileDrags.remove(id)
-        if delivered { onFileTakenFromShelf?(id) }
+    func beginFileDrag(_ ids: Set<UUID>) { outgoingFileDrags.formUnion(ids) }
+    func endFileDrag(_ ids: Set<UUID>, delivered: Bool) {
+        outgoingFileDrags.subtract(ids)
+        if delivered { onFilesTakenFromShelf?(ids) }
     }
 
     func entries(_ kind: HistoryKind) -> [Entry] { history[kind] ?? [] }
@@ -235,7 +235,7 @@ final class LocalHistoryStore {
             let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
             if files.fileExists(atPath: folder.path) { try files.removeItem(at: folder) }
             history[kind]?.removeAll { $0.id == entry.id }
-            if kind == .files { onFileTakenFromShelf?(entry.id) }
+            if kind == .files { onFilesTakenFromShelf?([entry.id]) }
             errors[kind] = nil
         } catch {
             report(error, kind: kind, message: "기록을 삭제하지 못했습니다")

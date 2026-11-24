@@ -124,6 +124,7 @@ private struct WookeySidebar: View {
 
 struct ContentView: View {
     @Environment(\.wookeyTheme) private var theme
+    let navigation: WorkspaceNavigation
     private enum QuickCreate: Identifiable {
         case workflow, link
 
@@ -225,6 +226,9 @@ struct ContentView: View {
         .onAppear {
             if !didCompleteOnboarding { showOnboarding = true }
         }
+        .onChange(of: navigation.destination, initial: true) {
+            if let destination = navigation.takeDestination() { selection = destination }
+        }
         .onChange(of: selection, initial: true) { _, current in
             switch current {
             case .workflow, .link, .template, .layout: runtime.iCloudSync.setEditing(true, session: editingSession)
@@ -310,8 +314,10 @@ struct ContentView: View {
             ApplicationsView(initialSearch: bundleID)
                 .id(bundleID)
         case .clipboard, .files:
-            LocalHistoryView(initialKind: selection == .clipboard ? .clipboard : .files)
-                .id(selection)
+            LocalHistoryView(kind: Binding(
+                get: { selection == .clipboard ? .clipboard : .files },
+                set: { selection = $0 == .clipboard ? .clipboard : .files }
+            ))
         case .templateCollection:
             TemplateLibraryView(
                 templates: runtime.store.templates,

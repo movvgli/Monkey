@@ -16,25 +16,80 @@ enum ShelfAfterDrop: String, CaseIterable {
 @Observable
 final class FloatingShelfSession {
     static let mascotSize = NSSize(width: 148, height: 134)
-    static let preferredBubbleWidth: CGFloat = 258
-    static let singleItemBubbleWidth: CGFloat = 144
+    static let preferredBubbleWidth: CGFloat = 272
+    static let singleItemBubbleWidth: CGFloat = 164
     static let cardHeight: CGFloat = 80
     static let cardSpacing: CGFloat = 8
     static let bubblePadding: CGFloat = 12
-    static let thoughtGutterWidth: CGFloat = 24
+    static let headerHeight: CGFloat = 36
+    nonisolated static let thoughtGutterWidth: CGFloat = 38
 
     var mascotFrame: NSRect
-    var entries: [LocalHistoryStore.Entry] = []
+    var entries: [LocalHistoryStore.Entry] = [] {
+        didSet { selection.retain(orderedIDs) }
+    }
+    private(set) var selection = ShelfSelection()
     var isExpanded = false
     var bubbleOnLeft = false
     var bubbleWidth: CGFloat = 0
+    var bubbleHeight: CGFloat = 0
+    var bubbleTopInset: CGFloat = 0
     var mascotTopInset: CGFloat = 0
 
     init(mascotFrame: NSRect) {
         self.mascotFrame = mascotFrame
     }
 
-    var columnCount: Int { bubbleWidth >= 226 ? 2 : 1 }
+    private var orderedIDs: [UUID] { entries.map(\.id) }
+
+    var columnCount: Int { bubbleWidth >= 234 ? 2 : 1 }
+
+    func select(_ id: UUID, modifiers: NSEvent.ModifierFlags = []) {
+        selection.click(id, in: orderedIDs, extending: modifiers.contains(.shift), toggling: modifiers.contains(.command))
+    }
+
+    func entriesForDrag(from entry: LocalHistoryStore.Entry) -> [LocalHistoryStore.Entry] {
+        if !selection.ids.contains(entry.id) { select(entry.id) }
+        return entries.filter { selection.ids.contains($0.id) }
+    }
+}
+
+struct ShelfSelection {
+    private(set) var ids: Set<UUID> = []
+    private var rangeAnchor: UUID?
+    // Preserve selections that existed before the current range so reversing it shrinks cleanly.
+    private var baseRangeSelection: Set<UUID>?
+
+    mutating func click(_ id: UUID, in order: [UUID], extending: Bool, toggling: Bool) {
+        guard let end = order.firstIndex(of: id) else { return }
+        if extending, let rangeAnchor, let start = order.firstIndex(of: rangeAnchor) {
+            let range = order[min(start, end)...max(start, end)]
+            if toggling {
+                if baseRangeSelection == nil { baseRangeSelection = ids }
+                ids = (baseRangeSelection ?? []).union(range)
+            } else {
+                baseRangeSelection = nil
+                ids = Set(range)
+            }
+            return
+        }
+        rangeAnchor = id
+        baseRangeSelection = nil
+        if toggling {
+            if ids.remove(id) == nil { ids.insert(id) }
+        } else {
+            ids = [id]
+        }
+    }
+
+    mutating func retain(_ order: [UUID]) {
+        ids.formIntersection(order)
+        baseRangeSelection?.formIntersection(order)
+        if let rangeAnchor, !order.contains(rangeAnchor) {
+            self.rangeAnchor = order.first { ids.contains($0) }
+            baseRangeSelection = nil
+        }
+    }
 }
 
 struct FileDropTarget: NSViewRepresentable {
@@ -304,7 +359,7 @@ final class FileDropShelf {
 
     func start() {
         guard timer == nil else { return }
-        history.onFileTakenFromShelf = { [weak self] id in self?.takeFile(id) }
+        history.onFilesTakenFromShelf = { [weak self] ids in self?.takeFiles(ids) }
         dragChangeCount = pasteboard.changeCount
         let timer = Timer(timeInterval: 0.025, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.sample() }
@@ -381,9 +436,9 @@ final class FileDropShelf {
         panel.orderFrontRegardless()
     }
 
-    private func takeFile(_ id: UUID) {
-        guard let session, session.entries.contains(where: { $0.id == id }) else { return }
-        session.entries.removeAll { $0.id == id }
+    private func takeFiles(_ ids: Set<UUID>) {
+        guard let session, session.entries.contains(where: { ids.contains($0.id) }) else { return }
+        session.entries.removeAll { ids.contains($0.id) }
         if session.entries.isEmpty, (panel?.contentView as? FileDropView)?.isImporting != true {
             close()
         } else if session.isExpanded {
@@ -450,11 +505,15 @@ final class FileDropShelf {
         session.bubbleWidth = max(0, min(available, preferredWidth))
         let rows = min(3, max(1, (session.entries.count + session.columnCount - 1) / session.columnCount))
         let gridHeight = CGFloat(rows) * FloatingShelfSession.cardHeight + CGFloat(rows - 1) * FloatingShelfSession.cardSpacing
-        let height = min(bounds.height, max(anchor.height, gridHeight + 2 * FloatingShelfSession.bubblePadding))
-        let y = min(max(anchor.midY - height / 2, bounds.minY), bounds.maxY - height)
+        let bubbleHeight = min(bounds.height, gridHeight + FloatingShelfSession.headerHeight + FloatingShelfSession.bubblePadding + 4)
+        let bubbleY = min(max(anchor.maxY + 42 - bubbleHeight, bounds.minY), bounds.maxY - bubbleHeight)
+        let top = max(anchor.maxY, bubbleY + bubbleHeight)
+        let bottom = min(anchor.minY, bubbleY)
         let x = session.bubbleOnLeft ? anchor.minX - session.bubbleWidth : anchor.minX
-        session.mascotTopInset = max(0, y + height - anchor.maxY)
-        panel.setFrame(NSRect(x: x, y: y, width: anchor.width + session.bubbleWidth, height: height), display: true)
+        session.bubbleHeight = bubbleHeight
+        session.bubbleTopInset = top - bubbleY - bubbleHeight
+        session.mascotTopInset = top - anchor.maxY
+        panel.setFrame(NSRect(x: x, y: bottom, width: anchor.width + session.bubbleWidth, height: top - bottom), display: true)
     }
 
     private func close() {
