@@ -491,6 +491,7 @@ struct PlainPanel<Content: View>: View {
 let wookeyTemplateSymbol = NSImage(systemSymbolName: "pencil.and.scribble", accessibilityDescription: nil) != nil
     ? "pencil.and.scribble"
     : "square.and.pencil"
+let wookeyDrawerSymbol = "archivebox"
 
 enum WookeyActionTint {
     case accent
@@ -506,7 +507,7 @@ enum WookeyActionTint {
         case "link": self = .graphite
         case "rectangle.3.group": self = .blue
         case "app", "arrow.left.arrow.right": self = .teal
-        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder", "archivebox": self = .amber
+        case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder", wookeyDrawerSymbol: self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
         default: self = .accent
         }
@@ -575,7 +576,7 @@ struct WookeyActionIcon: View {
         case "app", "macwindow", "dock.rectangle": "WorkflowActionApplication"
         case "doc": "WorkflowActionDocument"
         case "folder": "WookeyShelfFolder"
-        case "archivebox": "WookeyShelfDrawer"
+        case wookeyDrawerSymbol: "WookeyShelfDrawer"
         case "rectangle.3.group": "WorkflowActionLayout"
         case "keyboard": "WorkflowActionKeyboard"
         case "clock": "WorkflowActionWait"

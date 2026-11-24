@@ -24,7 +24,8 @@ struct LocalHistoryView: View {
             VStack(alignment: .leading, spacing: 12) {
                 header
                 WookeyFilterPicker(
-                    title: "우키 폴더", selection: $kind, options: [.files, .clipboard], icon: { $0.symbol }
+                    title: "우키 폴더", selection: $kind, options: [.files, .clipboard],
+                    icon: { $0 == .files ? wookeyDrawerSymbol : $0.symbol }
                 ) { $0 == .files ? "서랍" : "클립보드" }
             }
             .padding(WookeyPageMetrics.padding)
@@ -488,7 +489,7 @@ struct FloatingShelfView: View {
         let selectedCount = session.selection.ids.count
         return VStack(spacing: 0) {
             HStack(spacing: 4) {
-                WookeyActionIcon(symbol: HistoryKind.files.symbol, tint: .amber, size: 16)
+                WookeyActionIcon(symbol: wookeyDrawerSymbol, tint: .amber, size: 16)
                 Text(selectedCount == 0 ? "서랍" : "\(selectedCount)개 선택")
                     .font(.pretendard(.caption, weight: .semibold))
                     .lineLimit(1)

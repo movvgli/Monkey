@@ -176,7 +176,7 @@ struct WookeySettingsView: View {
                 }
 
                 PlainPanel {
-                    GeneralSettingRow(symbol: HistoryKind.files.symbol, title: "파일을 담은 뒤 우키 서랍") {
+                    GeneralSettingRow(symbol: wookeyDrawerSymbol, title: "파일을 담은 뒤 우키 서랍") {
                         WookeyFilterPicker(title: "파일을 담은 뒤 우키 서랍", selection: $shelfAfterDrop, options: ShelfAfterDrop.allCases) {
                             $0.title
                         }
