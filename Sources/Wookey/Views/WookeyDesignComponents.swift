@@ -506,7 +506,7 @@ enum WookeyActionTint {
         switch symbol {
         case "link": self = .graphite
         case "rectangle.3.group": self = .blue
-        case "app", "arrow.left.arrow.right": self = .teal
+        case "app", "arrow.left.arrow.right", "dial.medium": self = .teal
         case "doc", "doc.on.clipboard", wookeyTemplateSymbol, "photo", "paperclip", "folder", wookeyDrawerSymbol: self = .amber
         case "keyboard", "return", "arrow.turn.down.left", "clock": self = .neutral
         default: self = .accent

@@ -16,6 +16,7 @@ struct WookeySettingsView: View {
 
     private enum Page: String, CaseIterable {
         case general = "일반"
+        case appearance = "테마"
         case permissions = "권한"
         case history = "보관 기간"
         case sync = "동기화"
@@ -25,6 +26,7 @@ struct WookeySettingsView: View {
         var symbol: String {
             switch self {
             case .general: "gearshape"
+            case .appearance: "paintpalette"
             case .permissions: "lock.shield"
             case .history: "clock"
             case .sync: "icloud"
@@ -49,6 +51,7 @@ struct WookeySettingsView: View {
                 Group {
                     switch page {
                     case .general: general
+                    case .appearance: appearance
                     case .permissions: permissions
                     case .history: HistorySettingsView()
                     case .sync: ICloudSyncSettingsSection()
@@ -142,44 +145,46 @@ struct WookeySettingsView: View {
         }
     }
 
+    private var appearance: some View {
+        WookeySection(title: "테마") {
+            PlainPanel {
+                VStack(alignment: .leading, spacing: 0) {
+                    GeneralSettingRow(symbol: "paintpalette", title: "색상 테마") {
+                        WookeyFilterPicker(title: "색상 테마", selection: $selectedTheme, options: WookeyTheme.allCases) {
+                            $0.title
+                        }
+                    }
+                    generalDivider
+                    GeneralSettingRow(symbol: "face.smiling", title: "캐릭터") {
+                        WookeyFilterPicker(title: "캐릭터", selection: $character, options: WookeyCharacter.allCases) {
+                            $0.title
+                        }
+                    }
+                    generalDivider
+                    GeneralSettingRow(symbol: "square.stack.3d.up", title: "아이콘 테마") {
+                        WookeyFilterPicker(title: "아이콘 테마", selection: $iconTheme, options: WookeyIconTheme.allCases) {
+                            $0.title
+                        }
+                    }
+                    if artworkIsPending {
+                        Text("아직 추가되지 않은 그림은 기존 아이콘으로 표시됩니다.")
+                            .font(.pretendard(.caption))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, GeneralSettingsLayout.titleInset)
+                            .padding(.bottom, 6)
+                    }
+                }
+            }
+        }
+    }
+
     private var general: some View {
         WookeySection(title: "일반") {
             VStack(spacing: 12) {
                 PlainPanel {
-                    GeneralSettingRow(symbol: "paintpalette", title: "테마") {
-                        WookeyFilterPicker(title: "테마", selection: $selectedTheme, options: WookeyTheme.allCases) {
-                            $0.title
-                        }
-                    }
-                }
-
-                PlainPanel {
-                    VStack(alignment: .leading, spacing: 0) {
-                        GeneralSettingRow(symbol: "face.smiling", title: "캐릭터") {
-                            WookeyFilterPicker(title: "캐릭터", selection: $character, options: WookeyCharacter.allCases) {
-                                $0.title
-                            }
-                        }
-                        generalDivider
-                        GeneralSettingRow(symbol: "square.stack.3d.up", title: "아이콘 테마") {
-                            WookeyFilterPicker(title: "아이콘 테마", selection: $iconTheme, options: WookeyIconTheme.allCases) {
-                                $0.title
-                            }
-                        }
-                        if artworkIsPending {
-                            Text("아직 추가되지 않은 그림은 기존 아이콘으로 표시됩니다.")
-                                .font(.pretendard(.caption))
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, GeneralSettingsLayout.titleInset)
-                                .padding(.bottom, 6)
-                        }
-                    }
-                }
-
-                PlainPanel {
                     VStack(alignment: .leading, spacing: 0) {
                         GeneralSettingRow(
-                            symbol: wookeyDrawerSymbol,
+                            symbol: "dial.medium",
                             title: "서랍 열기 감도",
                             detail: "감도가 높을수록 파일을 작게 흔들어도 서랍이 열립니다."
                         ) {
