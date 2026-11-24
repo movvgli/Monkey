@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "Wookey",
+    defaultLocalization: "ko",
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "Wookey", targets: ["Wookey"]),
@@ -14,6 +15,7 @@ let package = Package(
     targets: [
         .target(
             name: "WookeyCore",
+            resources: [.process("Resources")],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("ApplicationServices"),
@@ -27,7 +29,7 @@ let package = Package(
                 "WookeyCore",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
-            resources: [.process("Resources/Assets.xcassets")]
+            resources: [.process("Resources/Assets.xcassets"), .process("Resources/en.lproj/Localizable.strings"), .process("Resources/ko.lproj/Localizable.strings")]
         ),
         .executableTarget(
             name: "WookeyLoginHelper"

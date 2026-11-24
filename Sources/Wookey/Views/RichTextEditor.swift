@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WookeyCore
 
 @MainActor
 final class RichTextEditorController {
@@ -44,13 +45,13 @@ final class RichTextEditorController {
     func addLink() {
         guard let textView, textView.selectedRange().length > 0 else { NSSound.beep(); return }
         let alert = NSAlert()
-        alert.messageText = "링크 추가"
-        alert.informativeText = "선택한 텍스트에 연결할 주소를 입력하세요."
+        alert.messageText = L10n.text("링크 추가")
+        alert.informativeText = L10n.text("선택한 텍스트에 연결할 주소를 입력하세요.")
         let field = NSTextField(string: "https://")
         field.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
         alert.accessoryView = field
-        alert.addButton(withTitle: "추가")
-        alert.addButton(withTitle: "취소")
+        alert.addButton(withTitle: L10n.text("추가"))
+        alert.addButton(withTitle: L10n.text("취소"))
         guard alert.runModal() == .alertFirstButtonReturn, let url = URL(string: field.stringValue),
               let storage = textView.textStorage else { return }
         let range = textView.selectedRange()
@@ -68,7 +69,7 @@ final class RichTextEditorController {
     func insertImage() {
         guard let textView else { return }
         let panel = NSOpenPanel()
-        panel.title = "템플릿에 넣을 이미지 선택"
+        panel.title = L10n.text("템플릿에 넣을 이미지 선택")
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK,
@@ -247,7 +248,7 @@ struct RichTextEditor: NSViewRepresentable {
         textView.drawsBackground = true
         textView.backgroundColor = NSColor(theme.panel)
         textView.insertionPointColor = .textColor
-        textView.setAccessibilityLabel("템플릿 본문")
+        textView.setAccessibilityLabel(L10n.text("템플릿 본문"))
         textView.textContainerInset = NSSize(width: 22, height: 20)
         textView.typingAttributes = [.font: NSFont.systemFont(ofSize: 15)]
         textView.delegate = context.coordinator

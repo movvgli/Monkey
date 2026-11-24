@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import SwiftUI
 import UniformTypeIdentifiers
+import WookeyCore
 
 enum ShelfAfterDrop: String, CaseIterable {
     case hide, keep
@@ -9,7 +10,7 @@ enum ShelfAfterDrop: String, CaseIterable {
     static let storageKey = "shelfAfterDrop"
     static let defaultValue = Self.keep
 
-    var title: String { self == .hide ? "즉시 숨기기" : "유지하기" }
+    var title: String { self == .hide ? L10n.text("즉시 숨기기") : L10n.text("유지하기") }
 }
 
 @MainActor
@@ -112,7 +113,7 @@ final class FileDropView: NSView {
         if shelf == nil {
             setAccessibilityElement(true)
             setAccessibilityRole(.group)
-            setAccessibilityLabel("우키에게 파일이나 링크를 놓는 드롭 영역")
+            setAccessibilityLabel(L10n.text("우키에게 파일이나 링크를 놓는 드롭 영역"))
         }
         registerForDraggedTypes(Self.shelfTypes + [.string])
     }
@@ -374,7 +375,7 @@ final class FileDropShelf {
         let mascotFrame = NSRect(origin: origin, size: size)
         let panel = ShelfPanel(contentRect: mascotFrame,
                             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        panel.title = "우키 서랍"
+        panel.title = L10n.text("우키 서랍")
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isFloatingPanel = true

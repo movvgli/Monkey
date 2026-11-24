@@ -2,12 +2,13 @@ import AppKit
 import ImageIO
 import Observation
 import UniformTypeIdentifiers
+import WookeyCore
 
 enum HistoryKind: String, CaseIterable {
     case clipboard
     case files = "images" // Intentionally kept: existing shelves live in this on-disk directory.
 
-    var title: String { self == .clipboard ? "클립보드" : "파일" }
+    var title: String { self == .clipboard ? L10n.text("클립보드") : L10n.text("파일") }
     var symbol: String { self == .clipboard ? "doc.on.clipboard" : "folder" }
 }
 
@@ -25,15 +26,15 @@ private enum HistoryLimits {
 }
 
 private struct FileTooLargeError: LocalizedError {
-    var errorDescription: String? { "2GB보다 큰 파일은 서랍에 담을 수 없습니다." }
+    var errorDescription: String? { L10n.text("2GB보다 큰 파일은 서랍에 담을 수 없습니다.") }
 }
 
 private struct ShelfFullError: LocalizedError {
-    var errorDescription: String? { "서랍이 가득 찼습니다(20GB). 쓰지 않는 파일을 지운 뒤 다시 시도해 주세요." }
+    var errorDescription: String? { L10n.text("서랍이 가득 찼습니다(20GB). 쓰지 않는 파일을 지운 뒤 다시 시도해 주세요.") }
 }
 
 private struct DiskFullError: LocalizedError {
-    var errorDescription: String? { "디스크 공간이 부족해 파일을 서랍에 담을 수 없습니다." }
+    var errorDescription: String? { L10n.text("디스크 공간이 부족해 파일을 서랍에 담을 수 없습니다.") }
 }
 
 struct HistoryRetention: Codable, Equatable {
@@ -131,8 +132,8 @@ final class LocalHistoryStore {
             do {
                 settings = try PropertyListDecoder().decode(Settings.self, from: Data(contentsOf: settingsURL))
             } catch {
-                report(error, kind: .clipboard, message: "보관 설정을 읽지 못했습니다")
-                report(error, kind: .files, message: "보관 설정을 읽지 못했습니다")
+                report(error, kind: .clipboard, message: L10n.text("보관 설정을 읽지 못했습니다"))
+                report(error, kind: .files, message: L10n.text("보관 설정을 읽지 못했습니다"))
             }
         }
         for kind in HistoryKind.allCases {
@@ -197,9 +198,9 @@ final class LocalHistoryStore {
             let restored = clipboard.writeObjects(items)
             pasteboardChangeCount = clipboard.changeCount
             if restored { errors[.clipboard] = nil }
-            else { errors[.clipboard] = "클립보드에 다시 복사하지 못했습니다." }
+            else { errors[.clipboard] = L10n.text("클립보드에 다시 복사하지 못했습니다.") }
         } catch {
-            report(error, kind: .clipboard, message: "클립보드에 다시 복사하지 못했습니다")
+            report(error, kind: .clipboard, message: L10n.text("클립보드에 다시 복사하지 못했습니다"))
         }
     }
 
@@ -231,7 +232,7 @@ final class LocalHistoryStore {
             record(entry, kind: .files)
             return entry
         } catch {
-            report(error, kind: .files, message: "파일을 가져오지 못했습니다")
+            report(error, kind: .files, message: L10n.text("파일을 가져오지 못했습니다"))
             return nil
         }
     }
@@ -250,7 +251,7 @@ final class LocalHistoryStore {
     func importImage(data: Data, type: UTType) -> Entry? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               CGImageSourceGetCount(source) > 0 else { return nil }
-        let name = "이미지.\(type.preferredFilenameExtension ?? "img")"
+        let name = L10n.text("이미지.\(type.preferredFilenameExtension ?? "img")")
         return insert(kind: .files, name: name, symbol: "photo", fileName: name) {
             try data.write(to: $0)
         }
@@ -268,7 +269,7 @@ final class LocalHistoryStore {
     func openFile(_ entry: Entry) {
         let url = entry.webURL ?? fileURL(for: entry, kind: .files)
         guard entry.webURL.map(Self.isWebURL) ?? true, NSWorkspace.shared.open(url) else {
-            errors[.files] = "‘\(entry.name)’을 열지 못했습니다."
+            errors[.files] = L10n.text("‘\(entry.name)’을 열지 못했습니다.")
             return
         }
         errors[.files] = nil
@@ -289,12 +290,12 @@ final class LocalHistoryStore {
             if kind == .files { onFileTakenFromShelf?(entry.id) }
             errors[kind] = nil
         } catch {
-            report(error, kind: kind, message: "기록을 삭제하지 못했습니다")
+            report(error, kind: kind, message: L10n.text("기록을 삭제하지 못했습니다"))
         }
     }
 
     func showFileImportError() {
-        if errors[.files] == nil { errors[.files] = "일부 항목을 보관하지 못했습니다. 개별 파일과 웹 링크를 추가할 수 있습니다." }
+        if errors[.files] == nil { errors[.files] = L10n.text("일부 항목을 보관하지 못했습니다. 개별 파일과 웹 링크를 추가할 수 있습니다.") }
     }
 
     private var settingsURL: URL { root.appendingPathComponent("settings.plist") }
@@ -311,7 +312,7 @@ final class LocalHistoryStore {
             errors[kind] = nil
             return true
         } catch {
-            report(error, kind: kind, message: "보관 설정을 저장하지 못했습니다")
+            report(error, kind: kind, message: L10n.text("보관 설정을 저장하지 못했습니다"))
             return false
         }
     }
@@ -326,7 +327,7 @@ final class LocalHistoryStore {
             record(entry, kind: kind)
             return entry
         } catch {
-            report(error, kind: kind, message: "기록을 저장하지 못했습니다")
+            report(error, kind: kind, message: L10n.text("기록을 저장하지 못했습니다"))
             return nil
         }
     }
@@ -416,7 +417,7 @@ final class LocalHistoryStore {
         } else if let nonemptyText, !nonemptyText.isEmpty {
             nonemptyText
         } else {
-            hasImage ? "복사한 이미지" : "복사한 내용"
+            hasImage ? L10n.text("복사한 이미지") : L10n.text("복사한 내용")
         }
         let symbol = !files.isEmpty ? "doc" : hasImage ? "photo" : "text.alignleft"
         let entry = Entry(id: UUID(), date: Date(), name: String(name.prefix(250)), symbol: symbol, fileName: "contents.plist")
@@ -435,7 +436,7 @@ final class LocalHistoryStore {
                 record(entry, kind: .clipboard)
                 enforceClipboardLimits()
             } catch {
-                self?.report(error, kind: .clipboard, message: "기록을 저장하지 못했습니다")
+                self?.report(error, kind: .clipboard, message: L10n.text("기록을 저장하지 못했습니다"))
             }
         }
     }

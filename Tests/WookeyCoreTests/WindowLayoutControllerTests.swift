@@ -8,7 +8,7 @@ struct WindowLayoutControllerTests {
         let failures = await controller.apply(WindowLayout(name: "빈 레이아웃"))
         #expect(failures.count == 1)
         #expect(failures.first?.actionTitle == "빈 레이아웃")
-        #expect(failures.first?.message == "레이아웃에 배치할 앱을 먼저 추가해 주세요.")
+        #expect(failures.first?.message == L10n.text("레이아웃에 배치할 앱을 먼저 추가해 주세요."))
     }
 
     @Test func focusedWindowWinsOverUnorderedAXWindowList() {

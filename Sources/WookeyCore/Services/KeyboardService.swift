@@ -73,7 +73,7 @@ final class KeyboardEventSender {
     ) async throws {
         try Task.checkCancellation()
         guard environment.hasPermission() else {
-            throw AutomationError.permissionRequired("손쉬운 사용")
+            throw AutomationError.permissionRequired(L10n.text("손쉬운 사용"))
         }
         guard let application else {
             throw AutomationError.inputTargetNotFound
@@ -85,7 +85,7 @@ final class KeyboardEventSender {
         try await waitForModifierRelease(phase: "afterActivation")
         try Task.checkCancellation()
         guard environment.isFrontmost(application) else {
-            throw AutomationError.applicationDidNotActivate(application.localizedName ?? "대상")
+            throw AutomationError.applicationDidNotActivate(application.localizedName ?? L10n.text("대상"))
         }
         try environment.post(keyCode, flags, application.processIdentifier)
         try await environment.sleep(settlingDelay)

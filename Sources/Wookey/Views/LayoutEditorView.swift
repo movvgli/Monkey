@@ -54,12 +54,12 @@ struct LayoutEditorView: View {
             WookeyEditorHeader(
                 title: $layout.name,
                 subtitle: layout.placements.isEmpty
-                    ? "함께 사용할 앱을 고르고 화면에 배치하세요."
-                    : "\(layout.placements.count)개 앱의 창을 한 번에 배치합니다.",
+                    ? L10n.text("함께 사용할 앱을 고르고 화면에 배치하세요.")
+                    : L10n.text("\(layout.placements.count)개 앱의 창을 한 번에 배치합니다."),
                 onBack: onBack
             ) {
                 if onDelete != nil {
-                    WookeyDeleteButton(title: "레이아웃 삭제") { showsDeleteConfirmation = true }
+                    WookeyDeleteButton(title: L10n.text("레이아웃 삭제")) { showsDeleteConfirmation = true }
                 }
             }
 
@@ -112,22 +112,22 @@ struct LayoutEditorView: View {
             )
             .presentationBackground(theme.canvas)
         }
-        .alert("레이아웃을 삭제할까요?", isPresented: $showsDeleteConfirmation) {
-            Button("취소", role: .cancel) {}
-            Button("삭제", role: .destructive) { onDelete?() }
+        .alert(L10n.text("레이아웃을 삭제할까요?"), isPresented: $showsDeleteConfirmation) {
+            Button(L10n.text("취소"), role: .cancel) {}
+            Button(L10n.text("삭제"), role: .destructive) { onDelete?() }
         } message: {
-            Text("‘\(layout.name)’과 이 레이아웃을 사용하는 워크플로 동작이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
+            Text(L10n.text("‘\(layout.name)’과 이 레이아웃을 사용하는 워크플로 동작이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다."))
         }
     }
 
     private var applicationsSection: some View {
-        WookeySection(title: "배치할 앱") {
+        WookeySection(title: L10n.text("배치할 앱")) {
             if layout.placements.isEmpty {
                 PlainPanel {
                     VStack(alignment: .leading, spacing: 10) {
                         WookeyActionIcon(symbol: "app", tint: .teal, size: 30)
-                        Text("앱을 골라 시작하세요").font(.headline)
-                        Text("여러 앱을 한 번에 추가할 수 있어요.")
+                        Text(L10n.text("앱을 골라 시작하세요")).font(.headline)
+                        Text(L10n.text("여러 앱을 한 번에 추가할 수 있어요."))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         addApplicationButton
@@ -145,7 +145,7 @@ struct LayoutEditorView: View {
     }
 
     private var addApplicationButton: some View {
-        Button("앱 추가", wookeyIcon: "plus") { showsAppPicker = true }
+        Button(L10n.text("앱 추가"), wookeyIcon: "plus") { showsAppPicker = true }
             .buttonStyle(WookeyGlossyButtonStyle())
             .disabled(displays.isEmpty)
     }
@@ -164,7 +164,7 @@ struct LayoutEditorView: View {
                     )
                     VStack(alignment: .leading, spacing: 3) {
                         Text(placement.appName).font(.subheadline.weight(.semibold))
-                        Text(display == nil ? "모니터 연결 안 됨" : placement.zone.title)
+                        Text(display == nil ? L10n.text("모니터 연결 안 됨") : placement.zone.title)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -177,7 +177,7 @@ struct LayoutEditorView: View {
             .buttonStyle(WookeyHoverButtonStyle(selected: isSelected))
             .accessibilityAddTraits(isSelected ? .isSelected : [])
 
-            WookeyDeleteButton(title: "\(placement.appName) 배치에서 제거") {
+            WookeyDeleteButton(title: L10n.text("\(placement.appName) 배치에서 제거")) {
                 layout.placements.removeAll { $0.id == placement.id }
                 automaticPlacementIDs.remove(placement.id)
             }
@@ -185,7 +185,7 @@ struct LayoutEditorView: View {
     }
 
     private var placementSection: some View {
-        WookeySection(title: "화면 배치") {
+        WookeySection(title: L10n.text("화면 배치")) {
             PlainPanel {
                 VStack(alignment: .leading, spacing: 12) {
                     if let placement = selectedPlacement {
@@ -209,7 +209,7 @@ struct LayoutEditorView: View {
                         )
                     } else {
                         Label(
-                            displays.isEmpty ? "연결된 모니터가 없습니다" : "위에서 연결된 모니터를 선택하세요",
+                            displays.isEmpty ? L10n.text("연결된 모니터가 없습니다") : L10n.text("위에서 연결된 모니터를 선택하세요"),
                             systemImage: "display"
                         )
                         .font(.subheadline)
@@ -220,24 +220,24 @@ struct LayoutEditorView: View {
                     if let placement = selectedPlacement, previewDisplay != nil {
                         Divider()
                         HStack {
-                            Text("배치 위치").font(.subheadline.weight(.semibold))
+                            Text(L10n.text("배치 위치")).font(.subheadline.weight(.semibold))
                             Spacer()
                             if let zones = Self.arrangedZones(for: visiblePlacements.count),
                                visiblePlacements.map(\.zone) != zones {
-                                Button("자동 배치") { arrangeVisibleApps(in: zones) }
+                                Button(L10n.text("자동 배치")) { arrangeVisibleApps(in: zones) }
                                     .controlSize(.small)
-                                    .help("이 모니터의 앱 창을 겹치지 않게 배치합니다.")
+                                    .help(L10n.text("이 모니터의 앱 창을 겹치지 않게 배치합니다."))
                             }
                         }
                         zoneGrid([.full, .leftHalf, .rightHalf], placement: placement)
                         if visiblePlacements.contains(where: {
                             $0.id != placement.id && !$0.zone.normalizedRect.intersection(placement.zone.normalizedRect).isEmpty
                         }) {
-                            Label("선택한 영역이 다른 앱과 겹칩니다.", systemImage: "square.on.square")
+                            Label(L10n.text("선택한 영역이 다른 앱과 겹칩니다."), systemImage: "square.on.square")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
-                        DisclosureGroup("더 많은 배치", isExpanded: $showsMoreZones) {
+                        DisclosureGroup(L10n.text("더 많은 배치"), isExpanded: $showsMoreZones) {
                             VStack(spacing: 8) {
                                 zoneGrid([.leftThird, .centerThird, .rightThird, .leftTwoThirds, .rightTwoThirds], placement: placement)
                                 zoneGrid([.topLeft, .topRight, .bottomLeft, .bottomRight], placement: placement)
@@ -254,7 +254,7 @@ struct LayoutEditorView: View {
     @ViewBuilder
     private func monitorControl(for placement: AppWindowPlacement) -> some View {
         if displays.count > 1 || previewDisplay == nil {
-            Picker("모니터", selection: Binding(
+            Picker(L10n.text("모니터"), selection: Binding(
                 get: { displayID(for: placement) },
                 set: { id in
                     guard let display = displays.first(where: { $0.id == id }),
@@ -264,7 +264,7 @@ struct LayoutEditorView: View {
                 }
             )) {
                 if previewDisplay == nil {
-                    Text("\(placement.display.name) · 연결 안 됨").tag(displayID(for: placement))
+                    Text(L10n.text("\(placement.display.name) · 연결 안 됨")).tag(displayID(for: placement))
                 }
                 ForEach(displays) { display in
                     Text(display.target.name).tag(display.id)
@@ -313,7 +313,7 @@ struct LayoutEditorView: View {
 
     private var shortcutSection: some View {
         PlainPanel {
-            let label = layout.shortcut.steps.isEmpty ? "단축키 추가 (선택)" : "단축키 · \(layout.shortcut.displayName)"
+            let label = layout.shortcut.steps.isEmpty ? L10n.text("단축키 추가 (선택)") : L10n.text("단축키 · \(layout.shortcut.displayName)")
             DisclosureGroup(label, isExpanded: $showsShortcut) {
                 ShortcutRecorderView(shortcut: $layout.shortcut)
                     .padding(.top, 10)
@@ -332,14 +332,14 @@ struct LayoutEditorView: View {
         HStack(spacing: 12) {
             if let onSave {
                 Spacer()
-                Button("취소", action: onBack)
+                Button(L10n.text("취소"), action: onBack)
                     .keyboardShortcut(.cancelAction)
                 Button {
                     var saved = layout
                     saved.name = layoutName
                     onSave(saved)
                 } label: {
-                    WookeyControlLabel(title: "레이아웃 저장", symbol: "checkmark.circle.fill")
+                    WookeyControlLabel(title: L10n.text("레이아웃 저장"), symbol: "checkmark.circle.fill")
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
                 }
@@ -350,12 +350,12 @@ struct LayoutEditorView: View {
                 WookeySaveStatus()
                 Spacer(minLength: 0)
                 if !layout.placements.isEmpty, !runtime.permissions.accessibilityGranted {
-                    Text("적용하려면 손쉬운 사용 권한이 필요합니다.")
+                    Text(L10n.text("적용하려면 손쉬운 사용 권한이 필요합니다."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Button("권한 설정", action: runtime.permissions.requestAccessibility)
+                    Button(L10n.text("권한 설정"), action: runtime.permissions.requestAccessibility)
                 } else {
-                    Button("레이아웃 적용", wookeyIcon: "play.fill") { runtime.run(layoutID: layout.id) }
+                    Button(L10n.text("레이아웃 적용"), wookeyIcon: "play.fill") { runtime.run(layoutID: layout.id) }
                         .buttonStyle(WookeyGlossyButtonStyle())
                         .controlSize(.large)
                         .disabled(layout.placements.isEmpty || displays.isEmpty
@@ -472,7 +472,7 @@ private struct DisplayPreview: View {
                     .strokeBorder(.separator.opacity(0.65))
 
                 if placements.isEmpty {
-                    Text("앱을 추가하면 배치가 여기에 표시됩니다.")
+                    Text(L10n.text("앱을 추가하면 배치가 여기에 표시됩니다."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -555,9 +555,9 @@ private struct LayoutApplicationPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("배치할 앱 선택").font(.title2.weight(.semibold))
+            Text(L10n.text("배치할 앱 선택")).font(.title2.weight(.semibold))
 
-            WookeySearchField(prompt: "앱 이름 검색", text: $query)
+            WookeySearchField(prompt: L10n.text("앱 이름 검색"), text: $query)
                 .focused($searchFocused)
 
             appList
@@ -569,15 +569,15 @@ private struct LayoutApplicationPicker: View {
             }
 
             HStack {
-                Button("찾아보기…") { showsFilePicker = true }
+                Button(L10n.text("찾아보기…")) { showsFilePicker = true }
                 Spacer()
-                Button("취소") { dismiss() }
+                Button(L10n.text("취소")) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button {
                     onAdd(selection)
                     dismiss()
                 } label: {
-                    WookeyControlLabel(title: selection.isEmpty ? "추가" : "\(selection.count)개 앱 추가", symbol: "plus")
+                    WookeyControlLabel(title: selection.isEmpty ? L10n.text("추가") : L10n.text("\(selection.count)개 앱 추가"), symbol: "plus")
                         .padding(.horizontal, 12)
                         .padding(.vertical, 7)
                 }
@@ -599,22 +599,22 @@ private struct LayoutApplicationPicker: View {
                     if !applications.contains(where: { $0.id == app.id }) { applications.append(app) }
                     if !existingIDs.contains(app.id), !selection.contains(where: { $0.id == app.id }) { selection.append(app) }
                 }
-                importError = matchingApps.isEmpty ? "선택한 위치에서 앱을 열 수 없습니다." : nil
+                importError = matchingApps.isEmpty ? L10n.text("선택한 위치에서 앱을 열 수 없습니다.") : nil
                 if !matchingApps.isEmpty { query = "" }
             case .failure:
-                importError = "선택한 앱을 불러오지 못했습니다."
+                importError = L10n.text("선택한 앱을 불러오지 못했습니다.")
             }
         }
     }
 
     @ViewBuilder private var appList: some View {
         if isLoading {
-            ProgressView("앱 목록을 불러오는 중…")
+            ProgressView(L10n.text("앱 목록을 불러오는 중…"))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if matches.isEmpty {
             Group {
                 if query.isEmpty {
-                    ContentUnavailableView("추가할 앱이 없습니다", systemImage: "macwindow")
+                    ContentUnavailableView(L10n.text("추가할 앱이 없습니다"), systemImage: "macwindow")
                 } else {
                     ContentUnavailableView.search(text: query)
                 }
@@ -624,11 +624,11 @@ private struct LayoutApplicationPicker: View {
             List {
                 let running = matches.filter { runningIDs.contains($0.id) }
                 if !running.isEmpty {
-                    Section("실행 중") { ForEach(running, content: appRow) }
+                    Section(L10n.text("실행 중")) { ForEach(running, content: appRow) }
                 }
                 let other = matches.filter { !runningIDs.contains($0.id) }
                 if !other.isEmpty {
-                    Section("설치된 앱") { ForEach(other, content: appRow) }
+                    Section(L10n.text("설치된 앱")) { ForEach(other, content: appRow) }
                 }
             }
             .listStyle(.inset)

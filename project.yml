@@ -63,6 +63,7 @@ targets:
         CFBundleDisplayName: Wookey
         CFBundleLocalizations:
           - ko
+          - en
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.productivity

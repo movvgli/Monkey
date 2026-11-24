@@ -46,7 +46,7 @@ public final class WindowLayoutController {
         mappingsURL = url
         guard FileManager.default.fileExists(atPath: url.path) else { return }
         do { displayMappings = try JSONDecoder().decode([String: String].self, from: Data(contentsOf: url)) }
-        catch { mappingError = "이 Mac의 모니터 연결을 다시 설정해 주세요." }
+        catch { mappingError = L10n.text("이 Mac의 모니터 연결을 다시 설정해 주세요.") }
     }
 
     public func setDisplayMapping(source: String, target: String) {
@@ -56,7 +56,7 @@ public final class WindowLayoutController {
             next[source] = target.isEmpty ? nil : target
             try JSONEncoder().encode(next).write(to: mappingsURL, options: .atomic)
             displayMappings = next; mappingError = nil
-        } catch { mappingError = "모니터 연결을 저장하지 못했습니다: \(error.localizedDescription)" }
+        } catch { mappingError = L10n.text("모니터 연결을 저장하지 못했습니다: \(error.localizedDescription)") }
     }
 
     public init(applications: ApplicationController) {
@@ -79,7 +79,7 @@ public final class WindowLayoutController {
         guard !layout.placements.isEmpty else {
             return [ActionFailure(
                 actionTitle: layout.name,
-                message: "레이아웃에 배치할 앱을 먼저 추가해 주세요."
+                message: L10n.text("레이아웃에 배치할 앱을 먼저 추가해 주세요.")
             )]
         }
         var failures: [ActionFailure] = []
@@ -98,7 +98,7 @@ public final class WindowLayoutController {
 
     private func apply(_ placement: AppWindowPlacement) async throws {
         guard AXIsProcessTrusted() else {
-            throw AutomationError.permissionRequired("손쉬운 사용")
+            throw AutomationError.permissionRequired(L10n.text("손쉬운 사용"))
         }
         let displayID = displayMappings[placement.display.uuid] ?? placement.display.uuid
         guard let display = availableDisplays.first(where: { $0.target.uuid == displayID }) else {

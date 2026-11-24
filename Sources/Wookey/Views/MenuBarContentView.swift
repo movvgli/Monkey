@@ -20,7 +20,7 @@ struct MenuBarContentView: View {
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
             if workflows.isEmpty {
-                Text("실행할 워크플로가 없습니다.")
+                Text(L10n.text("실행할 워크플로가 없습니다."))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 9)
                     .padding(.bottom, 5)
@@ -60,14 +60,14 @@ struct MenuBarContentView: View {
                                   runtime.runner.queuedWorkflowIDs.contains(layout.id))
                     }
                 } label: {
-                    rowLabel("레이아웃 적용", symbol: "rectangle.3.group")
+                    rowLabel(L10n.text("레이아웃 적용"), symbol: "rectangle.3.group")
                 }
                 .menuStyle(.borderlessButton)
             }
 
             if runtime.runner.runningWorkflowID != nil {
                 Divider()
-                menuButton("실행 중지", symbol: "stop.fill", action: runtime.runner.cancel)
+                menuButton(L10n.text("실행 중지"), symbol: "stop.fill", action: runtime.runner.cancel)
             } else if let lastRun = runtime.lastRun {
                 Text(shortMenuTitle(lastRun.menuTitle))
                     .font(.caption)
@@ -77,26 +77,26 @@ struct MenuBarContentView: View {
             }
 
             Divider()
-            menuButton("Wookey 검색창 열기", symbol: "magnifyingglass") {
+            menuButton(L10n.text("Wookey 검색창 열기"), symbol: "magnifyingglass") {
                 dismiss()
                 Task { @MainActor in showSearch() }
             }
-            menuButton("Wookey 열기", symbol: "macwindow") {
+            menuButton(L10n.text("Wookey 열기"), symbol: "macwindow") {
                 dismiss()
                 NSApp.unhide(nil)
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             }
-            menuButton("설정…", symbol: "gearshape") {
+            menuButton(L10n.text("설정…"), symbol: "gearshape") {
                 dismiss()
                 Task { @MainActor in showSettings() }
             }
-            menuButton("업데이트 확인…", symbol: "arrow.clockwise") {
+            menuButton(L10n.text("업데이트 확인…"), symbol: "arrow.clockwise") {
                 dismiss()
                 updates.checkForUpdates()
             }
             .disabled(!updates.canCheckForUpdates)
-            menuButton("Wookey 종료", symbol: "power") { NSApp.terminate(nil) }
+            menuButton(L10n.text("Wookey 종료"), symbol: "power") { NSApp.terminate(nil) }
         }
         .padding(10)
         .frame(width: 290)

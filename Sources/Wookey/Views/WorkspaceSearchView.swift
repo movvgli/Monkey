@@ -20,10 +20,10 @@ struct WorkspaceSearchView: View {
 
         var actionTitle: String {
             switch self {
-            case .library, .openApplication, .openFile: "열기"
-            case .openWebAddress: "브라우저에서 열기"
-            case .run: "실행"
-            case .copy, .copyValue: "복사"
+            case .library, .openApplication, .openFile: L10n.text("열기")
+            case .openWebAddress: L10n.text("브라우저에서 열기")
+            case .run: L10n.text("실행")
+            case .copy, .copyValue: L10n.text("복사")
             }
         }
     }
@@ -83,7 +83,7 @@ struct WorkspaceSearchView: View {
         let fileText = fileSearchText(for: query)
         let waitingForFiles = fileText != nil && fileResults?.query != fileText
         let webResults = waitingForFiles ? [] : webAddress.map {
-            [Result(id: .openWebAddress($0), name: $0.absoluteString, detail: "웹사이트", symbol: "link")]
+            [Result(id: .openWebAddress($0), name: $0.absoluteString, detail: L10n.text("웹사이트"), symbol: "link")]
         } ?? []
         let appPaths = Set(applications.compactMap { result -> String? in
             if case .openApplication(let app) = result.id { return app.path }
@@ -125,7 +125,7 @@ struct WorkspaceSearchView: View {
     private func applicationResults(matching terms: [String]) -> [Result] {
         installedApplications.compactMap { application in
             guard application.matchesSearchTerms(terms) else { return nil }
-            return Result(id: .openApplication(application), name: application.displayName, detail: "설치된 앱", symbol: "app")
+            return Result(id: .openApplication(application), name: application.displayName, detail: L10n.text("설치된 앱"), symbol: "app")
         }
     }
 
@@ -141,7 +141,7 @@ struct WorkspaceSearchView: View {
         switch utility {
         case .calculation(.value(let value)):
             let formatted = SearchNumber.formatted(value)
-            return [Result(id: .copyValue(formatted), name: formatted, detail: "계산 결과", symbol: "equal.circle")]
+            return [Result(id: .copyValue(formatted), name: formatted, detail: L10n.text("계산 결과"), symbol: "equal.circle")]
         case .calculation(.error):
             return []
         case .exchange(let request):
@@ -163,7 +163,7 @@ struct WorkspaceSearchView: View {
 
     private var launcherResults: [Result] {
         let templates = runtime.store.templates.map {
-            Result(id: .copy($0.id), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
+            Result(id: .copy($0.id), name: $0.name, detail: L10n.text("템플릿"), symbol: wookeyTemplateSymbol)
         }
         return templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map { workflowResult($0) }
     }
@@ -173,7 +173,7 @@ struct WorkspaceSearchView: View {
         return Result(
             id: .run(workflow.id),
             name: workflow.name,
-            detail: action?.title ?? "워크플로",
+            detail: action?.title ?? L10n.text("워크플로"),
             symbol: action?.wookeyIcon.symbol ?? "bolt",
             keyword: matchingKeyword ?? WorkflowKeyword.normalized(workflow.keywords.first)
         )
@@ -181,33 +181,33 @@ struct WorkspaceSearchView: View {
 
     private var libraryResults: [Result] {
         let sections = SidebarSelection.sections.map {
-            Result(id: .library($0), name: $0.title, detail: "보관함", symbol: $0.symbol)
+            Result(id: .library($0), name: $0.title, detail: L10n.text("보관함"), symbol: $0.symbol)
         }
         let workflows = runtime.store.workflows.map {
             Result(id: .library(.workflow($0.id)), name: $0.name,
-                   detail: $0.shortcut.steps.isEmpty ? "워크플로" : "워크플로 · \($0.shortcut.displayName)",
+                   detail: $0.shortcut.steps.isEmpty ? L10n.text("워크플로") : L10n.text("워크플로 · \($0.shortcut.displayName)"),
                    symbol: "bolt")
         }
         let apps = runtime.store.applicationShortcuts.map {
             Result(id: .library(.application($0.bundleIdentifier)), name: $0.displayName,
-                   detail: "앱 · \($0.shortcut.displayName)", symbol: "app")
+                   detail: L10n.text("앱 · \($0.shortcut.displayName)"), symbol: "app")
         }
         let templates = runtime.store.templates.map {
-            Result(id: .library(.template($0.id)), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
+            Result(id: .library(.template($0.id)), name: $0.name, detail: L10n.text("템플릿"), symbol: wookeyTemplateSymbol)
         }
         let layouts = runtime.store.layouts.map {
             Result(id: .library(.layout($0.id)), name: $0.name,
-                   detail: $0.shortcut.steps.isEmpty ? "레이아웃" : "레이아웃 · \($0.shortcut.displayName)",
+                   detail: $0.shortcut.steps.isEmpty ? L10n.text("레이아웃") : L10n.text("레이아웃 · \($0.shortcut.displayName)"),
                    symbol: "rectangle.3.group")
         }
-        let clipboard = Result(id: .library(.clipboard), name: "클립보드", detail: "파일 보관함", symbol: HistoryKind.clipboard.symbol)
+        let clipboard = Result(id: .library(.clipboard), name: L10n.text("클립보드"), detail: L10n.text("파일 보관함"), symbol: HistoryKind.clipboard.symbol)
         return sections + [clipboard] + workflows + apps + templates + layouts
     }
 
     var body: some View {
         let (entries, utility) = matches(for: query)
         let fileText = utility == nil ? fileSearchText(for: query) : nil
-        let actionTitle = selected?.actionTitle ?? "열기"
+        let actionTitle = selected?.actionTitle ?? L10n.text("열기")
         VStack(spacing: 0) {
             HStack(spacing: 12) {
                 WorkspaceSearchField(
@@ -216,15 +216,15 @@ struct WorkspaceSearchView: View {
                     onSubmit: openSelected,
                     onWebSearch: searchWeb,
                     onCancel: close,
-                    prompt: isLauncher ? "앱·파일·워크플로 검색, 웹 주소 입력, 계산·환율" : "보관함 검색 또는 웹 주소 입력"
+                    prompt: isLauncher ? L10n.text("앱·파일·워크플로 검색, 웹 주소 입력, 계산·환율") : L10n.text("보관함 검색 또는 웹 주소 입력")
                 )
                 .frame(height: 28)
-                Button("닫기", wookeyIcon: "xmark", action: close)
+                Button(L10n.text("닫기"), wookeyIcon: "xmark", action: close)
                     .labelStyle(.iconOnly)
                     .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                     .keyboardShortcut(.cancelAction)
-                    .accessibilityLabel("닫기")
-                    .help("닫기")
+                    .accessibilityLabel(L10n.text("닫기"))
+                    .help(L10n.text("닫기"))
             }
             .padding(18)
             Divider()
@@ -237,11 +237,11 @@ struct WorkspaceSearchView: View {
                 utilityStatus(utility)
                     .frame(maxHeight: .infinity)
             } else if entries.isEmpty, fileText != nil, fileResults?.query != fileText {
-                ProgressView("파일 찾는 중…")
+                ProgressView(L10n.text("파일 찾는 중…"))
                     .frame(maxHeight: .infinity)
             } else if entries.isEmpty {
                 if query.isEmpty {
-                    ContentUnavailableView(isLauncher ? "앱이나 파일 이름을 입력하세요" : "저장한 템플릿이나 워크플로가 없습니다",
+                    ContentUnavailableView(isLauncher ? L10n.text("앱이나 파일 이름을 입력하세요") : L10n.text("저장한 템플릿이나 워크플로가 없습니다"),
                                            systemImage: "magnifyingglass")
                         .frame(maxHeight: .infinity)
                 } else {
@@ -261,13 +261,13 @@ struct WorkspaceSearchView: View {
                     .padding(.top, 9)
             }
             HStack {
-                Text("↑ ↓ 이동").foregroundStyle(.secondary)
+                Text(L10n.text("↑ ↓ 이동")).foregroundStyle(.secondary)
                 Text("↵ \(actionTitle)").foregroundStyle(.secondary)
                 Spacer()
-                Button("웹 검색  ⌘↵", action: searchWeb)
+                Button(L10n.text("웹 검색  ⌘↵"), action: searchWeb)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.return, modifiers: .command)
-                    .accessibilityLabel("웹 검색")
+                    .accessibilityLabel(L10n.text("웹 검색"))
                     .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 Button(actionTitle, action: openSelected)
                     .buttonStyle(WookeyGlossyButtonStyle())
@@ -319,11 +319,11 @@ struct WorkspaceSearchView: View {
 
     private func exchangeHeader(_ request: SearchCurrencyQuery) -> some View {
         HStack {
-            Text("\(SearchNumber.formatted(request.amount)) \(request.base.rawValue) 환산")
+            Text(L10n.text("\(SearchNumber.formatted(request.amount)) \(request.base.rawValue) 환산"))
                 .font(.subheadline.weight(.semibold))
             Spacer()
             if let exchangeRates {
-                Text("\(exchangeRates.usedFallback ? "최근 확인값 · " : "")ECB 기준환율 · \(exchangeRates.rates.date)")
+                Text(L10n.text("\(exchangeRates.usedFallback ? L10n.text("최근 확인값 · ") : "")ECB 기준환율 · \(exchangeRates.rates.date)"))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -342,14 +342,14 @@ struct WorkspaceSearchView: View {
         case .exchange:
             if exchangeLoadFailed {
                 ContentUnavailableView {
-                    Label("환율을 불러오지 못했습니다", systemImage: "wifi.slash")
+                    Label(L10n.text("환율을 불러오지 못했습니다"), systemImage: "wifi.slash")
                 } actions: {
-                    Button("다시 시도") { Task { await loadExchangeRates() } }
+                    Button(L10n.text("다시 시도")) { Task { await loadExchangeRates() } }
                 }
             } else if exchangeRates != nil {
-                ContentUnavailableView("선택한 통화의 기준환율이 없습니다", systemImage: "arrow.left.arrow.right")
+                ContentUnavailableView(L10n.text("선택한 통화의 기준환율이 없습니다"), systemImage: "arrow.left.arrow.right")
             } else {
-                ProgressView("환율 확인 중…")
+                ProgressView(L10n.text("환율 확인 중…"))
             }
         }
     }
@@ -435,7 +435,7 @@ struct WorkspaceSearchView: View {
         if NSWorkspace.shared.open(url) {
             close()
         } else {
-            actionError = "기본 브라우저를 열지 못했습니다."
+            actionError = L10n.text("기본 브라우저를 열지 못했습니다.")
         }
     }
 
@@ -447,7 +447,7 @@ struct WorkspaceSearchView: View {
             if NSWorkspace.shared.open(URL(fileURLWithPath: application.path)) {
                 close()
             } else {
-                actionError = "‘\(application.displayName)’ 앱을 열지 못했습니다."
+                actionError = L10n.text("‘\(application.displayName)’ 앱을 열지 못했습니다.")
             }
         case .openWebAddress(let url):
             openInBrowser(url)
@@ -455,7 +455,7 @@ struct WorkspaceSearchView: View {
             if NSWorkspace.shared.open(url) {
                 close()
             } else {
-                actionError = "‘\(url.lastPathComponent)’을 열지 못했습니다."
+                actionError = L10n.text("‘\(url.lastPathComponent)’을 열지 못했습니다.")
             }
         case .run(let id):
             guard runtime.store.workflows.contains(where: { $0.id == id && !$0.actions.isEmpty }) else { return }
@@ -506,7 +506,7 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.title = "Wookey 검색창"
+        panel.title = L10n.text("Wookey 검색창")
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
         panel.isOpaque = false
@@ -594,7 +594,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
     func makeNSView(context: Context) -> NSSearchField {
         let field = AutofocusingSearchField()
         field.placeholderString = prompt
-        field.setAccessibilityLabel("Wookey 검색어")
+        field.setAccessibilityLabel(L10n.text("Wookey 검색어"))
         field.controlSize = .large
         field.delegate = context.coordinator
         return field

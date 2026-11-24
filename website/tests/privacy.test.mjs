@@ -4,7 +4,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { createRequire, Module } from "node:module";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
-import { searchResults } from "../src/examples.js";
+import { englishSearchResults, searchResults } from "../src/examples.js";
 
 const require = createRequire(import.meta.url);
 const React = require("react");
@@ -18,14 +18,21 @@ compiled._compile(output.outputFiles[0].text, compiled.filename);
 const { App, Demo } = compiled.exports;
 
 test("search renders only fictional examples and labels them", () => {
-  const html = renderToStaticMarkup(React.createElement(Demo));
-  for (const { title } of searchResults) assert.ok(html.includes(title));
-  assert.ok(html.includes("실제 개인 설정이 아닙니다"));
-  assert.ok(html.includes('aria-label="기능 예시 검색"'));
+  for (const [language, examples, caption, search] of [
+    ["ko", searchResults, "실제 개인 설정이 아닙니다", "기능 예시 검색"],
+    ["en", englishSearchResults, "Demo with fictional data", "Search the demo"],
+  ]) {
+    const html = renderToStaticMarkup(React.createElement(Demo, { language }));
+    for (const { title } of examples) assert.ok(html.includes(title));
+    assert.ok(html.includes(caption));
+    assert.ok(html.includes(`aria-label="${search}"`));
+  }
 });
 
 test("site renders a stable download and privacy details without storage", () => {
   const prior = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  const priorNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: { language: "ko-KR" } });
   Object.defineProperty(globalThis, "localStorage", { configurable: true, get() { throw new Error("Storage disabled"); } });
   try {
     const html = renderToStaticMarkup(React.createElement(App));
@@ -45,6 +52,30 @@ test("site renders a stable download and privacy details without storage", () =>
     assert.ok(privacy.includes("개인 iCloud Drive 폴더"));
     assert.ok(privacy.includes("기본값은 꺼짐"));
     assert.ok(!privacy.includes("가상 예시"));
+  } finally {
+    if (prior) Object.defineProperty(globalThis, "localStorage", prior);
+    else delete globalThis.localStorage;
+    if (priorNavigator) Object.defineProperty(globalThis, "navigator", priorNavigator);
+    else delete globalThis.navigator;
+  }
+});
+
+test("a saved English preference localizes the page and keeps the same download", () => {
+  const prior = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: { getItem: (key) => key === "wookey-site-language" ? "en" : null },
+  });
+  try {
+    const html = renderToStaticMarkup(React.createElement(App));
+    assert.ok(html.includes('lang="en" aria-pressed="true">English'));
+    assert.ok(html.includes("Installation and permissions"));
+    assert.ok(html.includes("Privacy and sync guide"));
+    assert.ok(html.includes("/docs/INSTALL.en.md"));
+    const version = html.match(/Stable version (\d+\.\d+\.\d+)/)?.[1];
+    assert.ok(version);
+    const download = `href="https://github.com/movvgli/Wookey/releases/download/v${version}/Wookey-${version}.dmg"`;
+    assert.equal(html.split(download).length - 1, 2);
   } finally {
     if (prior) Object.defineProperty(globalThis, "localStorage", prior);
     else delete globalThis.localStorage;

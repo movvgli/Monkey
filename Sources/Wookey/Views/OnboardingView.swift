@@ -49,9 +49,9 @@ struct OnboardingView: View {
             WookeyMascot(size: 46)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text("Wookey 시작하기")
+                Text(L10n.text("Wookey 시작하기"))
                     .font(.system(size: 25, weight: .semibold))
-                Text(page == 0 ? "무엇을 할 수 있는지 먼저 알아볼게요." : "필요한 기능만 선택해서 켜세요.")
+                Text(page == 0 ? L10n.text("무엇을 할 수 있는지 먼저 알아볼게요.") : L10n.text("필요한 기능만 선택해서 켜세요."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -67,7 +67,7 @@ struct OnboardingView: View {
             }
             .animation(.easeOut(duration: 0.2), value: page)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel("온보딩 \(page + 1)단계, 총 2단계")
+            .accessibilityLabel(L10n.text("온보딩 \(page + 1)단계, 총 2단계"))
         }
         .padding(.horizontal, 32)
         .padding(.top, 28)
@@ -77,10 +77,10 @@ struct OnboardingView: View {
     private var introduction: some View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 7) {
-                Text("반복하는 일을\n단축키 하나로 끝내세요")
+                Text(L10n.text("반복하는 일을\n단축키 하나로 끝내세요"))
                     .font(.system(size: 32, weight: .bold))
                     .fixedSize(horizontal: false, vertical: true)
-                Text("자주 하는 작업을 원하는 순서로 연결하면 Wookey가 어디서든 빠르게 실행합니다.")
+                Text(L10n.text("자주 하는 작업을 원하는 순서로 연결하면 Wookey가 어디서든 빠르게 실행합니다."))
                     .font(.system(size: 16))
                     .foregroundStyle(.secondary)
             }
@@ -88,27 +88,27 @@ struct OnboardingView: View {
             VStack(spacing: 12) {
                 OnboardingFeatureCard(
                     systemImage: "point.3.connected.trianglepath.dotted",
-                    title: "여러 작업을 하나의 워크플로로",
-                    detail: "앱 실행, 웹사이트, 템플릿과 창 배치를 순서대로 연결합니다."
+                    title: L10n.text("여러 작업을 하나의 워크플로로"),
+                    detail: L10n.text("앱 실행, 웹사이트, 템플릿과 창 배치를 순서대로 연결합니다.")
                 )
                 OnboardingFeatureCard(
                     systemImage: "bolt.fill",
-                    title: "어디서나 빠르게 실행",
-                    detail: "한 번 또는 두 단계 단축키와 메뉴 막대에서 바로 실행합니다."
+                    title: L10n.text("어디서나 빠르게 실행"),
+                    detail: L10n.text("한 번 또는 두 단계 단축키와 메뉴 막대에서 바로 실행합니다.")
                 )
                 OnboardingFeatureCard(
                     systemImage: "lock.shield.fill",
-                    title: "기본은 내 Mac에 저장",
-                    detail: "설정은 이 Mac에 보관합니다. 원하면 설정에서 iCloud 동기화를 직접 켤 수 있습니다."
+                    title: L10n.text("기본은 내 Mac에 저장"),
+                    detail: L10n.text("설정은 이 Mac에 보관합니다. 원하면 설정에서 iCloud 동기화를 직접 켤 수 있습니다.")
                 )
             }
 
             HStack(spacing: 10) {
-                OnboardingStepLabel(number: 1, title: "워크플로 만들기")
+                OnboardingStepLabel(number: 1, title: L10n.text("워크플로 만들기"))
                 WookeyActionIcon(symbol: "chevron.right", tint: .neutral, size: 12)
-                OnboardingStepLabel(number: 2, title: "동작 추가")
+                OnboardingStepLabel(number: 2, title: L10n.text("동작 추가"))
                 WookeyActionIcon(symbol: "chevron.right", tint: .neutral, size: 12)
-                OnboardingStepLabel(number: 3, title: "단축키로 실행")
+                OnboardingStepLabel(number: 3, title: L10n.text("단축키로 실행"))
             }
             .frame(maxWidth: .infinity)
         }
@@ -119,9 +119,9 @@ struct OnboardingView: View {
     private var permissions: some View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("필요한 기능만 권한을 켜세요")
+                Text(L10n.text("필요한 기능만 권한을 켜세요"))
                     .font(.system(size: 28, weight: .bold))
-                Text("기본 워크플로는 권한 없이도 사용할 수 있고, 필요한 기능은 나중에 설정할 수 있습니다.")
+                Text(L10n.text("기본 워크플로는 권한 없이도 사용할 수 있고, 필요한 기능은 나중에 설정할 수 있습니다."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -129,16 +129,16 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 OnboardingPermissionRow(
                     systemImage: "macwindow",
-                    title: "창 배치와 자동 붙여넣기",
-                    detail: "손쉬운 사용 권한을 사용합니다.",
+                    title: L10n.text("창 배치와 자동 붙여넣기"),
+                    detail: L10n.text("손쉬운 사용 권한을 사용합니다."),
                     granted: runtime.permissions.accessibilityGranted,
                     request: runtime.permissions.requestAccessibility
                 )
                 Divider().padding(.leading, 60)
                 OnboardingPermissionRow(
                     systemImage: "keyboard",
-                    title: "두 단계 단축키",
-                    detail: "손쉬운 사용과 입력 모니터링 권한을 사용합니다.",
+                    title: L10n.text("두 단계 단축키"),
+                    detail: L10n.text("손쉬운 사용과 입력 모니터링 권한을 사용합니다."),
                     granted: runtime.permissions.inputMonitoringGranted,
                     request: runtime.permissions.requestInputMonitoring
                 )
@@ -156,10 +156,10 @@ struct OnboardingView: View {
             if runtime.permissions.inputMonitoringRestartRecommended {
                 HStack(spacing: 10) {
                     WookeyActionIcon(symbol: "arrow.clockwise", tint: .accent, size: 16)
-                    Text("입력 모니터링을 켠 뒤에는 Wookey를 다시 열어야 적용됩니다.")
+                    Text(L10n.text("입력 모니터링을 켠 뒤에는 Wookey를 다시 열어야 적용됩니다."))
                         .font(.subheadline)
                     Spacer()
-                    Button("다시 열기") {
+                    Button(L10n.text("다시 열기")) {
                         runtime.permissions.relaunchApplication()
                     }
                 }
@@ -168,15 +168,15 @@ struct OnboardingView: View {
             }
 
             VStack(alignment: .leading, spacing: 5) {
-                Toggle("Mac 로그인 시 Wookey 실행", isOn: $launchAtLogin)
+                Toggle(L10n.text("Mac 로그인 시 Wookey 실행"), isOn: $launchAtLogin)
                     .toggleStyle(.switch)
                     .tint(theme.selectionTint)
-                Text("메인 창은 띄우지 않고 메뉴 막대와 단축키만 준비합니다.")
+                Text(L10n.text("메인 창은 띄우지 않고 메뉴 막대와 단축키만 준비합니다."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Text("권한을 켜지 않아도 앱 실행, 웹사이트 열기와 템플릿 클립보드 복사는 사용할 수 있습니다.")
+            Text(L10n.text("권한을 켜지 않아도 앱 실행, 웹사이트 열기와 템플릿 클립보드 복사는 사용할 수 있습니다."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -188,27 +188,27 @@ struct OnboardingView: View {
     private var onboardingFooter: some View {
         HStack {
             if page == 0 {
-                Button("건너뛰기") { complete(enableLoginItem: nil) }
+                Button(L10n.text("건너뛰기")) { complete(enableLoginItem: nil) }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .tint(theme.accent)
                 Spacer()
-                Button("다음") {
+                Button(L10n.text("다음")) {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 1 }
                 }
                 .buttonStyle(WookeyGlossyButtonStyle())
                 .controlSize(.large)
                 .keyboardShortcut(.defaultAction)
             } else {
-                Button("이전") {
+                Button(L10n.text("이전")) {
                     withAnimation(.easeInOut(duration: 0.24)) { page = 0 }
                 }
                 .buttonStyle(WookeyGlossyButtonStyle())
                 .tint(theme.accent)
                 Spacer()
-                Button("나중에 설정") { complete(enableLoginItem: nil) }
+                Button(L10n.text("나중에 설정")) { complete(enableLoginItem: nil) }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .tint(theme.accent)
-                Button("Wookey 시작") { complete(enableLoginItem: launchAtLogin) }
+                Button(L10n.text("Wookey 시작")) { complete(enableLoginItem: launchAtLogin) }
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
                     .keyboardShortcut(.defaultAction)
@@ -307,9 +307,9 @@ private struct OnboardingPermissionRow: View {
             }
             Spacer()
             if granted {
-                StatusPill(title: "완료", tone: .good)
+                StatusPill(title: L10n.text("완료"), tone: .good)
             } else {
-                Button("권한 켜기", action: request)
+                Button(L10n.text("권한 켜기"), action: request)
             }
         }
         .padding(.vertical, 14)

@@ -47,9 +47,9 @@ struct WorkflowLibraryView: View {
 
                 if !runtime.store.workflows.isEmpty {
                     HStack(spacing: 16) {
-                        WookeySearchField(prompt: "이름·단축키·동작 검색", text: $query)
-                        WookeyFilterPicker(title: "워크플로 필터", selection: $filter, options: Filter.allCases) {
-                            $0.rawValue
+                        WookeySearchField(prompt: L10n.text("이름·단축키·동작 검색"), text: $query)
+                        WookeyFilterPicker(title: L10n.text("워크플로 필터"), selection: $filter, options: Filter.allCases) {
+                            L10n.label($0.rawValue)
                         }
                     }
                 }
@@ -66,16 +66,16 @@ struct WorkflowLibraryView: View {
 
                     if runtime.store.workflows.isEmpty {
                         ContentUnavailableView {
-                            WookeyEmptyStateLabel(title: "첫 워크플로를 만들어 보세요", symbol: SidebarSelection.workflowCollection.symbol)
+                            WookeyEmptyStateLabel(title: L10n.text("첫 워크플로를 만들어 보세요"), symbol: SidebarSelection.workflowCollection.symbol)
                         } description: {
-                            Text("앱 열기, 웹사이트 열기, 템플릿 붙여넣기 등의 동작을 원하는 순서로 추가하세요.")
+                            Text(L10n.text("앱 열기, 웹사이트 열기, 템플릿 붙여넣기 등의 동작을 원하는 순서로 추가하세요."))
                         }
                         .frame(maxWidth: .infinity, minHeight: 230)
                     } else if visibleWorkflows.isEmpty {
                         ContentUnavailableView {
-                            Label("표시할 워크플로가 없습니다", systemImage: "magnifyingglass")
+                            Label(L10n.text("표시할 워크플로가 없습니다"), systemImage: "magnifyingglass")
                         } actions: {
-                            Button("검색 및 필터 초기화") {
+                            Button(L10n.text("검색 및 필터 초기화")) {
                                 query = ""
                                 filter = .all
                             }
@@ -94,21 +94,21 @@ struct WorkflowLibraryView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .navigationTitle("워크플로")
+        .navigationTitle(L10n.text("워크플로"))
     }
 
     private var libraryHeader: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("워크플로")
+                Text(L10n.text("워크플로"))
                     .font(.system(size: 30, weight: .bold, design: .rounded))
                     .accessibilityAddTraits(.isHeader)
-                Text("자주 하는 일을 단축키 하나로 실행하세요.")
+                Text(L10n.text("자주 하는 일을 단축키 하나로 실행하세요."))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Button("새 워크플로", wookeyIcon: "plus", action: createWorkflow)
+                Button(L10n.text("새 워크플로"), wookeyIcon: "plus", action: createWorkflow)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.large)
                     .padding(.top, 3)
@@ -124,7 +124,7 @@ struct WorkflowLibraryView: View {
     }
 
     private func latestRun(_ summary: RunSummary) -> some View {
-        WookeySection(title: "최근 실행") {
+        WookeySection(title: L10n.text("최근 실행")) {
             PlainPanel { RunSummaryView(summary: summary) }
         }
     }
@@ -132,9 +132,9 @@ struct WorkflowLibraryView: View {
     private func workflowList(_ workflows: [Workflow]) -> some View {
         LazyVStack(spacing: 0) {
             HStack(spacing: WorkflowListMetrics.spacing) {
-                Text("이름").frame(maxWidth: .infinity, alignment: .leading)
-                Text("단축키").frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
-                Text("실행").frame(width: WorkflowListMetrics.playWidth)
+                Text(L10n.text("이름")).frame(maxWidth: .infinity, alignment: .leading)
+                Text(L10n.text("단축키")).frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
+                Text(L10n.text("실행")).frame(width: WorkflowListMetrics.playWidth)
             }
             .font(.caption.weight(.medium))
             .foregroundStyle(.secondary)
@@ -167,18 +167,18 @@ private struct WorkflowLibraryRow: View {
     var open: () -> Void
 
     private var executionStatus: String? {
-        if runtime.runner.runningWorkflowID == workflow.id { return "실행 중" }
-        if runtime.runner.queuedWorkflowIDs.contains(workflow.id) { return "대기 중" }
+        if runtime.runner.runningWorkflowID == workflow.id { return L10n.text("실행 중") }
+        if runtime.runner.queuedWorkflowIDs.contains(workflow.id) { return L10n.text("대기 중") }
         return nil
     }
 
     private var detail: String? {
         if let executionStatus { return executionStatus }
-        if !workflow.isEnabled { return "단축키 꺼짐" }
+        if !workflow.isEnabled { return L10n.text("단축키 꺼짐") }
         switch workflow.actions.count {
-        case 0: return "동작 없음"
+        case 0: return L10n.text("동작 없음")
         case 1: return nil
-        default: return "\(workflow.actions.count)개 동작"
+        default: return L10n.text("\(workflow.actions.count)개 동작")
         }
     }
 
@@ -229,8 +229,8 @@ private struct WorkflowLibraryRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("\(workflow.name) 편집")
-        .accessibilityLabel("\(workflow.name) 편집")
+        .help(L10n.text("\(workflow.name) 편집"))
+        .accessibilityLabel(L10n.text("\(workflow.name) 편집"))
     }
 
     private var shortcut: some View {
@@ -246,7 +246,7 @@ private struct WorkflowLibraryRow: View {
                 Text("—")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel("단축키 미지정")
+                    .accessibilityLabel(L10n.text("단축키 미지정"))
             } else {
                 ShortcutBadge(text: workflow.shortcut.displayName, isMuted: !workflow.isEnabled)
             }
@@ -264,7 +264,7 @@ private struct WorkflowLibraryRow: View {
         .controlSize(.small)
         .frame(width: WorkflowListMetrics.playWidth)
         .disabled(workflow.actions.isEmpty || executionStatus != nil)
-        .help("워크플로 실행")
-        .accessibilityLabel("\(workflow.name) 실행")
+        .help(L10n.text("워크플로 실행"))
+        .accessibilityLabel(L10n.text("\(workflow.name) 실행"))
     }
 }

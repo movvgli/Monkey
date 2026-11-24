@@ -55,7 +55,7 @@ struct QuickWorkflowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(kind?.rawValue ?? "무엇을 자동화할까요?")
+            Text(kind.map { L10n.label($0.rawValue) } ?? L10n.text("무엇을 자동화할까요?"))
                 .font(.title2.weight(.semibold))
                 .accessibilityAddTraits(.isHeader)
 
@@ -69,7 +69,7 @@ struct QuickWorkflowView: View {
                         } label: {
                             HStack(spacing: 9) {
                                 WookeyActionIcon(symbol: option.symbol, tint: option.tint)
-                                Text(option.rawValue)
+                                Text(L10n.label(option.rawValue))
                                     .font(.system(.body, design: .rounded))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -83,10 +83,10 @@ struct QuickWorkflowView: View {
             Divider()
             HStack {
                 if kind != nil && initialKind == nil {
-                    Button("뒤로") { kind = nil }
+                    Button(L10n.text("뒤로")) { kind = nil }
                 } else if kind == nil {
                     Button(action: onAdvanced) {
-                        Text("여러 동작 연결…")
+                        Text(L10n.text("여러 동작 연결…"))
                             .foregroundStyle(Color.wookeyInk(in: colorScheme))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
@@ -94,9 +94,9 @@ struct QuickWorkflowView: View {
                     .buttonStyle(WookeyGlossyButtonStyle())
                 }
                 Spacer()
-                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(L10n.text("취소")) { dismiss() }.keyboardShortcut(.cancelAction)
                 if let kind {
-                    Button("저장") { save(kind) }
+                    Button(L10n.text("저장")) { save(kind) }
                         .buttonStyle(WookeyGlossyButtonStyle())
                         .keyboardShortcut(.defaultAction)
                         .disabled(action(kind) == nil || keywordError != nil || (!shortcut.steps.isEmpty && shortcut.validationMessage != nil))
@@ -111,20 +111,20 @@ struct QuickWorkflowView: View {
         VStack(alignment: .leading, spacing: 13) {
             target(kind)
 
-            TextField("이름", text: $name, prompt: Text(defaultName(kind)))
+            TextField(L10n.text("이름"), text: $name, prompt: Text(defaultName(kind)))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("자동화 이름")
+                .accessibilityLabel(L10n.text("자동화 이름"))
 
             WorkflowKeywordField(text: $keywordInput)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("단축키 (선택)")
+                Text(L10n.text("단축키 (선택)"))
                     .font(.headline)
                 CompactShortcutRecorderView(shortcut: $shortcut)
                 if let error = shortcut.validationMessage, !shortcut.steps.isEmpty {
                     Text(error).font(.caption).foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                 }
-                Text("macOS 단축어 앱에서 ‘Wookey 워크플로 실행’을 추가해 이 자동화를 선택할 수도 있습니다.")
+                Text(L10n.text("macOS 단축어 앱에서 ‘Wookey 워크플로 실행’을 추가해 이 자동화를 선택할 수도 있습니다."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -137,32 +137,32 @@ struct QuickWorkflowView: View {
         switch kind {
         case .template:
             if runtime.store.templates.isEmpty {
-                Text("템플릿 보관함에서 먼저 템플릿을 만들어 주세요.")
+                Text(L10n.text("템플릿 보관함에서 먼저 템플릿을 만들어 주세요."))
                     .foregroundStyle(.secondary)
             } else {
-                Picker("템플릿", selection: $templateID) {
-                    Text("템플릿 선택").tag(nil as UUID?)
+                Picker(L10n.text("템플릿"), selection: $templateID) {
+                    Text(L10n.text("템플릿 선택")).tag(nil as UUID?)
                     ForEach(runtime.store.templates) { Text($0.name).tag(Optional($0.id)) }
                 }
-                Picker("동작", selection: $templateMode) {
+                Picker(L10n.text("동작"), selection: $templateMode) {
                     ForEach(TemplateDeliveryMode.allCases, id: \.self) { Text($0.title).tag($0) }
                 }
                 if templateMode == .copyAndPaste {
-                    Text("자동으로 붙여넣으려면 손쉬운 사용 권한과 대상 앱의 입력란이 필요합니다.")
+                    Text(L10n.text("자동으로 붙여넣으려면 손쉬운 사용 권한과 대상 앱의 입력란이 필요합니다."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         case .link:
-            TextField("링크 주소", text: $address, prompt: Text("https://example.com"))
+            TextField(L10n.text("링크 주소"), text: $address, prompt: Text("https://example.com"))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("링크 주소")
+                .accessibilityLabel(L10n.text("링크 주소"))
         case .app:
-            Button(application?.name ?? "앱 선택…", wookeyIcon: "app") {
+            Button(application?.name ?? L10n.text("앱 선택…"), wookeyIcon: "app") {
                 QuickWorkflowTargetPicker.application { application = $0 }
             }
         case .file:
-            Button(file?.lastPathComponent ?? "파일 선택…", wookeyIcon: "doc") {
+            Button(file?.lastPathComponent ?? L10n.text("파일 선택…"), wookeyIcon: "doc") {
                 QuickWorkflowTargetPicker.file { file = $0 }
             }
         }
@@ -189,15 +189,15 @@ struct QuickWorkflowView: View {
 
     private func defaultName(_ kind: Kind) -> String {
         switch kind {
-        case .template: runtime.store.templates.first { $0.id == templateID }?.name ?? kind.rawValue
+        case .template: runtime.store.templates.first { $0.id == templateID }?.name ?? L10n.label(kind.rawValue)
         case .link:
             if case .openURL(let value) = action(kind), let host = URL(string: value)?.host {
-                "\(host) 열기"
+                L10n.text("\(host) 열기")
             } else {
-                kind.rawValue
+                L10n.label(kind.rawValue)
             }
-        case .app: application.map { "\($0.name) 열기" } ?? kind.rawValue
-        case .file: file.map { "\($0.lastPathComponent) 열기" } ?? kind.rawValue
+        case .app: application.map { L10n.text("\($0.name) 열기") } ?? L10n.label(kind.rawValue)
+        case .file: file.map { L10n.text("\($0.lastPathComponent) 열기") } ?? L10n.label(kind.rawValue)
         }
     }
 
@@ -228,11 +228,11 @@ struct WorkflowKeywordField: View {
     var body: some View {
         let error = WorkflowKeyword.validationMessage(for: text, excluding: workflowID, in: runtime.store.workflows)
         VStack(alignment: .leading, spacing: 5) {
-            Text("검색 키워드 (선택)").font(.headline)
-            TextField("검색 키워드", text: $text, prompt: Text("예: gcal, 구글캘, ㅎㅊ미"))
+            Text(L10n.text("검색 키워드 (선택)")).font(.headline)
+            TextField(L10n.text("검색 키워드"), text: $text, prompt: Text(L10n.text("예: gcal, 구글캘, ㅎㅊ미")))
                 .textFieldStyle(.roundedBorder)
-                .accessibilityLabel("검색 키워드")
-            Text(error ?? "여러 키워드는 쉼표로 구분하세요. 검색창에서 어느 키워드로든 실행할 수 있습니다.")
+                .accessibilityLabel(L10n.text("검색 키워드"))
+            Text(error ?? L10n.text("여러 키워드는 쉼표로 구분하세요. 검색창에서 어느 키워드로든 실행할 수 있습니다."))
                 .font(.caption)
                 .foregroundStyle(error == nil ? Color.secondary : WookeyActionTint.rose.ink(in: colorScheme))
         }
@@ -243,7 +243,7 @@ struct WorkflowKeywordField: View {
 enum QuickWorkflowTargetPicker {
     static func application(_ onSelection: @escaping ((id: String, name: String)) -> Void) {
         let panel = NSOpenPanel()
-        panel.title = "열 앱 선택"
+        panel.title = L10n.text("열 앱 선택")
         panel.allowedContentTypes = [.application]
         panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
         panel.begin { response in
@@ -255,7 +255,7 @@ enum QuickWorkflowTargetPicker {
 
     static func file(_ onSelection: @escaping (URL) -> Void) {
         let panel = NSOpenPanel()
-        panel.title = "열 파일 선택"
+        panel.title = L10n.text("열 파일 선택")
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowsMultipleSelection = false

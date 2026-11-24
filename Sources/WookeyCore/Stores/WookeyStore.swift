@@ -71,7 +71,7 @@ public final class WookeyStore {
         canOverwriteState = true
         needsRecovery = FileManager.default.fileExists(atPath: recoveryMarkerURL.path)
         recoveryMessage = needsRecovery
-            ? "이전에 설정 파일이 손상되어 복구 확인이 필요합니다. iCloud의 설정을 적용하거나 새로 시작을 선택할 때까지 이 Mac의 설정을 동기화하지 않습니다."
+            ? L10n.text("이전에 설정 파일이 손상되어 복구 확인이 필요합니다. iCloud의 설정을 적용하거나 새로 시작을 선택할 때까지 이 Mac의 설정을 동기화하지 않습니다.")
             : nil
         do {
             try FileManager.default.createDirectory(at: templatesURL, withIntermediateDirectories: true)
@@ -93,11 +93,11 @@ public final class WookeyStore {
             do {
                 let backupName = try backUpCorruptStateIfPresent()
                 try Data().write(to: recoveryMarkerURL, options: .atomic)
-                let kept = backupName.map { " 기존 파일은 \($0)에 보관했습니다." } ?? ""
-                recoveryMessage = "설정을 불러오지 못해 빈 상태로 시작했습니다.\(kept) iCloud의 설정을 적용하거나 새로 시작을 선택할 때까지 이 Mac의 설정을 동기화하지 않습니다: \(error.localizedDescription)"
+                let kept = backupName.map { L10n.text(" 기존 파일은 \($0)에 보관했습니다.") } ?? ""
+                recoveryMessage = L10n.text("설정을 불러오지 못해 빈 상태로 시작했습니다.\(kept) iCloud의 설정을 적용하거나 새로 시작을 선택할 때까지 이 Mac의 설정을 동기화하지 않습니다: \(error.localizedDescription)")
             } catch let backupError {
                 canOverwriteState = false
-                recoveryMessage = "설정을 불러오지 못했고 기존 파일을 백업하지도 못해 변경 사항을 저장하지 않습니다. Finder에서 config.json을 따로 복사해 주세요: \(error.localizedDescription) / \(backupError.localizedDescription)"
+                recoveryMessage = L10n.text("설정을 불러오지 못했고 기존 파일을 백업하지도 못해 변경 사항을 저장하지 않습니다. Finder에서 config.json을 따로 복사해 주세요: \(error.localizedDescription) / \(backupError.localizedDescription)")
             }
             lastPersistenceError = recoveryMessage
         }
@@ -120,7 +120,7 @@ public final class WookeyStore {
                 try FileManager.default.removeItem(at: recoveryMarkerURL)
             }
         } catch {
-            lastPersistenceError = "복구 상태를 해제하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("복구 상태를 해제하지 못했습니다: \(error.localizedDescription)")
             return
         }
         needsRecovery = false
@@ -143,7 +143,7 @@ public final class WookeyStore {
             onSave?()
             return true
         } catch {
-            lastPersistenceError = "설정을 저장하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("설정을 저장하지 못했습니다: \(error.localizedDescription)")
             return false
         }
     }
@@ -157,7 +157,7 @@ public final class WookeyStore {
     public func addTemplate() -> UUID {
         let template = RichTemplate()
         state.templates.append(template)
-        let initial = NSAttributedString(string: "새 템플릿")
+        let initial = NSAttributedString(string: L10n.text("새 템플릿"))
         saveTemplateDocument(initial, for: template.id)
         save()
         return template.id
@@ -169,7 +169,7 @@ public final class WookeyStore {
         do {
             try writeTemplateDocument(document, to: url)
         } catch {
-            lastPersistenceError = "템플릿을 저장하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("템플릿을 저장하지 못했습니다: \(error.localizedDescription)")
             return nil
         }
         state.templates.append(template)
@@ -272,7 +272,7 @@ public final class WookeyStore {
             state.templates[index].plainText = document.string
             save()
         } catch {
-            lastPersistenceError = "템플릿을 저장하지 못했습니다: \(error.localizedDescription)"
+            lastPersistenceError = L10n.text("템플릿을 저장하지 못했습니다: \(error.localizedDescription)")
         }
     }
 
@@ -430,8 +430,8 @@ public enum StoreError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .unsupportedSchema(let version): "지원하지 않는 설정 버전입니다: \(version)"
-        case .couldNotEncodeTemplate: "서식 템플릿을 RTFD로 변환할 수 없습니다."
+        case .unsupportedSchema(let version): L10n.text("지원하지 않는 설정 버전입니다: \(version)")
+        case .couldNotEncodeTemplate: L10n.text("서식 템플릿을 RTFD로 변환할 수 없습니다.")
         }
     }
 }

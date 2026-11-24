@@ -14,8 +14,8 @@ struct ShortcutRecorderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            WookeyFilterPicker(title: "입력 방식", selection: $stepCount, options: [1, 2]) {
-                $0 == 1 ? "한 번에 누르기" : "두 번 이어서 누르기"
+            WookeyFilterPicker(title: L10n.text("입력 방식"), selection: $stepCount, options: [1, 2]) {
+                $0 == 1 ? L10n.text("한 번에 누르기") : L10n.text("두 번 이어서 누르기")
             }
 
             HStack(spacing: 10) {
@@ -23,7 +23,7 @@ struct ShortcutRecorderView: View {
                     .frame(height: 42)
                     .frame(maxWidth: 390)
                 if !shortcut.steps.isEmpty {
-                    Button("지우기") { shortcut = ShortcutGesture() }
+                    Button(L10n.text("지우기")) { shortcut = ShortcutGesture() }
                         .buttonStyle(WookeyGlossyButtonStyle(tint: .rose))
                         .controlSize(.small)
                 }
@@ -42,11 +42,11 @@ struct ShortcutRecorderView: View {
 
     private var helperText: String {
         if shortcut.steps.isEmpty {
-            return "입력란을 클릭한 뒤 원하는 키를 누르세요. 첫 입력에는 ⌘, ⌥, ⌃, ⇧ 중 하나가 필요합니다."
+            return L10n.text("입력란을 클릭한 뒤 원하는 키를 누르세요. 첫 입력에는 ⌘, ⌥, ⌃, ⇧ 중 하나가 필요합니다.")
         }
         return stepCount == 2
-            ? "첫 입력 뒤 1.2초 안에 두 번째 키를 누르세요. 손쉬운 사용과 입력 모니터링 권한이 필요합니다."
-            : "이 단축키는 다른 앱을 사용 중일 때도 동작합니다."
+            ? L10n.text("첫 입력 뒤 1.2초 안에 두 번째 키를 누르세요. 손쉬운 사용과 입력 모니터링 권한이 필요합니다.")
+            : L10n.text("이 단축키는 다른 앱을 사용 중일 때도 동작합니다.")
     }
 
     private var visibleValidationMessage: String? {
@@ -80,8 +80,8 @@ struct CompactShortcutRecorderView: View {
             }
             .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
             .controlSize(.small)
-            .help(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
-            .accessibilityLabel(shortcut.steps.isEmpty ? "단축키 지정" : "단축키 지우기")
+            .help(shortcut.steps.isEmpty ? L10n.text("단축키 지정") : L10n.text("단축키 지우기"))
+            .accessibilityLabel(shortcut.steps.isEmpty ? L10n.text("단축키 지정") : L10n.text("단축키 지우기"))
         }
     }
 }
@@ -175,8 +175,8 @@ private final class KeyRecorderControl: NSControl {
         }
         setAccessibilityElement(true)
         setAccessibilityRole(.button)
-        setAccessibilityLabel("단축키 입력")
-        setAccessibilityHelp("클릭한 뒤 원하는 단축키를 누르세요.")
+        setAccessibilityLabel(L10n.text("단축키 입력"))
+        setAccessibilityHelp(L10n.text("클릭한 뒤 원하는 단축키를 누르세요."))
         setAccessibilityValue(shortcut.displayName)
     }
 
@@ -194,7 +194,7 @@ private final class KeyRecorderControl: NSControl {
         if !isRecording { onRecordingChange?(true) }
         isRecording = true
         needsDisplay = true
-        setAccessibilityValue("지금 단축키를 누르세요")
+        setAccessibilityValue(L10n.text("지금 단축키를 누르세요"))
     }
 
     func endRecording() {
@@ -268,9 +268,9 @@ private final class KeyRecorderControl: NSControl {
 
         let text: String
         if isRecording {
-            text = captured.isEmpty ? "지금 단축키를 누르세요" : captured.map(\.displayName).joined(separator: " → ") + " → 다음 키"
+            text = captured.isEmpty ? L10n.text("지금 단축키를 누르세요") : captured.map(\.displayName).joined(separator: " → ") + L10n.text(" → 다음 키")
         } else {
-            text = shortcut.steps.isEmpty ? "클릭해 단축키 지정" : shortcut.displayName
+            text = shortcut.steps.isEmpty ? L10n.text("클릭해 단축키 지정") : shortcut.displayName
         }
         let attributes: [NSAttributedString.Key: Any] = [
             .font: shortcut.steps.isEmpty && !isRecording

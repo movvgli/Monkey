@@ -24,10 +24,10 @@ public final class SequenceMonitor {
     public func begin(acceptable: Set<KeyChord>, timeout: TimeInterval = 1.2, completion: @escaping Completion) throws {
         stop(result: nil)
         guard CGPreflightListenEventAccess() else {
-            throw AutomationError.permissionRequired("입력 모니터링")
+            throw AutomationError.permissionRequired(L10n.text("입력 모니터링"))
         }
         guard AXIsProcessTrusted() else {
-            throw AutomationError.permissionRequired("손쉬운 사용 · 연속 단축키가 다른 앱에 입력되지 않도록 필요")
+            throw AutomationError.permissionRequired(L10n.text("손쉬운 사용 · 연속 단축키가 다른 앱에 입력되지 않도록 필요"))
         }
 
         keyState = SequenceKeyState(acceptable: acceptable)
@@ -42,7 +42,7 @@ public final class SequenceMonitor {
             userInfo: Unmanaged.passUnretained(self).toOpaque()
         ) else {
             self.completion = nil
-            throw AutomationError.permissionRequired("입력 모니터링")
+            throw AutomationError.permissionRequired(L10n.text("입력 모니터링"))
         }
 
         eventTap = tap

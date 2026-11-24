@@ -59,12 +59,18 @@ h1, h2, h3, p, li { word-break: keep-all; overflow-wrap: anywhere; }
 .header nav a, .footer > div > a { display: inline-flex; align-items: center; min-height: 44px; }
 .header nav a:hover, .footer a:hover { text-decoration: underline; }
 .button { display: inline-flex; justify-content: center; align-items: center; gap: 9px; min-height: 52px; padding: 10px 18px; border: 1px solid transparent; border-radius: 11px; text-decoration: none; line-height: 1.25; font-weight: 700; white-space: nowrap; }
-.github-nav { justify-self: end; min-height: 44px; padding-inline: 13px; border-color: var(--line); }
+.github-nav { min-height: 44px; padding-inline: 13px; border-color: var(--line); }
 .github-nav:hover { border-color: var(--ink); }
 .download { min-height: 54px; padding-inline: 20px; color: #241f13; background: var(--sun); border-color: #dcae2d; }
 .download:hover { background: var(--sun-hover); }
 .secondary { border-color: #758da1; color: #253849; }
 .secondary:hover { background: #ffffff65; }
+
+.header-actions { justify-self: end; display: flex; align-items: center; gap: 9px; }
+.language-toggle { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 11px; padding: 2px; }
+.language-toggle button { min-height: 38px; padding: 4px 10px; border: 0; border-radius: 8px; background: transparent; font-size: 14px; font-weight: 650; white-space: nowrap; }
+.language-toggle button:hover { text-decoration: underline; }
+.language-toggle button[aria-pressed="true"] { background: var(--sun); color: #241f13; }
 
 .hero {
   display: grid;
@@ -161,14 +167,18 @@ h2 { font-size: clamp(29px, 3.4vw, 45px); line-height: 1.22; letter-spacing: -.0
   .feature-art { padding: 13px; }
 }
 
-@media (max-width: 740px) {
-  .site { width: calc(100% - 32px); }
-  .header { min-height: 64px; grid-template-columns: auto minmax(0, 1fr) auto; gap: 9px; }
-  .brand { gap: 4px; font-size: 21px; }
-  .brand img { width: 34px; height: 34px; }
-  .header nav { justify-content: center; gap: 14px; font-size: 14px; }
+@media (max-width: 900px) {
   .github-nav { min-width: 44px; padding: 8px; }
   .github-nav span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+
+@media (max-width: 740px) {
+  .site { width: calc(100% - 32px); }
+  .header { min-height: 64px; grid-template-columns: 1fr auto; gap: 0 9px; padding-top: 8px; }
+  .brand { gap: 4px; font-size: 21px; }
+  .brand img { width: 34px; height: 34px; }
+  .header nav { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; gap: 23px; font-size: 14px; }
+  .header-actions { grid-column: 2; grid-row: 1; }
   .hero, .details, .appearance, .download-banner { grid-template-columns: minmax(0, 1fr); }
   .hero { border-radius: 20px; padding: 25px 20px 17px; gap: 17px; }
   .hero h1 { font-size: clamp(32px, 7vw, 51px); }
@@ -192,10 +202,10 @@ h2 { font-size: clamp(29px, 3.4vw, 45px); line-height: 1.22; letter-spacing: -.0
 
 @media (max-width: 370px) {
   .site { width: calc(100% - 24px); }
-  .header { gap: 7px; }
+  .header { column-gap: 7px; }
   .brand { font-size: 19px; }
   .brand img { width: 28px; height: 28px; }
-  .header nav { gap: 6px; font-size: 12px; }
+  .header nav { font-size: 13px; }
   .hero h1 { font-size: 29px; }
   .hero { padding-inline: 15px; }
   .hero-actions { gap: 8px; }
@@ -203,4 +213,8 @@ h2 { font-size: clamp(29px, 3.4vw, 45px); line-height: 1.22; letter-spacing: -.0
   .launcher-field > svg { width: 19px; }
   .launcher-field input { font-size: 14px; }
   .download-banner img { display: none; }
+}
+
+@media (max-width: 440px) {
+  .download-actions { grid-template-columns: 1fr; justify-items: start; gap: 4px; }
 }

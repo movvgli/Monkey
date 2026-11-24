@@ -4,3 +4,9 @@ export const searchResults = [
   { title: "회의 노트", detail: "템플릿", kind: "note", action: "복사", keywords: "회의 템플릿" },
   { title: "작업 시작", detail: "워크플로", kind: "flow", action: "실행", keywords: "시작 작업 워크플로" },
 ];
+
+export const englishSearchResults = [
+  { title: "Notes", detail: "Installed app", kind: "app", action: "Open", keywords: "notes app" },
+  { title: "Meeting notes", detail: "Template", kind: "note", action: "Copy", keywords: "meeting notes template" },
+  { title: "Start work", detail: "Workflow", kind: "flow", action: "Run", keywords: "start work workflow" },
+];

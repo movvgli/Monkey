@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import WookeyCore
 
 enum WookeyCharacter: String, CaseIterable {
     static let storageKey = "selectedCharacter"
@@ -7,8 +8,8 @@ enum WookeyCharacter: String, CaseIterable {
     case wookey
     case sharkey
 
-    var title: String { self == .wookey ? "우키" : "샤키" }
-    var companionTitle: String { self == .wookey ? "바나나" : "산호" }
+    var title: String { self == .wookey ? L10n.text("우키") : L10n.text("샤키") }
+    var companionTitle: String { self == .wookey ? L10n.text("바나나") : L10n.text("산호") }
 
     var shelfArtwork: String {
         self == .wookey ? "FileShelfFolderWookey" : "FileShelfFolderSharkey"
@@ -25,7 +26,7 @@ enum WookeyIconTheme: String, CaseIterable {
     case threeDimensional
     case fluffy
 
-    var title: String { self == .threeDimensional ? "3D" : "플러피" }
+    var title: String { self == .threeDimensional ? "3D" : L10n.text("플러피") }
 
     // Fluffy variants use the same asset name with a Fluffy prefix.
     func asset(_ preferred: String, fallback: String? = nil) -> String {
@@ -127,8 +128,8 @@ enum WookeyMenuBarIcon: String, CaseIterable, Identifiable {
 
         var label: String {
             switch self {
-            case .running: "Wookey, 워크플로 실행 중"
-            case .failed: "Wookey, 마지막 실행 실패"
+            case .running: L10n.text("Wookey, 워크플로 실행 중")
+            case .failed: L10n.text("Wookey, 마지막 실행 실패")
             }
         }
     }

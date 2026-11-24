@@ -10,11 +10,11 @@ enum WookeyTheme: String, CaseIterable {
 
     var title: String {
         switch self {
-        case .white: "화이트"
-        case .yellow: "옐로우"
-        case .sky: "하늘색"
-        case .brown: "브라운"
-        case .dark: "다크"
+        case .white: L10n.text("화이트")
+        case .yellow: L10n.text("옐로우")
+        case .sky: L10n.text("하늘색")
+        case .brown: L10n.text("브라운")
+        case .dark: L10n.text("다크")
         }
     }
 
@@ -302,8 +302,8 @@ struct WookeySearchField: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .help("검색 지우기")
-                .accessibilityLabel("검색 지우기")
+                .help(L10n.text("검색 지우기"))
+                .accessibilityLabel(L10n.text("검색 지우기"))
             }
         }
         .padding(.horizontal, 13)
@@ -322,12 +322,12 @@ struct WookeySaveStatus: View {
 
     var body: some View {
         Label(
-            runtime.store.lastPersistenceError == nil ? "자동 저장됨" : "저장 실패",
+            runtime.store.lastPersistenceError == nil ? L10n.text("자동 저장됨") : L10n.text("저장 실패"),
             systemImage: runtime.store.lastPersistenceError == nil ? "checkmark.circle" : "exclamationmark.triangle"
         )
         .font(.caption)
         .foregroundStyle(runtime.store.lastPersistenceError == nil ? Color.secondary : WookeyActionTint.rose.ink(in: colorScheme))
-        .help(runtime.store.lastPersistenceError ?? "변경 사항을 자동으로 저장합니다.")
+        .help(runtime.store.lastPersistenceError ?? L10n.text("변경 사항을 자동으로 저장합니다."))
     }
 }
 
@@ -355,11 +355,11 @@ struct WookeyEditorHeader<Actions: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let onBack {
-                Button("목록", wookeyIcon: "chevron.left", action: onBack)
+                Button(L10n.text("목록"), wookeyIcon: "chevron.left", action: onBack)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .controlSize(.small)
-                    .help("목록으로 돌아가기 (⌘[)")
-                    .accessibilityLabel("목록으로 돌아가기")
+                    .help(L10n.text("목록으로 돌아가기 (⌘[)"))
+                    .accessibilityLabel(L10n.text("목록으로 돌아가기"))
                     .keyboardShortcut("[", modifiers: [.command])
             }
 
@@ -371,15 +371,15 @@ struct WookeyEditorHeader<Actions: View>: View {
                         }
                         .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
                         .controlSize(.small)
-                        .accessibilityLabel("이름 수정")
-                        .help("이름 수정")
+                        .accessibilityLabel(L10n.text("이름 수정"))
+                        .help(L10n.text("이름 수정"))
 
-                        TextField("이름", text: $title)
+                        TextField(L10n.text("이름"), text: $title)
                             .textFieldStyle(.plain)
                             .focused($isEditingName)
                             .font(.system(size: 25, weight: .semibold, design: .rounded))
-                            .accessibilityLabel("이름")
-                            .help("이름 편집")
+                            .accessibilityLabel(L10n.text("이름"))
+                            .help(L10n.text("이름 편집"))
                     }
                     Text(subtitle)
                         .font(.subheadline)
@@ -433,7 +433,7 @@ struct ShortcutBadge: View {
                 isMuted ? Color.secondary.opacity(0.08) : Color.wookeyInk(in: colorScheme).opacity(0.1),
                 in: RoundedRectangle(cornerRadius: 6, style: .continuous)
             )
-            .accessibilityLabel("단축키 \(text)")
+            .accessibilityLabel(L10n.text("단축키 \(text)"))
     }
 }
 
@@ -879,6 +879,6 @@ struct WookeySelectionCard<Accessory: View>: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue(isSelected ? "선택됨" : "선택 안 됨")
+        .accessibilityValue(isSelected ? L10n.text("선택됨") : L10n.text("선택 안 됨"))
     }
 }
