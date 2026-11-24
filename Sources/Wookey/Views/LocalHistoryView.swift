@@ -456,6 +456,7 @@ struct FloatingShelfView: View {
 
     private func entryCard(_ entry: LocalHistoryStore.Entry) -> some View {
         let file = history.fileURL(for: entry, kind: .files)
+        let icon = NSWorkspace.shared.icon(forFile: file.path)
         let isSelected = session.selection.ids.contains(entry.id)
         return Button {
             session.select(entry.id)
@@ -497,7 +498,7 @@ struct FloatingShelfView: View {
         .accessibilityAction(named: "열기") { history.openFile(entry) }
         .overlay {
             ShelfDragSource(
-                entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path),
+                entry: entry, file: file, history: history, icon: icon,
                 onClick: { count, modifiers in
                     if count == 2, modifiers.intersection([.shift, .command]).isEmpty {
                         history.openFile(entry)
