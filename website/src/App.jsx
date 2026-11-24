@@ -9,7 +9,7 @@ import { copy } from "./copy.js";
 const github = "https://github.com/movvgli/Wookey";
 const releases = github + "/releases";
 const stable = releases + "/latest";
-const version = "1.2.63";
+const version = "1.2.64";
 const releaseTag = "v" + version;
 const dmg = releases + "/download/" + releaseTag + "/Wookey-" + version + ".dmg";
 const docs = github + "/blob/" + releaseTag + "/docs/";

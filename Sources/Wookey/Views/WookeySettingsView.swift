@@ -293,7 +293,7 @@ struct WookeySettingsView: View {
     private var webSearchEngineSetting: some View {
         let title = L10n.text("웹 검색 엔진")
         return GeneralSettingRow(
-            symbol: "magnifyingglass",
+            symbol: "globe",
             title: title,
             detail: L10n.text("검색창에서 ⌘ Enter를 누르면 이 검색 엔진을 사용합니다.")
         ) {
