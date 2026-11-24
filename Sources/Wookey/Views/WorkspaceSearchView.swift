@@ -15,11 +15,12 @@ struct WorkspaceSearchView: View {
         case copy(UUID)
         case copyValue(String)
         case openApplication(InstalledApplication)
+        case openFile(URL)
         case openWebAddress(URL)
 
         var actionTitle: String {
             switch self {
-            case .library, .openApplication: "열기"
+            case .library, .openApplication, .openFile: "열기"
             case .openWebAddress: "브라우저에서 열기"
             case .run: "실행"
             case .copy, .copyValue: "복사"
@@ -52,6 +53,7 @@ struct WorkspaceSearchView: View {
     @State private var selected: Destination?
     @State private var actionError: String?
     @State private var installedApplications: [InstalledApplication] = []
+    @State private var fileResults: (query: String, matches: [LocalFileSearch.Match])?
     @State private var exchangeRates: SearchExchangeRates.Snapshot?
     @State private var exchangeLoadFailed = false
     var mode: Mode
@@ -78,10 +80,46 @@ struct WorkspaceSearchView: View {
             }
         }
         let applications = isLauncher && !terms.isEmpty ? applicationResults(matching: terms) : []
-        let webResults = webAddress.map {
+        let fileText = fileSearchText(for: query)
+        let waitingForFiles = fileText != nil && fileResults?.query != fileText
+        let webResults = waitingForFiles ? [] : webAddress.map {
             [Result(id: .openWebAddress($0), name: $0.absoluteString, detail: "웹사이트", symbol: "link")]
         } ?? []
-        return (webResults + keywordResults + matchingEntries + applications, nil)
+        let appPaths = Set(applications.compactMap { result -> String? in
+            if case .openApplication(let app) = result.id { return app.path }
+            return nil
+        })
+        let files = fileText != nil && fileResults?.query == fileText
+            ? (fileResults?.matches ?? []).filter { !appPaths.contains($0.url.path) } : []
+        let exactFileCount = if let fileText, webAddress != nil {
+            files.prefix(while: { $0.hasExactName(fileText) }).count
+        } else { 0 }
+        let fileEntries = files.map { match in
+            Result(id: .openFile(match.url), name: match.name,
+                   detail: (match.url.deletingLastPathComponent().path as NSString).abbreviatingWithTildeInPath,
+                   symbol: match.isFolder ? "folder" : "doc")
+        }
+        return (Array(fileEntries.prefix(exactFileCount)) + webResults + keywordResults + matchingEntries
+                + applications + fileEntries.dropFirst(exactFileCount), nil)
+    }
+
+    private func fileSearchText(for query: String) -> String? {
+        guard isLauncher else { return nil }
+        let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, !text.contains("://") else { return nil }
+        return text
+    }
+
+    private func loadFiles(matching text: String?) async {
+        guard let text else {
+            fileResults = nil
+            return
+        }
+        do { try await Task.sleep(for: .milliseconds(150)) }
+        catch { return }
+        let matches = await LocalFileSearch.search(matching: text)
+        guard !Task.isCancelled else { return }
+        fileResults = (text, matches)
     }
 
     private func applicationResults(matching terms: [String]) -> [Result] {
@@ -168,6 +206,7 @@ struct WorkspaceSearchView: View {
 
     var body: some View {
         let (entries, utility) = matches(for: query)
+        let fileText = utility == nil ? fileSearchText(for: query) : nil
         let actionTitle = selected?.actionTitle ?? "열기"
         VStack(spacing: 0) {
             HStack(spacing: 12) {
@@ -177,7 +216,7 @@ struct WorkspaceSearchView: View {
                     onSubmit: openSelected,
                     onWebSearch: searchWeb,
                     onCancel: close,
-                    prompt: isLauncher ? "앱·워크플로 검색, 웹 주소 입력, 계산·환율" : "보관함 검색 또는 웹 주소 입력"
+                    prompt: isLauncher ? "앱·파일·워크플로 검색, 웹 주소 입력, 계산·환율" : "보관함 검색 또는 웹 주소 입력"
                 )
                 .frame(height: 28)
                 Button("닫기", wookeyIcon: "xmark", action: close)
@@ -197,9 +236,12 @@ struct WorkspaceSearchView: View {
             if entries.isEmpty, let utility {
                 utilityStatus(utility)
                     .frame(maxHeight: .infinity)
+            } else if entries.isEmpty, fileText != nil, fileResults?.query != fileText {
+                ProgressView("파일 찾는 중…")
+                    .frame(maxHeight: .infinity)
             } else if entries.isEmpty {
                 if query.isEmpty {
-                    ContentUnavailableView(isLauncher ? "앱 이름을 입력해 검색하세요" : "저장한 템플릿이나 워크플로가 없습니다",
+                    ContentUnavailableView(isLauncher ? "앱이나 파일 이름을 입력하세요" : "저장한 템플릿이나 워크플로가 없습니다",
                                            systemImage: "magnifyingglass")
                         .frame(maxHeight: .infinity)
                 } else {
@@ -240,8 +282,11 @@ struct WorkspaceSearchView: View {
         .background {
             if isLauncher { Color.clear.wookeyLauncherGlass(theme: theme).allowsHitTesting(false) }
         }
-        .onChange(of: entries.map(\.id), initial: true) { _, ids in
-            if selected.map(ids.contains) != true { selected = ids.first }
+        .onChange(of: entries.map(\.id), initial: true) { previous, ids in
+            if selected == previous.first || selected.map(ids.contains) != true { selected = ids.first }
+        }
+        .task(id: fileText) {
+            await loadFiles(matching: fileText)
         }
         .task {
             guard isLauncher else { return }
@@ -337,6 +382,8 @@ struct WorkspaceSearchView: View {
                                 }
                                 Spacer()
                                 Text(entry.detail)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }
@@ -404,6 +451,12 @@ struct WorkspaceSearchView: View {
             }
         case .openWebAddress(let url):
             openInBrowser(url)
+        case .openFile(let url):
+            if NSWorkspace.shared.open(url) {
+                close()
+            } else {
+                actionError = "‘\(url.lastPathComponent)’을 열지 못했습니다."
+            }
         case .run(let id):
             guard runtime.store.workflows.contains(where: { $0.id == id && !$0.actions.isEmpty }) else { return }
             close()

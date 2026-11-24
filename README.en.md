@@ -4,12 +4,13 @@
 
 # Wookey
 
-Wookey is a Mac launcher for **finding apps and links, retrieving clipboard items, and running recurring tasks with a shortcut**. It's free and open source, and runs on Apple Silicon and Intel Macs with macOS 14 or later.
+Wookey is a Mac launcher for **finding apps and files, retrieving clipboard items, and running recurring tasks with a shortcut**. It's free and open source, and runs on Apple Silicon and Intel Macs with macOS 14 or later.
 
 [Download the stable release](https://github.com/movvgli/Wookey/releases/latest) · [Website](https://movvgli.github.io/Wookey/) · [Release history](https://github.com/movvgli/Wookey/releases) · [한국어](README.md)
 
 ## Start with quick search
 
+- Use **Option–Space** to search for files and folders by name across the Mac’s Spotlight index. Enter a full path to open an item directly.
 - Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press **Return** to open the selection or **Command–Return** to search Google in your default browser. You can also open a web address, run a calculation, or convert currencies.
 - Search for **Open Clipboard** or **Open Folder** to jump to your history. Recent clipboard and drawer items are also available in search.
 - Give links and workflows search aliases, or assign a global shortcut to an app or link.

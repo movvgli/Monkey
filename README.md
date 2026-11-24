@@ -4,12 +4,13 @@
 
 # Wookey
 
-Wookey는 **앱과 링크를 찾고, 복사한 내용을 다시 쓰고, 반복 작업을 단축키로 실행하는 Mac용 런처**입니다. 무료 오픈소스이며 macOS 14 이상의 Apple Silicon·Intel Mac에서 사용할 수 있습니다.
+Wookey는 **앱과 파일을 찾고, 복사한 내용을 다시 쓰고, 반복 작업을 단축키로 실행하는 Mac용 런처**입니다. 무료 오픈소스이며 macOS 14 이상의 Apple Silicon·Intel Mac에서 사용할 수 있습니다.
 
 [정식 버전 다운로드](https://github.com/movvgli/Wookey/releases/latest) · [공식 웹사이트](https://movvgli.github.io/Wookey/) · [릴리스 내역](https://github.com/movvgli/Wookey/releases) · [English](README.en.md)
 
 ## 검색창에서 시작하기
 
+- **파일과 폴더**를 이름으로 찾으려면 **⌥ Space**를 누르고 파일 이름의 일부를 입력하세요. Spotlight가 색인한 항목을 검색하며, 전체 경로를 입력해 항목을 바로 열 수도 있습니다.
 - **⌥ Space**로 설치된 앱, 저장한 링크, 템플릿과 워크플로를 찾으세요. **Enter**로 선택한 항목을 열고 **⌘ Enter**로 기본 브라우저에서 Google 검색을 실행합니다. 검색창에 주소를 입력하거나 계산과 환율 변환도 할 수 있습니다.
 - **클립보드 열기**, **우키 폴더 열기**를 검색하면 보관함으로 바로 이동합니다. 검색창에서도 최근에 복사하거나 서랍에 담은 항목을 확인할 수 있습니다.
 - 링크와 워크플로에 검색 별칭을 추가하거나, 자주 쓰는 앱과 링크에 전역 단축키를 지정할 수 있습니다.

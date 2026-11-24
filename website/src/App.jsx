@@ -8,7 +8,7 @@ import { searchResults } from "./examples.js";
 const github = "https://github.com/movvgli/Wookey";
 const releases = github + "/releases";
 const stable = releases + "/latest";
-const version = "1.2.59";
+const version = "1.2.60";
 const releaseTag = "v" + version;
 const dmg = releases + "/download/" + releaseTag + "/Wookey-" + version + ".dmg";
 const docs = github + "/blob/" + releaseTag + "/docs/";
@@ -97,7 +97,7 @@ function Features() {
             </div>
           </div>
           <h3>빠른 검색</h3>
-          <p><b className="shortcut">⌥ Space</b>로 앱, 링크, 템플릿과 워크플로를 찾아보세요. 최근 클립보드와 폴더 항목도 바로 열 수 있어요. <b className="shortcut">⌘ Enter</b>를 누르면 웹에서 검색합니다.</p>
+          <p><b className="shortcut">⌥ Space</b>로 앱, 파일, 폴더, 링크와 워크플로를 찾아보세요. 최근 클립보드와 폴더 항목도 바로 열 수 있어요. <b className="shortcut">⌘ Enter</b>를 누르면 웹에서 검색합니다.</p>
         </article>
         <article className="feature-card">
           <div className="feature-art feature-drawer" aria-hidden="true">
@@ -179,7 +179,7 @@ export function App() {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-copy">
             <h1 id="hero-title">Mac에서 자주 쓰는 일, <br />단축키 하나로</h1>
-            <p>앱과 링크를 찾고, 복사한 내용을 꺼내 쓰고, 반복 작업을 실행하세요.</p>
+            <p>앱과 파일을 찾고, 복사한 내용을 꺼내 쓰고, 반복 작업을 실행하세요.</p>
             <div className="hero-actions"><Download /><a className="button secondary" href="#install">설치 안내</a></div>
             <p className="compatibility">macOS 14 이상 · Apple Silicon 및 Intel</p>
           </div>
