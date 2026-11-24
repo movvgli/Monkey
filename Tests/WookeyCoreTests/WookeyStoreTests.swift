@@ -32,6 +32,44 @@ struct WookeyStoreTests {
         #expect(try files.contentsOfDirectory(atPath: root.appendingPathComponent("Templates").path).isEmpty)
     }
 
+    @Test func templateTriggersPersistAndNewWorkflowReferencesTheTemplate() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = WookeyStore(rootURL: root)
+        let id = try #require(store.addTemplate(name: "인사말", document: NSAttributedString(string: "안녕하세요")))
+        let index = try #require(store.templates.firstIndex(where: { $0.id == id }))
+        let shortcut = ShortcutGesture(steps: [.init(keyCode: 40, modifiers: [.control, .option])])
+        store.templates[index].shortcut = shortcut
+        store.templates[index].keywords = ["hi", "인사"]
+        store.templates[index].deliveryMode = .copyAndPaste
+        let workflowID = try #require(store.createWorkflow(fromTemplate: id))
+        store.saveTemplateDocument(NSAttributedString(string: "수정한 인사말"), for: id)
+
+        let reloaded = WookeyStore(rootURL: root)
+        reloaded.load()
+        let template = try #require(reloaded.templates.first)
+        let workflow = try #require(reloaded.workflows.first(where: { $0.id == workflowID }))
+        #expect(template.shortcut == shortcut)
+        #expect(template.keywords == ["hi", "인사"])
+        #expect(template.deliveryMode == .copyAndPaste)
+        #expect(workflow.name == "인사말")
+        #expect(workflow.actions == [.copyTemplate(templateID: id, mode: .copyAndPaste)])
+        #expect(workflow.shortcut.steps.isEmpty && workflow.keywords.isEmpty)
+        #expect(reloaded.templateDocument(id: id).string == "수정한 인사말")
+    }
+
+    @Test func legacyTemplateWithoutDirectTriggersLoadsWithCopyDefault() throws {
+        let id = UUID()
+        let data = Data("""
+            {"id":"\(id)","name":"인사말","fileName":"greeting.rtfd","plainText":"안녕하세요"}
+            """.utf8)
+
+        let template = try JSONDecoder().decode(RichTemplate.self, from: data)
+
+        #expect(template.shortcut == nil && template.keywords == nil)
+        #expect(template.deliveryAction == .copyTemplate(templateID: id, mode: .copyOnly))
+    }
+
     @Test func stateAndRichTemplateRoundTrip() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         defer { try? FileManager.default.removeItem(at: root) }

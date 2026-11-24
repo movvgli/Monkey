@@ -15,7 +15,7 @@ struct MenuBarContentView: View {
 
         VStack(alignment: .leading, spacing: 5) {
             Text("Wookey")
-                .font(.headline)
+                .font(.pretendard(.headline))
                 .padding(.horizontal, 9)
                 .padding(.vertical, 4)
             if workflows.isEmpty {
@@ -27,12 +27,13 @@ struct MenuBarContentView: View {
                 ScrollView {
                     VStack(spacing: 2) {
                         ForEach(workflows) { workflow in
+                            let icon = workflow.wookeyIcon
                             Button {
                                 dismiss()
                                 runtime.run(workflowID: workflow.id)
                             } label: {
                                 HStack {
-                                    rowLabel(shortMenuTitle(workflow.name), symbol: "bolt")
+                                    rowLabel(shortMenuTitle(workflow.name), symbol: icon.symbol, tint: icon.tint)
                                     if !workflow.shortcut.steps.isEmpty {
                                         ShortcutBadge(text: workflow.shortcut.displayName)
                                     }
@@ -69,7 +70,7 @@ struct MenuBarContentView: View {
                 menuButton("실행 중지", symbol: "stop.fill", action: runtime.runner.cancel)
             } else if let lastRun = runtime.lastRun {
                 Text(shortMenuTitle(lastRun.menuTitle))
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(lastRun.failures.isEmpty ? Color.secondary : .orange)
                     .padding(.horizontal, 9)
                     .help(lastRun.failures.first?.message ?? lastRun.workflowName)
@@ -102,9 +103,9 @@ struct MenuBarContentView: View {
         .background(theme.panel)
     }
 
-    private func rowLabel(_ title: String, symbol: String) -> some View {
+    private func rowLabel(_ title: String, symbol: String, tint: WookeyActionTint? = nil) -> some View {
         HStack(spacing: 8) {
-            WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 16)
+            WookeyActionIcon(symbol: symbol, tint: tint ?? WookeyActionTint(symbol: symbol), size: 16)
             Text(title).lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

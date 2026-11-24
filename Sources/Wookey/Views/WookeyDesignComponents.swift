@@ -91,6 +91,7 @@ struct WookeyThemeScope: ViewModifier {
             .environment(\.wookeyTheme, theme)
             .preferredColorScheme(theme.colorScheme)
             .tint(theme.accent)
+            .font(.pretendard(.body))
             .buttonStyle(WookeyGlossyButtonStyle())
     }
 }
@@ -243,7 +244,7 @@ private struct WookeyFilterButtonStyle: ButtonStyle {
             let charcoal = Color(white: 0.16).opacity(isPressed ? 0.23 : hovered ? 0.11 : 0)
 
             label
-                .font(.system(size: 12))
+                .font(.pretendard(size: 12))
                 .foregroundStyle(textColor)
                 .padding(.horizontal, 11)
                 .frame(minHeight: 25)
@@ -270,10 +271,10 @@ struct WookeyPageHeader<Actions: View>: View {
         HStack(alignment: .center, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .font(.pretendard(size: 28, weight: .semibold))
                     .accessibilityAddTraits(.isHeader)
                 Text(subtitle)
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -325,7 +326,7 @@ struct WookeySaveStatus: View {
             runtime.store.lastPersistenceError == nil ? "자동 저장됨" : "저장 실패",
             systemImage: runtime.store.lastPersistenceError == nil ? "checkmark.circle" : "exclamationmark.triangle"
         )
-        .font(.caption)
+        .font(.pretendard(.caption))
         .foregroundStyle(runtime.store.lastPersistenceError == nil ? Color.secondary : WookeyActionTint.rose.ink(in: colorScheme))
         .help(runtime.store.lastPersistenceError ?? "변경 사항을 자동으로 저장합니다.")
     }
@@ -377,12 +378,12 @@ struct WookeyEditorHeader<Actions: View>: View {
                         TextField("이름", text: $title)
                             .textFieldStyle(.plain)
                             .focused($isEditingName)
-                            .font(.system(size: 25, weight: .semibold, design: .rounded))
+                            .font(.pretendard(size: 25, weight: .semibold))
                             .accessibilityLabel("이름")
                             .help("이름 편집")
                     }
                     Text(subtitle)
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -404,10 +405,10 @@ struct WookeySection<Content: View>: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.headline)
+                    .font(.pretendard(.headline))
                 if let detail {
                     Text(detail)
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -425,7 +426,7 @@ struct ShortcutBadge: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .font(.pretendard(size: 11, weight: .medium))
             .foregroundStyle(isMuted ? Color.secondary : Color.wookeyInk(in: colorScheme))
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
@@ -461,7 +462,7 @@ struct StatusPill: View {
                 .fill(tone.color)
                 .frame(width: 6, height: 6)
             Text(title)
-                .font(.caption.weight(.medium))
+                .font(.pretendard(.caption, weight: .medium))
         }
         .foregroundStyle(tone.color)
         .padding(.horizontal, 9)
@@ -547,6 +548,13 @@ extension WorkflowAction {
         case .wait: "clock"
         }
         return (symbol, WookeyActionTint(symbol: symbol))
+    }
+}
+
+extension Workflow {
+    var wookeyIcon: (symbol: String, tint: WookeyActionTint) {
+        guard actions.count == 1, let action = actions.first else { return ("bolt", .accent) }
+        return action.wookeyIcon
     }
 }
 
@@ -706,7 +714,7 @@ struct WookeyGlossyButtonStyle: ButtonStyle {
         let minimumSize: CGFloat = compact ? 29 : 36
         return WookeyHoverSurface(
             label: configuration.label
-                .font(.system(size: 13, weight: .regular))
+                .font(.pretendard(size: 13, weight: .regular))
                 .foregroundStyle(ink)
                 .padding(.horizontal, iconOnly ? 0 : compact ? 9 : 12)
                 .frame(minWidth: minimumSize, minHeight: minimumSize),

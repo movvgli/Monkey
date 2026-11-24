@@ -44,6 +44,7 @@ final class RichTextEditorController {
         alert.messageText = "링크 추가"
         alert.informativeText = "선택한 텍스트에 연결할 주소를 입력하세요."
         let field = NSTextField(string: "https://")
+        field.font = WookeyTypography.native(size: 13)
         field.frame = NSRect(x: 0, y: 0, width: 320, height: 24)
         alert.accessoryView = field
         alert.addButton(withTitle: "추가")
@@ -103,24 +104,37 @@ final class RichTextEditorController {
         guard let textView, let storage = textView.textStorage else { return }
         let range = effectiveRange(in: textView)
         if range.length == 0 {
-            let font = textView.typingAttributes[.font] as? NSFont ?? NSFont.systemFont(ofSize: 15)
-            let manager = NSFontManager.shared
-            let hasTrait = manager.traits(of: font).contains(trait)
-            textView.typingAttributes[.font] = hasTrait
-                ? manager.convert(font, toNotHaveTrait: trait)
-                : manager.convert(font, toHaveTrait: trait)
+            var attributes = textView.typingAttributes
+            toggle(trait, in: &attributes)
+            textView.typingAttributes = attributes
             return
         }
+        var changes: [(NSRange, [NSAttributedString.Key: Any])] = []
+        storage.enumerateAttributes(in: range) { attributes, subrange, _ in
+            var updated = attributes
+            toggle(trait, in: &updated)
+            changes.append((subrange, updated))
+        }
         storage.beginEditing()
-        storage.enumerateAttribute(.font, in: range) { value, subrange, _ in
-            let font = value as? NSFont ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-            let manager = NSFontManager.shared
-            let hasTrait = manager.traits(of: font).contains(trait)
-            let converted = hasTrait ? manager.convert(font, toNotHaveTrait: trait) : manager.convert(font, toHaveTrait: trait)
-            storage.addAttribute(.font, value: converted, range: subrange)
+        for (subrange, attributes) in changes {
+            storage.setAttributes(attributes, range: subrange)
         }
         storage.endEditing()
         emitChange()
+    }
+
+    private func toggle(_ trait: NSFontTraitMask, in attributes: inout [NSAttributedString.Key: Any]) {
+        let font = attributes[.font] as? NSFont ?? WookeyTypography.native(size: 15)
+        if trait == .italicFontMask, font.familyName == "Pretendard" {
+            // Pretendard has no italic face. RTFD preserves the slant attribute.
+            let slant = attributes[.obliqueness] as? Double ?? 0
+            attributes[.obliqueness] = slant == 0 ? 0.2 : nil
+            return
+        }
+        let manager = NSFontManager.shared
+        attributes[.font] = manager.traits(of: font).contains(trait)
+            ? manager.convert(font, toNotHaveTrait: trait)
+            : manager.convert(font, toHaveTrait: trait)
     }
 
     private func effectiveRange(in textView: NSTextView) -> NSRange {
@@ -133,7 +147,7 @@ final class RichTextEditorController {
         guard let pendingDocument, let storage = textView.textStorage else { return }
         storage.setAttributedString(pendingDocument)
         if storage.length == 0 {
-            textView.typingAttributes = [.font: NSFont.systemFont(ofSize: 14)]
+            textView.typingAttributes = [.font: WookeyTypography.native(size: 15)]
         }
         (textView as? TemplateTextView)?.refreshPreviewContrast()
         self.pendingDocument = nil
@@ -229,7 +243,8 @@ struct RichTextEditor: NSViewRepresentable {
         textView.insertionPointColor = .textColor
         textView.setAccessibilityLabel("템플릿 본문")
         textView.textContainerInset = NSSize(width: 22, height: 20)
-        textView.typingAttributes = [.font: NSFont.systemFont(ofSize: 15)]
+        textView.font = WookeyTypography.native(size: 15)
+        textView.typingAttributes = [.font: WookeyTypography.native(size: 15)]
         textView.delegate = context.coordinator
         scroll.documentView = textView
         controller.attach(textView)

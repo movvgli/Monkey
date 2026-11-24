@@ -102,6 +102,17 @@ public final class WookeyStore {
         return workflow.id
     }
 
+    public func createWorkflow(fromTemplate id: UUID) -> UUID? {
+        guard let template = state.templates.first(where: { $0.id == id }) else { return nil }
+        let workflow = Workflow(name: template.name, actions: [template.deliveryAction])
+        state.workflows.append(workflow)
+        guard save() else {
+            state.workflows.removeLast()
+            return nil
+        }
+        return workflow.id
+    }
+
     public func addTemplate() -> UUID {
         let template = RichTemplate()
         state.templates.append(template)

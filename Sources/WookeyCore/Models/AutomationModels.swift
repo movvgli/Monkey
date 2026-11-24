@@ -62,7 +62,10 @@ public enum WorkflowKeyword {
         return tokens
     }
 
-    public static func validationMessage(for text: String, excluding id: UUID? = nil, in workflows: [Workflow]) -> String? {
+    public static func validationMessage(
+        for text: String, excluding id: UUID? = nil, in workflows: [Workflow],
+        templates: [RichTemplate] = [], excludingTemplate templateID: UUID? = nil
+    ) -> String? {
         guard let tokens = parseList(text) else { return "키워드마다 공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요." }
         let requested = Set(tokens)
         for workflow in workflows where workflow.id != id {
@@ -70,24 +73,65 @@ public enum WorkflowKeyword {
                 return "‘\(conflict)’ 키워드는 ‘\(workflow.name)’에서 이미 사용 중입니다."
             }
         }
+        for template in templates where template.id != templateID {
+            if let conflict = (template.keywords ?? []).compactMap(normalized).first(where: requested.contains) {
+                return "‘\(conflict)’ 키워드는 ‘\(template.name)’에서 이미 사용 중입니다."
+            }
+        }
         return nil
     }
 
     public static func matches(_ query: String, in workflows: [Workflow]) -> [Match] {
+        matches(query, in: workflows, templates: []).compactMap { match in
+            if case .workflow(let workflow) = match.target { return Match(workflow: workflow, keyword: match.keyword) }
+            return nil
+        }
+    }
+
+    public enum Target {
+        case workflow(Workflow)
+        case template(RichTemplate)
+
+        fileprivate enum ID: Hashable { case workflow(UUID), template(UUID) }
+        fileprivate var id: ID {
+            switch self {
+            case .workflow(let workflow): .workflow(workflow.id)
+            case .template(let template): .template(template.id)
+            }
+        }
+        fileprivate var keywords: [String] {
+            switch self {
+            case .workflow(let workflow): workflow.keywords
+            case .template(let template): template.keywords ?? []
+            }
+        }
+        fileprivate var canRun: Bool {
+            if case .workflow(let workflow) = self { return !workflow.actions.isEmpty }
+            return true
+        }
+    }
+
+    public struct TargetMatch {
+        public let target: Target
+        public let keyword: String
+    }
+
+    public static func matches(_ query: String, in workflows: [Workflow], templates: [RichTemplate]) -> [TargetMatch] {
         guard let token = normalized(query) else { return [] }
-        let candidates = workflows.flatMap { workflow in
+        let targets = workflows.map(Target.workflow) + templates.map(Target.template)
+        let candidates = targets.flatMap { target in
             var seen = Set<String>()
-            return workflow.keywords.compactMap(normalized).compactMap { keyword -> Match? in
+            return target.keywords.compactMap(normalized).compactMap { keyword -> TargetMatch? in
                 guard keyword.hasPrefix(token), seen.insert(keyword).inserted else { return nil }
-                return Match(workflow: workflow, keyword: keyword)
+                return TargetMatch(target: target, keyword: keyword)
             }
         }
         let grouped = Dictionary(grouping: candidates, by: \.keyword)
-        // Imported or synced workflows can share a keyword. Leave ambiguous commands out.
-        let unique = candidates.filter { grouped[$0.keyword]?.count == 1 && !$0.workflow.actions.isEmpty }
+        // Imports and sync can produce ambiguous aliases across workflows and templates.
+        let unique = candidates.filter { grouped[$0.keyword]?.count == 1 && $0.target.canRun }
         let ranked = unique.filter { $0.keyword == token } + unique.filter { $0.keyword != token }
-        var matchedWorkflows = Set<UUID>()
-        return ranked.filter { matchedWorkflows.insert($0.workflow.id).inserted }
+        var matchedTargets = Set<Target.ID>()
+        return ranked.filter { matchedTargets.insert($0.target.id).inserted }
     }
 }
 
@@ -209,6 +253,13 @@ public struct RichTemplate: Identifiable, Codable, Hashable, Sendable {
     public var name: String
     public var fileName: String
     public var plainText: String
+    public var shortcut: ShortcutGesture?
+    public var keywords: [String]?
+    public var deliveryMode: TemplateDeliveryMode?
+
+    public var deliveryAction: WorkflowAction {
+        .copyTemplate(templateID: id, mode: deliveryMode ?? .copyOnly)
+    }
 
     public init(id: UUID = UUID(), name: String = "새 템플릿", plainText: String = "") {
         self.id = id

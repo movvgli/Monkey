@@ -27,7 +27,7 @@ let package = Package(
                 "WookeyCore",
                 .product(name: "Sparkle", package: "Sparkle"),
             ],
-            resources: [.process("Resources/Assets.xcassets")]
+            resources: [.process("Resources/Assets.xcassets"), .process("Resources/Fonts")]
         ),
         .executableTarget(
             name: "WookeyLoginHelper"

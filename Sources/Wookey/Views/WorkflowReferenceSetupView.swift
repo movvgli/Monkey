@@ -13,9 +13,9 @@ struct WorkflowReferenceSetupView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("다른 워크플로 실행 추가")
-                    .font(.title2.weight(.semibold))
+                    .font(.pretendard(.title2, weight: .semibold))
                 Text("이 위치에서 이어서 실행할 워크플로를 선택하세요.")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -38,7 +38,7 @@ struct WorkflowReferenceSetupView: View {
 
             HStack(spacing: 10) {
                 Text("선택한 워크플로의 동작이 이 순서에서 실행됩니다.")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button("취소", action: onCancel)
@@ -66,10 +66,10 @@ struct WorkflowReferenceSetupView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(workflow.name)
-                        .font(.body)
+                        .font(.pretendard(.body))
                         .foregroundStyle(.primary)
                     Text("동작 \(workflow.actions.count)개")
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                 }
 

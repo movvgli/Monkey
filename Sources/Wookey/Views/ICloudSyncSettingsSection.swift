@@ -22,14 +22,14 @@ struct ICloudSyncSettingsSection: View {
                     HStack {
                         WookeyActionIcon(symbol: "icloud", tint: .accent, size: 20)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(sync.isEnabled ? "iCloud Drive 연결됨" : "이 Mac에만 저장 중").font(.headline)
-                            Text(sync.status).font(.subheadline).foregroundStyle(.secondary)
+                            Text(sync.isEnabled ? "iCloud Drive 연결됨" : "이 Mac에만 저장 중").font(.pretendard(.headline))
+                            Text(sync.status).font(.pretendard(.subheadline)).foregroundStyle(.secondary)
                         }
                         Spacer()
                         if sync.isBusy { ProgressView().controlSize(.small) }
                     }
                     Text("각 Mac에서 iCloud Drive의 같은 개인 폴더를 한 번 연결하세요. 앱이 실행 중일 때 자동으로 확인합니다.")
-                        .font(.subheadline).foregroundStyle(.secondary)
+                        .font(.pretendard(.subheadline)).foregroundStyle(.secondary)
                     HStack {
                         Button(sync.isEnabled ? "폴더 변경…" : "동기화 시작…") { showConsent = true }
                         Button("지금 백업") { Task { await sync.createBackup() } }
@@ -39,21 +39,21 @@ struct ICloudSyncSettingsSection: View {
                         }
                     }.disabled(sync.isBusy)
                     if sync.isEnabled {
-                        Text("연결 폴더: \(sync.folderName)").font(.caption).foregroundStyle(.secondary)
+                        Text("연결 폴더: \(sync.folderName)").font(.pretendard(.caption)).foregroundStyle(.secondary)
                     }
                     if let date = sync.lastChecked {
                         Text("마지막 폴더 확인: \(date.formatted(date: .abbreviated, time: .shortened)) · 다른 Mac 도착 여부는 해당 Mac에서 확인하세요.")
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.pretendard(.caption)).foregroundStyle(.secondary)
                     }
                     if let error = sync.errorMessage ?? pickerError {
                         WookeyControlLabel(title: error, symbol: "exclamationmark.triangle")
-                            .font(.subheadline).foregroundStyle(.orange)
+                            .font(.pretendard(.subheadline)).foregroundStyle(.orange)
                     }
                     if !sync.conflicts.isEmpty {
                         Divider()
-                        Text("설정 충돌 · 두 버전 모두 보관 중").font(.headline)
+                        Text("설정 충돌 · 두 버전 모두 보관 중").font(.pretendard(.headline))
                         Text("동시에 수정되었거나 처음 연결한 Mac의 설정이 다릅니다. 사용할 전체 설정을 선택하세요. 선택하지 않은 내용도 백업에 남습니다.")
-                            .font(.subheadline).foregroundStyle(.secondary)
+                            .font(.pretendard(.subheadline)).foregroundStyle(.secondary)
                         ForEach(sync.conflicts) { backup in backupRow(backup, action: "이 버전 사용…") }
                     } else if let pending = sync.pendingVersion {
                         Divider()
@@ -62,7 +62,7 @@ struct ICloudSyncSettingsSection: View {
                     DisclosureGroup("백업 및 복원 (\(sync.versions.count))", isExpanded: $showHistory) {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("이 Mac의 복원용 백업은 30일 동안 보관합니다. 동기화를 꺼도 이 기간에는 복원할 수 있습니다.")
-                                .font(.caption).foregroundStyle(.secondary)
+                                .font(.pretendard(.caption)).foregroundStyle(.secondary)
                             if sync.versions.isEmpty { Text("아직 백업이 없습니다.").foregroundStyle(.secondary) }
                             ForEach(sync.versions.prefix(historyLimit)) { backup in backupRow(backup, action: "복원…") }
                             if sync.versions.count > historyLimit {
@@ -71,13 +71,13 @@ struct ICloudSyncSettingsSection: View {
                         }.padding(.top, 8)
                     }
                     Text("앱 설치와 손쉬운 사용·입력 모니터링 권한은 각 Mac에서 설정해야 합니다. 첨부 파일은 각각 20MB, 백업은 총 50MB까지 지원합니다. 공유 폴더는 사용하지 마세요.")
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.pretendard(.caption)).foregroundStyle(.secondary)
                     if !missingApps.isEmpty {
                         WookeyControlLabel(
                             title: "이 Mac에 없는 앱: " + missingApps.joined(separator: ", "),
                             symbol: "app.badge.checkmark"
                         )
-                            .font(.caption).foregroundStyle(.orange)
+                            .font(.pretendard(.caption)).foregroundStyle(.orange)
                     }
                     localDisplayMappings
                 }.padding(18)
@@ -110,13 +110,13 @@ struct ICloudSyncSettingsSection: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text("\(backup.device) · \(backup.createdAt.formatted(date: .abbreviated, time: .shortened))")
                 Text("워크플로 \(backup.payload.state.workflows.count) · 템플릿 \(backup.payload.state.templates.count) · 앱 단축키 \(backup.payload.state.applicationShortcuts.count) · 레이아웃 \(backup.payload.state.layouts.count)")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.pretendard(.caption)).foregroundStyle(.secondary)
             }
             Spacer()
             Button(action) {
                 selectedBackup = backup; selectedParents = sync.resolutionParents; showRestore = true
             }.disabled(sync.isBusy)
-        }.font(.subheadline)
+        }.font(.pretendard(.subheadline))
     }
 
     private var missingApps: [String] {
@@ -135,9 +135,9 @@ struct ICloudSyncSettingsSection: View {
             .filter { target in !displays.contains { $0.id == target.uuid } }.sorted { $0.uuid < $1.uuid }
         if !targets.isEmpty {
             Divider()
-            Text("이 Mac의 모니터 연결").font(.headline)
+            Text("이 Mac의 모니터 연결").font(.pretendard(.headline))
             Text("다른 Mac의 모니터를 여기서 사용할 화면에 연결하세요. 이 연결은 다른 Mac에 동기화하지 않습니다.")
-                .font(.caption).foregroundStyle(.secondary)
+                .font(.pretendard(.caption)).foregroundStyle(.secondary)
             ForEach(targets, id: \.uuid) { target in
                 Picker(target.name, selection: Binding(
                     get: { runtime.layoutController.displayMappings[target.uuid] ?? "" },
@@ -148,7 +148,7 @@ struct ICloudSyncSettingsSection: View {
                 }
             }
             if let error = runtime.layoutController.mappingError {
-                Text(error).font(.caption).foregroundStyle(.orange)
+                Text(error).font(.pretendard(.caption)).foregroundStyle(.orange)
             }
         }
     }

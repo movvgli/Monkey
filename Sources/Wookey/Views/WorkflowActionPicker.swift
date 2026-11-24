@@ -72,7 +72,7 @@ struct WorkflowActionPicker: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                Text("동작 추가").font(.title2.weight(.semibold))
+                Text("동작 추가").font(.pretendard(.title2, weight: .semibold))
                 HStack(spacing: 8) {
                     WookeyActionIcon(symbol: "magnifyingglass", tint: .neutral, size: 16)
                     TextField("동작 검색", text: $query)
@@ -99,7 +99,7 @@ struct WorkflowActionPicker: View {
                                             Text(option.rawValue)
                                             if let reason = unavailableReason(option) {
                                                 Text(reason)
-                                                    .font(.caption)
+                                                    .font(.pretendard(.caption))
                                                     .foregroundStyle(.secondary)
                                             }
                                         }
@@ -155,7 +155,7 @@ struct WorkflowActionSetupSheet<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text(title).font(.title2.weight(.semibold))
+            Text(title).font(.pretendard(.title2, weight: .semibold))
             content
             HStack {
                 Spacer()

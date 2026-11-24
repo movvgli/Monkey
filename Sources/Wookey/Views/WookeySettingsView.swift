@@ -78,9 +78,9 @@ struct WookeySettingsView: View {
                     WookeyActionIcon(symbol: "info.circle.fill", tint: .accent, size: 18)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("Wookey를 응용 프로그램 폴더에서 실행해 주세요")
-                            .font(.headline)
+                            .font(.pretendard(.headline))
                         Text("macOS 권한은 앱의 설치 위치와 서명을 구분합니다. 위치가 바뀌면 기존 권한이 적용되지 않을 수 있습니다.")
-                            .font(.subheadline)
+                            .font(.pretendard(.subheadline))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -120,9 +120,9 @@ struct WookeySettingsView: View {
                         .frame(width: 30)
                     VStack(alignment: .leading, spacing: 3) {
                         Text("입력 모니터링을 켰다면 Wookey를 다시 열어 주세요")
-                            .font(.headline)
+                            .font(.pretendard(.headline))
                         Text("macOS는 이 권한을 새로 시작한 앱에 적용합니다.")
-                            .font(.subheadline)
+                            .font(.pretendard(.subheadline))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
@@ -167,7 +167,7 @@ struct WookeySettingsView: View {
                         }
                         if artworkIsPending {
                             Text("아직 추가되지 않은 그림은 기존 아이콘으로 표시됩니다.")
-                                .font(.caption)
+                                .font(.pretendard(.caption))
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, GeneralSettingsLayout.titleInset)
                                 .padding(.bottom, 6)
@@ -203,7 +203,7 @@ struct WookeySettingsView: View {
                         }
                         if !showsMenuBarIcon && !runtime.dockIcon.isVisible {
                             Text("Finder의 응용 프로그램에서 Wookey를 다시 열 수 있습니다.")
-                                .font(.caption)
+                                .font(.pretendard(.caption))
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, GeneralSettingsLayout.titleInset)
                                 .padding(.bottom, 6)
@@ -271,13 +271,13 @@ struct WookeySettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     if runtime.loginItem.status == .requiresApproval {
                         WookeyControlLabel(title: "macOS 설정에서 로그인 항목을 허용해 주세요.", symbol: "info.circle")
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(.secondary)
                         Button("로그인 항목 설정 열기") { runtime.loginItem.openSystemSettings() }
                     }
                     if let error = runtime.loginItem.lastError {
                         WookeyControlLabel(title: error, symbol: "exclamationmark.triangle")
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                     }
                 }
@@ -312,7 +312,7 @@ struct WookeySettingsView: View {
             }
             if let error = runtime.hotkeys.searchRegistrationError {
                 WookeyControlLabel(title: error, symbol: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                     .padding(.leading, GeneralSettingsLayout.titleInset)
                     .padding(.bottom, 8)
@@ -354,7 +354,7 @@ struct WookeySettingsView: View {
     private func hyperKeyStatus(_ message: String, button: String, action: @escaping () -> Void) -> some View {
         HStack(spacing: 8) {
             Text(message)
-                .font(.caption)
+                .font(.pretendard(.caption))
                 .foregroundStyle(.secondary)
             Button(button, action: action)
                 .controlSize(.small)
@@ -411,9 +411,9 @@ struct WookeySettingsView: View {
                             .frame(width: 30)
                         VStack(alignment: .leading, spacing: 3) {
                             Text("현재 버전 \(currentVersion)")
-                                .font(.headline)
+                                .font(.pretendard(.headline))
                             Text(lastCheckedText)
-                                .font(.subheadline)
+                                .font(.pretendard(.subheadline))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -471,7 +471,7 @@ struct WookeySettingsView: View {
                                 .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                         }
                     }
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                 }
             }
         } else {
@@ -534,10 +534,10 @@ private struct GeneralSettingRow<Control: View>: View {
                 .frame(width: GeneralSettingsLayout.iconWidth)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.headline)
+                Text(title).font(.pretendard(.headline))
                 if let detail {
                     Text(detail)
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -564,9 +564,9 @@ private struct UpdateSettingRow: View {
             WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.headline)
+                Text(title).font(.pretendard(.headline))
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -593,9 +593,9 @@ private struct PermissionSettingRow: View {
             WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
                 .frame(width: 30)
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.headline)
+                Text(title).font(.pretendard(.headline))
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
             Spacer()

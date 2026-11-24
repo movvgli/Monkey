@@ -6,14 +6,17 @@ struct WorkspaceSearchView: View {
     @Environment(\.wookeyTheme) private var theme
     enum Mode {
         case library(open: (SidebarSelection) -> Void)
-        case launcher(close: () -> Void, open: (SidebarSelection) -> Void)
+        case launcher(close: () -> Void)
     }
 
     private enum Destination: Hashable {
         case library(SidebarSelection)
         case run(UUID)
         case copy(UUID)
+        case pasteTemplate(UUID)
         case copyValue(String)
+        case history(HistoryKind)
+        case historyEntry(HistoryKind, UUID)
         case openApplication(InstalledApplication)
         case openWebAddress(URL)
 
@@ -22,7 +25,10 @@ struct WorkspaceSearchView: View {
             case .library, .openApplication: "열기"
             case .openWebAddress: "브라우저에서 열기"
             case .run: "실행"
+            case .pasteTemplate: "붙여넣기"
             case .copy, .copyValue: "복사"
+            case .history: "보기"
+            case .historyEntry(let kind, _): kind == .clipboard ? "다시 복사" : "열기"
             }
         }
     }
@@ -47,11 +53,14 @@ struct WorkspaceSearchView: View {
     }
 
     @Environment(WookeyRuntime.self) private var runtime
+    @Environment(LocalHistoryStore.self) private var history
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     @State private var selected: Destination?
     @State private var actionError: String?
+    @State private var historyKind: HistoryKind?
+    @State private var previousQuery = ""
     @State private var installedApplications: [InstalledApplication] = []
     @State private var exchangeRates: SearchExchangeRates.Snapshot?
     @State private var exchangeLoadFailed = false
@@ -63,14 +72,27 @@ struct WorkspaceSearchView: View {
     }
 
     private func matches(for query: String) -> (entries: [Result], utility: Utility?) {
+        let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
+        if let historyKind {
+            let entries = history.entries(historyKind).sorted { $0.date > $1.date }.compactMap { entry -> Result? in
+                guard terms.allSatisfy({ entry.name.localizedCaseInsensitiveContains($0) }) else { return nil }
+                return Result(
+                    id: .historyEntry(historyKind, entry.id), name: entry.name,
+                    detail: entry.date.formatted(date: .abbreviated, time: .shortened), symbol: entry.symbol
+                )
+            }
+            return (entries, nil)
+        }
         let webAddress = SearchWebAddress.parse(query)
-        let keywordResults = WorkflowKeyword.matches(query, in: runtime.store.workflows).map {
-            workflowResult($0.workflow, matchingKeyword: $0.keyword)
+        let keywordResults = WorkflowKeyword.matches(query, in: runtime.store.workflows, templates: runtime.store.templates).map {
+            switch $0.target {
+            case .workflow(let workflow): workflowResult(workflow, matchingKeyword: $0.keyword)
+            case .template(let template): templateResult(template, matchingKeyword: $0.keyword)
+            }
         }
         if webAddress == nil, let utility = utility(for: query, keywordResults: keywordResults) {
             return (utilityResults(utility), utility)
         }
-        let terms = query.split(whereSeparator: \.isWhitespace).map(String.init)
         let entries = isLauncher ? launcherResults : libraryResults
         let keywordIDs = Set(keywordResults.map(\.id))
         let matchingEntries = entries.filter { result in
@@ -128,18 +150,26 @@ struct WorkspaceSearchView: View {
     private var launcherResults: [Result] {
         let historyActions = [
             Result(
-                id: .library(.clipboard), name: "클립보드 열기", detail: "Wookey",
+                id: .history(.clipboard), name: "클립보드 열기", detail: "Wookey",
                 symbol: HistoryKind.clipboard.symbol, searchAliases: ["복사 기록", "open clipboard"]
             ),
             Result(
-                id: .library(.files), name: "우키 폴더 열기", detail: "Wookey",
+                id: .history(.files), name: "우키 폴더 열기", detail: "Wookey",
                 symbol: HistoryKind.files.symbol, searchAliases: ["파일함 열기", "파일 보관함", "서랍", "open files", "open folder", "drawer"]
             )
         ]
-        let templates = runtime.store.templates.map {
-            Result(id: .copy($0.id), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
-        }
+        let templates = runtime.store.templates.map { templateResult($0) }
         return historyActions + templates + runtime.store.workflows.filter { !$0.actions.isEmpty }.map { workflowResult($0) }
+    }
+
+    private func templateResult(_ template: RichTemplate, matchingKeyword: String? = nil) -> Result {
+        let destination: Destination = if !isLauncher { .library(.template(template.id)) }
+        else if template.deliveryMode == .copyAndPaste { .pasteTemplate(template.id) }
+        else { .copy(template.id) }
+        return Result(
+            id: destination, name: template.name, detail: "템플릿", symbol: wookeyTemplateSymbol,
+            keyword: matchingKeyword ?? WorkflowKeyword.normalized(template.keywords?.first)
+        )
     }
 
     private func workflowResult(_ workflow: Workflow, matchingKeyword: String? = nil) -> Result {
@@ -166,9 +196,7 @@ struct WorkspaceSearchView: View {
             Result(id: .library(.application($0.bundleIdentifier)), name: $0.displayName,
                    detail: "앱 · \($0.shortcut.displayName)", symbol: "app")
         }
-        let templates = runtime.store.templates.map {
-            Result(id: .library(.template($0.id)), name: $0.name, detail: "템플릿", symbol: wookeyTemplateSymbol)
-        }
+        let templates = runtime.store.templates.map { templateResult($0) }
         let layouts = runtime.store.layouts.map {
             Result(id: .library(.layout($0.id)), name: $0.name,
                    detail: $0.shortcut.steps.isEmpty ? "레이아웃" : "레이아웃 · \($0.shortcut.displayName)",
@@ -183,19 +211,25 @@ struct WorkspaceSearchView: View {
         let actionTitle = selected?.actionTitle ?? "열기"
         VStack(spacing: 0) {
             HStack(spacing: 12) {
+                if historyKind != nil {
+                    Button("뒤로", wookeyIcon: "chevron.left", action: backOrClose)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
+                        .keyboardShortcut(.cancelAction)
+                }
                 WorkspaceSearchField(
                     text: Binding(get: { query }, set: changeQuery),
                     onMove: moveSelection,
                     onSubmit: openSelected,
                     onWebSearch: searchWeb,
-                    onCancel: close,
-                    prompt: isLauncher ? "앱·워크플로 검색, 웹 주소 입력, 계산·환율" : "보관함 검색 또는 웹 주소 입력"
+                    onCancel: backOrClose,
+                    prompt: historyPrompt ?? (isLauncher ? "앱·워크플로 검색, 웹 주소 입력, 계산·환율" : "보관함 검색 또는 웹 주소 입력")
                 )
                 .frame(height: 28)
                 Button("닫기", wookeyIcon: "xmark", action: close)
                     .labelStyle(.iconOnly)
                     .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
-                    .keyboardShortcut(.cancelAction)
+                    .keyboardShortcut(historyKind == nil ? .cancelAction : nil)
             }
             .padding(18)
             Divider()
@@ -209,7 +243,7 @@ struct WorkspaceSearchView: View {
                     .frame(maxHeight: .infinity)
             } else if entries.isEmpty {
                 if query.isEmpty {
-                    ContentUnavailableView(isLauncher ? "앱 이름을 입력해 검색하세요" : "저장한 템플릿이나 워크플로가 없습니다",
+                    ContentUnavailableView(historyEmptyTitle ?? (isLauncher ? "앱 이름을 입력해 검색하세요" : "저장한 템플릿이나 워크플로가 없습니다"),
                                            systemImage: "magnifyingglass")
                         .frame(maxHeight: .infinity)
                 } else {
@@ -223,26 +257,30 @@ struct WorkspaceSearchView: View {
             Divider()
             if let actionError {
                 Label(actionError, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                     .padding(.horizontal, 18)
                     .padding(.top, 9)
             }
             HStack {
-                Text("↑ ↓ 이동").foregroundStyle(.secondary)
-                Text("↵ \(actionTitle)").foregroundStyle(.secondary)
+                if selected != nil {
+                    Text("↑ ↓ 이동").foregroundStyle(.secondary)
+                    Text("↵ \(actionTitle)").foregroundStyle(.secondary)
+                }
                 Spacer()
-                Button("웹 검색  ⌘↵", action: searchWeb)
-                    .buttonStyle(WookeyGlossyButtonStyle())
-                    .keyboardShortcut(.return, modifiers: .command)
-                    .accessibilityLabel("웹 검색")
-                    .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                if historyKind == nil {
+                    Button("웹 검색  ⌘↵", action: searchWeb)
+                        .buttonStyle(WookeyGlossyButtonStyle())
+                        .keyboardShortcut(.return, modifiers: .command)
+                        .accessibilityLabel("웹 검색")
+                        .disabled(query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
                 Button(actionTitle, action: openSelected)
                     .buttonStyle(WookeyGlossyButtonStyle())
                     .keyboardShortcut(.defaultAction)
                     .disabled(selected == nil)
             }
-            .font(.caption)
+            .font(.pretendard(.caption))
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
         }
@@ -265,6 +303,23 @@ struct WorkspaceSearchView: View {
         }
     }
 
+    private var historyPrompt: String? {
+        historyKind.map { $0 == .clipboard ? "최근 클립보드 검색" : "우키 폴더 검색" }
+    }
+
+    private var historyEmptyTitle: String? {
+        historyKind.map { $0 == .clipboard ? "클립보드 기록이 없습니다" : "우키 폴더에 항목이 없습니다" }
+    }
+
+    private func backOrClose() {
+        guard historyKind != nil else {
+            close()
+            return
+        }
+        historyKind = nil
+        changeQuery(previousQuery)
+    }
+
     private func needsExchangeRates(_ utility: Utility?) -> Bool {
         if case .exchange = utility { return true }
         return false
@@ -285,11 +340,11 @@ struct WorkspaceSearchView: View {
     private func exchangeHeader(_ request: SearchCurrencyQuery) -> some View {
         HStack {
             Text("\(SearchNumber.formatted(request.amount)) \(request.base.rawValue) 환산")
-                .font(.subheadline.weight(.semibold))
+                .font(.pretendard(.subheadline, weight: .semibold))
             Spacer()
             if let exchangeRates {
                 Text("\(exchangeRates.usedFallback ? "최근 확인값 · " : "")ECB 기준환율 · \(exchangeRates.rates.date)")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
             }
         }
@@ -339,17 +394,17 @@ struct WorkspaceSearchView: View {
                                         WookeyActionIcon(symbol: entry.symbol, tint: WookeyActionTint(symbol: entry.symbol), size: 17)
                                     }
                                 }
-                                .font(entry.isValue ? .system(.title3, design: .rounded, weight: .semibold) : .body)
+                                .font(entry.isValue ? .pretendard(.title3, weight: .semibold) : .pretendard(.body))
                                 if let keyword = entry.keyword {
                                     Text(keyword)
-                                        .font(.system(.caption, design: .monospaced, weight: .medium))
+                                        .font(.pretendard(.caption, weight: .medium))
                                         .padding(.horizontal, 7)
                                         .padding(.vertical, 3)
                                         .background(Color.wookeyInk(in: colorScheme).opacity(0.1), in: Capsule())
                                 }
                                 Spacer()
                                 Text(entry.detail)
-                                    .font(.caption)
+                                    .font(.pretendard(.caption))
                                     .foregroundStyle(.secondary)
                             }
                             .padding(.horizontal, 10)
@@ -391,7 +446,7 @@ struct WorkspaceSearchView: View {
     }
 
     private func searchWeb() {
-        guard (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() != true,
+        guard historyKind == nil, (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() != true,
               let url = SearchWebAddress.searchURL(for: query) else { return }
         openInBrowser(url)
     }
@@ -407,13 +462,17 @@ struct WorkspaceSearchView: View {
     private func perform(_ destination: Destination) {
         switch destination {
         case .library(let location):
-            switch mode {
-            case .library(let open):
-                open(location)
-            case .launcher(let closePanel, let open):
-                closePanel()
-                open(location)
-            }
+            if case .library(let open) = mode { open(location) }
+        case .history(let kind):
+            previousQuery = query
+            historyKind = kind
+            changeQuery("")
+        case .historyEntry(let kind, let id):
+            guard let entry = history.entries(kind).first(where: { $0.id == id }) else { return }
+            if kind == .clipboard { history.restoreClipboard(entry) }
+            else { history.openFile(entry) }
+            if let failure = history.errors[kind] { actionError = failure }
+            else { close() }
         case .openApplication(let application):
             if NSWorkspace.shared.open(URL(fileURLWithPath: application.path)) {
                 close()
@@ -434,6 +493,9 @@ struct WorkspaceSearchView: View {
             } catch {
                 actionError = error.localizedDescription
             }
+        case .pasteTemplate(let id):
+            runtime.run(templateID: id)
+            close()
         case .copyValue(let value):
             do {
                 try runtime.clipboard.copy(NSAttributedString(string: value))
@@ -445,7 +507,7 @@ struct WorkspaceSearchView: View {
     }
 
     private func close() {
-        if case .launcher(let closePanel, _) = mode { closePanel() }
+        if case .launcher(let closePanel) = mode { closePanel() }
         else { dismiss() }
     }
 }
@@ -453,12 +515,12 @@ struct WorkspaceSearchView: View {
 @MainActor
 final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
     private let runtime: WookeyRuntime
-    private let openWorkspace: (SidebarSelection) -> Void
+    private let history: LocalHistoryStore
     private var window: SearchWindow?
 
-    init(runtime: WookeyRuntime, openWorkspace: @escaping (SidebarSelection) -> Void) {
+    init(runtime: WookeyRuntime, history: LocalHistoryStore) {
         self.runtime = runtime
-        self.openWorkspace = openWorkspace
+        self.history = history
     }
 
     func toggle() {
@@ -491,8 +553,9 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
         panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
         panel.standardWindowButton(.zoomButton)?.isHidden = true
         panel.contentView = NSHostingView(rootView:
-            WorkspaceSearchView(mode: .launcher(close: { [weak self] in self?.close() }, open: openWorkspace))
+            WorkspaceSearchView(mode: .launcher(close: { [weak self] in self?.close() }))
                 .environment(runtime)
+                .environment(history)
                 .modifier(WookeyThemeScope())
         )
         panel.openSettings = { [weak self] event in
@@ -561,6 +624,7 @@ private struct WorkspaceSearchField: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSSearchField {
         let field = AutofocusingSearchField()
+        field.font = WookeyTypography.native(size: 16)
         field.placeholderString = prompt
         field.setAccessibilityLabel("Wookey 검색어")
         field.controlSize = .large
@@ -570,9 +634,13 @@ private struct WorkspaceSearchField: NSViewRepresentable {
 
     func updateNSView(_ field: NSSearchField, context: Context) {
         context.coordinator.parent = self
-        if (field.currentEditor() as? NSTextView)?.hasMarkedText() != true,
-           field.stringValue != text {
-            field.stringValue = text
+        if field.placeholderString != prompt { field.placeholderString = prompt }
+        let editor = field.currentEditor() as? NSTextView
+        guard editor?.hasMarkedText() != true else { return }
+        if field.stringValue != text { field.stringValue = text }
+        if let editor, editor.string != text {
+            editor.string = text
+            editor.setSelectedRange(NSRange(location: text.utf16.count, length: 0))
         }
     }
 

@@ -50,7 +50,7 @@ struct WorkflowEditorView: View {
 
                         VStack(alignment: .leading, spacing: 0) {
                             Text("실행 순서")
-                                .font(.headline)
+                                .font(.pretendard(.headline))
                                 .padding(.bottom, 14)
 
                             if workflow.actions.isEmpty {
@@ -119,7 +119,7 @@ struct WorkflowEditorView: View {
                 WookeySaveStatus()
                 Spacer()
                 Text("\(workflow.actions.count)개 동작")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                 Button {
                     runtime.run(workflowID: workflow.id)
@@ -237,7 +237,7 @@ struct WorkflowEditorView: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 14) {
                 Text("단축키")
-                    .font(.headline)
+                    .font(.pretendard(.headline))
                 ShortcutBadge(
                     text: workflow.shortcut.steps.isEmpty ? "미지정" : workflow.shortcut.displayName,
                     isMuted: workflow.shortcut.steps.isEmpty
@@ -255,7 +255,7 @@ struct WorkflowEditorView: View {
                 .popover(isPresented: $showsShortcutEditor, arrowEdge: .bottom) {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("단축키 변경")
-                            .font(.headline)
+                            .font(.pretendard(.headline))
                         ShortcutRecorderView(shortcut: $workflow.shortcut)
                     }
                     .padding(20)
@@ -266,7 +266,7 @@ struct WorkflowEditorView: View {
 
             if let error = runtime.hotkeys.registrationErrors[workflow.id] {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.orange)
             }
 
@@ -280,7 +280,7 @@ struct WorkflowEditorView: View {
                 }
                 .onChange(of: keywordDraft) { _, value in
                     guard let keywords = WorkflowKeyword.parseList(value), workflow.keywords != keywords,
-                          WorkflowKeyword.validationMessage(for: value, excluding: workflow.id, in: runtime.store.workflows) == nil else { return }
+                          WorkflowKeywordField.error(for: value, workflowID: workflow.id, store: runtime.store) == nil else { return }
                     workflow.keywords = keywords
                 }
         }
@@ -390,9 +390,9 @@ private struct TemplateActionSetupView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("템플릿 붙여넣기 추가")
-                    .font(.title2.weight(.semibold))
+                    .font(.pretendard(.title2, weight: .semibold))
                 Text("붙여넣을 템플릿과 실행 방식을 선택하세요.")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -406,7 +406,7 @@ private struct TemplateActionSetupView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("붙여넣을 템플릿")
-                            .font(.headline)
+                            .font(.pretendard(.headline))
 
                         VStack(spacing: 8) {
                             ForEach(templates) { template in
@@ -417,13 +417,13 @@ private struct TemplateActionSetupView: View {
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("실행 방식")
-                            .font(.headline)
+                            .font(.pretendard(.headline))
                         WookeyFilterPicker(title: "실행 방식", selection: $selectedMode, options: TemplateDeliveryMode.allCases) {
                             $0.title
                         }
 
                         Text(modeDescription)
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -459,10 +459,10 @@ private struct TemplateActionSetupView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(template.name)
-                        .font(.body)
+                        .font(.pretendard(.body))
                         .foregroundStyle(.primary)
                     Text(template.plainText.isEmpty ? "내용 없음" : template.plainText)
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -520,9 +520,9 @@ private struct EmptyActionsView: View {
             WookeyMascot(size: 66)
             VStack(alignment: .leading, spacing: 3) {
                 Text("첫 동작을 추가해 보세요")
-                    .font(.headline)
+                    .font(.pretendard(.headline))
                 Text("앱, 키 입력, 템플릿, 이미지, 파일과 다른 워크플로를 순서대로 연결할 수 있습니다.")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
         }
@@ -560,10 +560,10 @@ private struct FlowActionRow: View {
                         ActionIcon(action: action)
                         VStack(alignment: .leading, spacing: 5) {
                             Text(actionTitle)
-                                .font(.body)
+                                .font(.pretendard(.body))
                                 .foregroundStyle(.primary)
                             Text(actionSubtitle)
-                                .font(.subheadline)
+                                .font(.pretendard(.subheadline))
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                         }
@@ -597,7 +597,7 @@ private struct FlowActionRow: View {
                 .popover(isPresented: $showsEditor, arrowEdge: .trailing) {
                     VStack(alignment: .leading, spacing: 18) {
                         Text(actionTitle)
-                            .font(.headline)
+                            .font(.pretendard(.headline))
                         actionEditor
                         Divider()
                         HStack {
@@ -681,7 +681,7 @@ private struct FlowActionRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(name)
                 Text(bundleID)
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
                 Button("앱 변경…") {
                     let panel = NSOpenPanel()
@@ -721,7 +721,7 @@ private struct FlowActionRow: View {
                 .textFieldStyle(.roundedBorder)
                 if URL(string: url)?.host?.isEmpty != false {
                     Label("전체 웹사이트 주소를 입력하세요. 예: https://example.com", systemImage: "info.circle")
-                        .font(.caption)
+                        .font(.pretendard(.caption))
                         .foregroundStyle(.orange)
                 }
             }
@@ -781,7 +781,7 @@ private struct FlowActionRow: View {
                     Text("대기 시간: \(seconds.formatted(.number.precision(.fractionLength(1))))초")
                 }
                 Text("파일 첨부나 화면 전환이 끝날 시간을 확보합니다. 0.1초부터 30초까지 설정할 수 있습니다.")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
             }
 
@@ -805,7 +805,7 @@ private struct FlowActionRow: View {
                     in: workflows
                 ) {
                     Label("서로 반복 실행되는 연결입니다. 다른 워크플로를 선택하세요.", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
+                        .font(.pretendard(.caption))
                         .foregroundStyle(.orange)
                 }
             }
@@ -834,7 +834,7 @@ private struct FlowActionRow: View {
 
             if filePaths.contains(where: { !FileManager.default.fileExists(atPath: $0) }) {
                 Label("이동되거나 삭제된 항목이 있습니다. 다시 선택해 주세요.", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.orange)
             }
 
@@ -892,7 +892,7 @@ private struct FlowMarker: View {
             }
 
             Text("\(number)")
-                .font(.system(size: 16, weight: .bold))
+                .font(.pretendard(size: 16, weight: .bold))
                 .foregroundStyle(Color.wookeyInk(in: colorScheme))
                 .frame(width: 38, height: 38)
                 .background(Color.wookeyInk(in: colorScheme).opacity(0.11), in: RoundedRectangle(cornerRadius: 12))

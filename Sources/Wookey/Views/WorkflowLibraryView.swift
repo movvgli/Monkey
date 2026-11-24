@@ -101,10 +101,10 @@ struct WorkflowLibraryView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 8) {
                 Text("워크플로")
-                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .font(.pretendard(size: 30, weight: .bold))
                     .accessibilityAddTraits(.isHeader)
                 Text("자주 하는 일을 단축키 하나로 실행하세요.")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -136,7 +136,7 @@ struct WorkflowLibraryView: View {
                 Text("단축키").frame(width: WorkflowListMetrics.shortcutWidth, alignment: .leading)
                 Text("실행").frame(width: WorkflowListMetrics.playWidth)
             }
-            .font(.caption.weight(.medium))
+            .font(.pretendard(.caption, weight: .medium))
             .foregroundStyle(.secondary)
             .padding(.horizontal, WorkflowListMetrics.horizontalPadding)
             .padding(.bottom, 8)
@@ -182,11 +182,6 @@ private struct WorkflowLibraryRow: View {
         }
     }
 
-    private var icon: (symbol: String, tint: WookeyActionTint) {
-        guard workflow.actions.count == 1, let action = workflow.actions.first else { return ("bolt", .accent) }
-        return action.wookeyIcon
-    }
-
     var body: some View {
         HStack(spacing: WorkflowListMetrics.spacing) {
             editButton
@@ -201,19 +196,20 @@ private struct WorkflowLibraryRow: View {
     }
 
     private var editButton: some View {
-        Button(action: open) {
+        let icon = workflow.wookeyIcon
+        return Button(action: open) {
             HStack(spacing: WorkflowListMetrics.spacing) {
                 HStack(spacing: 10) {
                     WookeyActionIcon(symbol: icon.symbol, tint: icon.tint)
 
                     Text(workflow.name)
-                        .font(.system(.body, design: .rounded))
+                        .font(.pretendard(.body))
                         .lineLimit(1)
                         .layoutPriority(1)
 
                     if let detail {
                         Text(detail)
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -244,7 +240,7 @@ private struct WorkflowLibraryRow: View {
 
             if workflow.shortcut.steps.isEmpty {
                 Text("—")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("단축키 미지정")
             } else {

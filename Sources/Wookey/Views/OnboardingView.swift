@@ -45,9 +45,9 @@ struct OnboardingView: View {
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("Wookey 시작하기")
-                    .font(.system(size: 25, weight: .semibold))
+                    .font(.pretendard(size: 25, weight: .semibold))
                 Text(page == 0 ? "무엇을 할 수 있는지 먼저 알아볼게요." : "필요한 기능만 선택해서 켜세요.")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
 
@@ -73,10 +73,10 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 22) {
             VStack(alignment: .leading, spacing: 7) {
                 Text("반복하는 일을\n단축키 하나로 끝내세요")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(.pretendard(size: 32, weight: .bold))
                     .fixedSize(horizontal: false, vertical: true)
                 Text("자주 하는 작업을 원하는 순서로 연결하면 Wookey가 어디서든 빠르게 실행합니다.")
-                    .font(.system(size: 16))
+                    .font(.pretendard(size: 16))
                     .foregroundStyle(.secondary)
             }
 
@@ -115,9 +115,9 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: 20) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("필요한 기능만 권한을 켜세요")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.pretendard(size: 28, weight: .bold))
                 Text("기본 워크플로는 권한 없이도 사용할 수 있고, 필요한 기능은 나중에 설정할 수 있습니다.")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
 
@@ -152,7 +152,7 @@ struct OnboardingView: View {
                 HStack(spacing: 10) {
                     WookeyActionIcon(symbol: "arrow.clockwise", tint: .accent, size: 16)
                     Text("입력 모니터링을 켠 뒤에는 Wookey를 다시 열어야 적용됩니다.")
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                     Spacer()
                     Button("다시 열기") {
                         runtime.permissions.relaunchApplication()
@@ -167,12 +167,12 @@ struct OnboardingView: View {
                     .toggleStyle(.switch)
                     .tint(theme.selectionTint)
                 Text("메인 창은 띄우지 않고 메뉴 막대와 단축키만 준비합니다.")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
             }
 
             Text("권한을 켜지 않아도 앱 실행, 웹사이트 열기와 템플릿 클립보드 복사는 사용할 수 있습니다.")
-                .font(.caption)
+                .font(.pretendard(.caption))
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 32)
@@ -235,9 +235,9 @@ private struct OnboardingFeatureCard: View {
                 .background(Color.wookeyInk(in: colorScheme).opacity(0.09), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.headline)
+                    .font(.pretendard(.headline))
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
@@ -264,12 +264,12 @@ private struct OnboardingStepLabel: View {
     var body: some View {
         HStack(spacing: 6) {
             Text("\(number)")
-                .font(.caption2.weight(.bold))
+                .font(.pretendard(.caption2, weight: .bold))
                 .foregroundStyle(Color.wookeyInk(in: colorScheme))
                 .frame(width: 20, height: 20)
                 .background(Color.wookeyInk(in: colorScheme).opacity(0.1), in: Circle())
             Text(title)
-                .font(.caption.weight(.medium))
+                .font(.pretendard(.caption, weight: .medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -292,9 +292,9 @@ private struct OnboardingPermissionRow: View {
                     in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                 )
             VStack(alignment: .leading, spacing: 3) {
-                Text(title).font(.headline)
+                Text(title).font(.pretendard(.headline))
                 Text(detail)
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
             }
             Spacer()

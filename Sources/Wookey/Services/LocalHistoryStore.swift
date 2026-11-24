@@ -231,15 +231,45 @@ final class LocalHistoryStore {
     }
 
     func remove(_ entry: Entry, kind: HistoryKind) {
+        if kind == .files {
+            removeFiles([entry.id])
+            return
+        }
         do {
-            let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
-            if files.fileExists(atPath: folder.path) { try files.removeItem(at: folder) }
+            try removeRecord(entry, kind: kind)
             history[kind]?.removeAll { $0.id == entry.id }
-            if kind == .files { onFilesTakenFromShelf?([entry.id]) }
             errors[kind] = nil
         } catch {
             report(error, kind: kind, message: "기록을 삭제하지 못했습니다")
         }
+    }
+
+    func removeFiles(_ ids: Set<UUID>) {
+        let requested = entries(.files).filter { ids.contains($0.id) }
+        var removed = Set<UUID>()
+        var failure: String?
+        for entry in requested {
+            if outgoingFileDrags.contains(entry.id) {
+                failure = "이동 중인 항목은 이동을 마친 뒤에 삭제할 수 있습니다."
+                continue
+            }
+            do {
+                try removeRecord(entry, kind: .files)
+                removed.insert(entry.id)
+            } catch {
+                failure = error.localizedDescription
+            }
+        }
+        if !removed.isEmpty {
+            history[.files]?.removeAll { removed.contains($0.id) }
+            onFilesTakenFromShelf?(removed)
+        }
+        errors[.files] = failure.map { "\(requested.count - removed.count)개 항목을 삭제하지 못했습니다. \($0)" }
+    }
+
+    private func removeRecord(_ entry: Entry, kind: HistoryKind) throws {
+        let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
+        if files.fileExists(atPath: folder.path) { try files.removeItem(at: folder) }
     }
 
     func showFileImportError() {

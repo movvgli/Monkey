@@ -30,7 +30,7 @@ struct ShortcutRecorderView: View {
             }
 
             Text(visibleValidationMessage ?? helperText)
-                .font(.caption)
+                .font(.pretendard(.caption))
                 .foregroundStyle(visibleValidationMessage == nil ? Color.secondary : WookeyActionTint.rose.ink(in: colorScheme))
         }
         .onChange(of: stepCount) { _, count in
@@ -274,8 +274,8 @@ private final class KeyRecorderControl: NSControl {
         }
         let attributes: [NSAttributedString.Key: Any] = [
             .font: shortcut.steps.isEmpty && !isRecording
-                ? NSFont.systemFont(ofSize: 13)
-                : NSFont.monospacedSystemFont(ofSize: 13, weight: .medium),
+                ? WookeyTypography.native(size: 13)
+                : WookeyTypography.native(size: 13, weight: .medium),
             .foregroundColor: shortcut.steps.isEmpty && !isRecording ? NSColor.secondaryLabelColor : NSColor.labelColor,
         ]
         let size = text.size(withAttributes: attributes)

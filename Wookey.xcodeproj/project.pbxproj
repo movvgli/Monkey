@@ -73,6 +73,12 @@
 		F8C4225DF9C0D8447F187BCD /* KeyboardService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BBFD811CFF41BB6E50326A3 /* KeyboardService.swift */; };
 		FAB9A8082885070D03068832 /* WookeyCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 40179216A1772150F1719EAC /* WookeyCore.framework */; };
 		FCA8C63E9E1624F4EB94572B /* WookeyStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A24D53D060BE24564F62CF55 /* WookeyStore.swift */; };
+		16099144D73BD728F795B6FC /* Pretendard-Bold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 224D2E977E211E9C718763C5 /* Pretendard-Bold.otf */; };
+		29B7FD72C53B92AC09B968F6 /* Pretendard-SemiBold.otf in Resources */ = {isa = PBXBuildFile; fileRef = 6B295B3F4D336E56E9DFD723 /* Pretendard-SemiBold.otf */; };
+		45345B6B9C10E4991ECCF5C2 /* Pretendard-Medium.otf in Resources */ = {isa = PBXBuildFile; fileRef = ABB935ACC8FBE997AF34F0C0 /* Pretendard-Medium.otf */; };
+		92565540F07FE5D6D436A62B /* WookeyTypography.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6262F238B123BFB01904B3F /* WookeyTypography.swift */; };
+		CA5625FD6887DF6070109407 /* Pretendard-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = D068C00723A5AD93C496C523 /* Pretendard-LICENSE.txt */; };
+		E7E6911D85F7D2418507E87E /* Pretendard-Regular.otf in Resources */ = {isa = PBXBuildFile; fileRef = 69AFF5636F085C06741FD50E /* Pretendard-Regular.otf */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -190,6 +196,12 @@
 		F423893B1BA45A8F9760DDEC /* WorkflowReferenceSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkflowReferenceSetupView.swift; sourceTree = "<group>"; };
 		F8311B814F3B168ADCFCB038 /* DockIconService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DockIconService.swift; sourceTree = "<group>"; };
 		FC2B14662FB8FC6B02D3FA9F /* WindowLayoutControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutControllerTests.swift; sourceTree = "<group>"; };
+		224D2E977E211E9C718763C5 /* Pretendard-Bold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Bold.otf"; sourceTree = "<group>"; };
+		69AFF5636F085C06741FD50E /* Pretendard-Regular.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Regular.otf"; sourceTree = "<group>"; };
+		6B295B3F4D336E56E9DFD723 /* Pretendard-SemiBold.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-SemiBold.otf"; sourceTree = "<group>"; };
+		ABB935ACC8FBE997AF34F0C0 /* Pretendard-Medium.otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Pretendard-Medium.otf"; sourceTree = "<group>"; };
+		B6262F238B123BFB01904B3F /* WookeyTypography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WookeyTypography.swift; sourceTree = "<group>"; };
+		D068C00723A5AD93C496C523 /* Pretendard-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Pretendard-LICENSE.txt"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -268,6 +280,7 @@
 				9CD5FD16E604EF4F1646268C /* RichTextEditor.swift */,
 				928C51A8110C6A07CC483231 /* ShortcutRecorderView.swift */,
 				C5D474D7A2FE6E9C6853A5B0 /* TemplateEditorView.swift */,
+				B6262F238B123BFB01904B3F /* WookeyTypography.swift */,
 				78E342F0F6965420E4F40F7C /* WookeyDesignComponents.swift */,
 				C4F766E91A1B80A9C12FBAEC /* WookeySettingsView.swift */,
 				82E3C5A7E61938F22D7D8F20 /* WorkflowActionPicker.swift */,
@@ -346,6 +359,7 @@
 		C782BDC5F620EEE383BFC9A4 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				7A41E6CC78E300BA495E33BD /* Fonts */,
 				2AAC3E4BFBB08DCCCA85D5BC /* Assets.xcassets */,
 			);
 			path = Resources;
@@ -382,6 +396,18 @@
 				DF414C4D550351D288CD1EBC /* WookeyLoginHelper */,
 				133048EE824E84524EFA3A0E /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		7A41E6CC78E300BA495E33BD /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				224D2E977E211E9C718763C5 /* Pretendard-Bold.otf */,
+				D068C00723A5AD93C496C523 /* Pretendard-LICENSE.txt */,
+				ABB935ACC8FBE997AF34F0C0 /* Pretendard-Medium.otf */,
+				69AFF5636F085C06741FD50E /* Pretendard-Regular.otf */,
+				6B295B3F4D336E56E9DFD723 /* Pretendard-SemiBold.otf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -522,6 +548,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				16099144D73BD728F795B6FC /* Pretendard-Bold.otf in Resources */,
+				CA5625FD6887DF6070109407 /* Pretendard-LICENSE.txt in Resources */,
+				45345B6B9C10E4991ECCF5C2 /* Pretendard-Medium.otf in Resources */,
+				E7E6911D85F7D2418507E87E /* Pretendard-Regular.otf in Resources */,
+				29B7FD72C53B92AC09B968F6 /* Pretendard-SemiBold.otf in Resources */,
 				7BDCBC53E0192FBFFAFEE6F9 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -599,6 +630,7 @@
 				8C4980DCEAB4DBFB4490CF2A /* TemplateEditorView.swift in Sources */,
 				DD5B1C0F78ADC5846938C905 /* UpdateController.swift in Sources */,
 				55BF68D94F5D08BAC89802E5 /* WookeyApp.swift in Sources */,
+				92565540F07FE5D6D436A62B /* WookeyTypography.swift in Sources */,
 				09E7C3E09C1886278FE0D381 /* WookeyDesignComponents.swift in Sources */,
 				033DF5DBF070491C9B43C44B /* WookeySettingsView.swift in Sources */,
 				3FE99FB7B586E39B3079CA77 /* WorkflowActionPicker.swift in Sources */,
@@ -735,7 +767,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002050;
+				CURRENT_PROJECT_VERSION = 1002051;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -755,7 +787,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.50;
+				MARKETING_VERSION = 1.2.51;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -802,7 +834,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002050;
+				CURRENT_PROJECT_VERSION = 1002051;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -816,7 +848,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.50;
+				MARKETING_VERSION = 1.2.51;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

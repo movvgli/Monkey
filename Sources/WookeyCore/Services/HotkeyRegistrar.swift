@@ -8,10 +8,12 @@ private let shortcutLogger = Logger(subsystem: "com.wikey.app", category: "short
 @Observable
 public final class HotkeyRegistrar {
     public private(set) var registrationErrors: [UUID: String] = [:]
+    public private(set) var templateRegistrationErrors: [UUID: String] = [:]
     public private(set) var applicationRegistrationErrors: [UUID: String] = [:]
     public private(set) var layoutRegistrationErrors: [UUID: String] = [:]
     public private(set) var searchRegistrationError: String?
     public var onWorkflow: ((UUID) -> Void)?
+    public var onTemplate: ((UUID) -> Void)?
     public var onApplication: ((UUID) -> Void)?
     public var onLayout: ((UUID) -> Void)?
     public var onSearch: (() -> Void)?
@@ -24,6 +26,7 @@ public final class HotkeyRegistrar {
     private var pressedIDs = Set<UInt32>()
     private var recordingTokens = Set<UUID>()
     private var configuredWorkflows: [Workflow] = []
+    private var configuredTemplates: [RichTemplate] = []
     private var configuredApplications: [ApplicationShortcut] = []
     private var configuredLayouts: [WindowLayout] = []
     private var configuredSearchShortcut = ShortcutGesture()
@@ -36,6 +39,7 @@ public final class HotkeyRegistrar {
 
     private enum Target: Hashable {
         case workflow(UUID)
+        case template(UUID)
         case application(UUID)
         case layout(UUID)
         case search
@@ -82,9 +86,11 @@ public final class HotkeyRegistrar {
         workflows: [Workflow],
         applicationShortcuts: [ApplicationShortcut] = [],
         layouts: [WindowLayout] = [],
+        templates: [RichTemplate] = [],
         searchShortcut: ShortcutGesture = .init()
     ) {
         configuredWorkflows = workflows
+        configuredTemplates = templates
         configuredApplications = applicationShortcuts
         configuredLayouts = layouts
         configuredSearchShortcut = searchShortcut
@@ -97,9 +103,17 @@ public final class HotkeyRegistrar {
         let conflicts = ShortcutConflictDetector.conflicts(
             workflows: workflows,
             applicationShortcuts: applicationShortcuts,
-            layouts: layouts
+            layouts: layouts,
+            templates: templates
         )
         registrationErrors = conflicts.workflows
+        templateRegistrationErrors = conflicts.templates
+        if searchShortcut.steps.count == 1, searchShortcut.validationMessage == nil,
+           let searchChord = searchShortcut.steps.first {
+            for template in templates where template.shortcut?.steps.first == searchChord {
+                templateRegistrationErrors[template.id] = "검색창 단축키와 겹칩니다."
+            }
+        }
         applicationRegistrationErrors = conflicts.applications
         layoutRegistrationErrors = conflicts.layouts
         searchRegistrationError = nil
@@ -114,6 +128,12 @@ public final class HotkeyRegistrar {
                 name: workflow.name,
                 shortcut: workflow.shortcut
             )
+        }
+
+        let templateCandidates = templates.compactMap { template -> Candidate? in
+            guard let shortcut = template.shortcut, shortcut.validationMessage == nil,
+                  templateRegistrationErrors[template.id] == nil else { return nil }
+            return Candidate(target: .template(template.id), name: template.name, shortcut: shortcut)
         }
 
         let applicationCandidates = applicationShortcuts.compactMap { application -> Candidate? in
@@ -132,7 +152,7 @@ public final class HotkeyRegistrar {
             return Candidate(target: .layout(layout.id), name: layout.name, shortcut: layout.shortcut)
         }
 
-        let grouped = Dictionary(grouping: workflowCandidates + applicationCandidates + layoutCandidates) {
+        let grouped = Dictionary(grouping: workflowCandidates + templateCandidates + applicationCandidates + layoutCandidates) {
             $0.shortcut.steps[0]
         }
 
@@ -173,6 +193,7 @@ public final class HotkeyRegistrar {
             workflows: configuredWorkflows,
             applicationShortcuts: configuredApplications,
             layouts: configuredLayouts,
+            templates: configuredTemplates,
             searchShortcut: configuredSearchShortcut
         )
     }
@@ -249,6 +270,7 @@ public final class HotkeyRegistrar {
     private func trigger(_ target: Target) {
         switch target {
         case .workflow(let id): onWorkflow?(id)
+        case .template(let id): onTemplate?(id)
         case .application(let id): onApplication?(id)
         case .layout(let id): onLayout?(id)
         case .search: onSearch?()
@@ -258,6 +280,7 @@ public final class HotkeyRegistrar {
     private func setRegistrationError(_ message: String?, for target: Target) {
         switch target {
         case .workflow(let id): registrationErrors[id] = message
+        case .template(let id): templateRegistrationErrors[id] = message
         case .application(let id): applicationRegistrationErrors[id] = message
         case .layout(let id): layoutRegistrationErrors[id] = message
         case .search: searchRegistrationError = message

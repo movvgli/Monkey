@@ -38,6 +38,18 @@ struct ShortcutModelsTests {
         #expect(conflicts.count == 2)
     }
 
+    @Test func directTemplateShortcutConflictsWithAnExistingWorkflow() {
+        let gesture = ShortcutGesture(steps: [KeyChord(keyCode: 40, modifiers: [.command])])
+        let workflow = Workflow(name: "링크 열기", shortcut: gesture)
+        var template = RichTemplate(name: "답변")
+        template.shortcut = gesture
+
+        let conflicts = ShortcutConflictDetector.conflicts(workflows: [workflow], applicationShortcuts: [], templates: [template])
+
+        #expect(conflicts.templates[template.id]?.contains(workflow.name) == true)
+        #expect(conflicts.workflows[workflow.id]?.contains(template.name) == true)
+    }
+
     @Test func applicationShortcutConflictsWithWorkflow() {
         let gesture = ShortcutGesture(steps: [KeyChord(keyCode: 1, modifiers: [.command, .shift])])
         let workflow = Workflow(name: "메시지 보내기", shortcut: gesture)

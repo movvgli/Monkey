@@ -68,7 +68,7 @@ private struct WookeySidebar: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 4) {
                 Text("보관함")
-                    .font(.caption.weight(.semibold))
+                    .font(.pretendard(.caption, weight: .semibold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 11)
                     .padding(.bottom, 3)
@@ -95,7 +95,7 @@ private struct WookeySidebar: View {
                 WookeyActionIcon(symbol: section.symbol, tint: WookeyActionTint(symbol: section.symbol), size: 17)
                     .frame(width: 19)
                 Text(section.title)
-                    .font(.body.weight(isSelected ? .medium : .regular))
+                    .font(.pretendard(.body, weight: isSelected ? .medium : .regular))
                     .foregroundStyle(isSelected ? ink : Color.primary)
                 Spacer(minLength: 0)
             }
@@ -124,7 +124,6 @@ private struct WookeySidebar: View {
 
 struct ContentView: View {
     @Environment(\.wookeyTheme) private var theme
-    let navigation: WorkspaceNavigation
     private enum QuickCreate: Identifiable {
         case workflow, link
 
@@ -151,7 +150,7 @@ struct ContentView: View {
                 if let error = runtime.store.lastPersistenceError {
                     HStack(spacing: 12) {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
-                            .font(.subheadline)
+                            .font(.pretendard(.subheadline))
                             .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                         Spacer()
                         Button("다시 저장") { runtime.saveAndReloadHotkeys() }
@@ -165,11 +164,11 @@ struct ContentView: View {
                     HStack(spacing: 10) {
                         ProgressView().controlSize(.small)
                         Text(runtime.runner.currentActionTitle ?? "실행 준비 중")
-                            .font(.subheadline)
+                            .font(.pretendard(.subheadline))
                             .lineLimit(1)
                         if !runtime.runner.queuedWorkflowIDs.isEmpty {
                             Text("대기 \(runtime.runner.queuedWorkflowIDs.count)개")
-                                .font(.caption)
+                                .font(.pretendard(.caption))
                                 .foregroundStyle(.secondary)
                         }
                         Spacer()
@@ -225,9 +224,6 @@ struct ContentView: View {
         ))
         .onAppear {
             if !didCompleteOnboarding { showOnboarding = true }
-        }
-        .onChange(of: navigation.destination, initial: true) {
-            if let destination = navigation.takeDestination() { selection = destination }
         }
         .onChange(of: selection, initial: true) { _, current in
             switch current {
@@ -329,7 +325,12 @@ struct ContentView: View {
                 TemplateEditorView(
                     template: binding,
                     onBack: { selection = .templateCollection },
-                    onDelete: { deleteTemplate(id) }
+                    onDelete: { deleteTemplate(id) },
+                    onCreateWorkflow: {
+                        if let workflowID = runtime.store.createWorkflow(fromTemplate: id) {
+                            selection = .workflow(workflowID)
+                        }
+                    }
                 )
                 .id(id)
             } else {
@@ -386,8 +387,13 @@ struct ContentView: View {
             get: { runtime.store.templates.first(where: { $0.id == id }) ?? fallback },
             set: { updated in
                 guard let index = runtime.store.templates.firstIndex(where: { $0.id == id }) else { return }
+                let previous = runtime.store.templates[index]
                 runtime.store.templates[index] = updated
-                runtime.store.save()
+                if runtime.store.save() {
+                    if previous.shortcut != updated.shortcut { runtime.reloadHotkeys() }
+                } else {
+                    runtime.store.templates[index] = previous
+                }
             }
         )
     }
@@ -450,16 +456,16 @@ struct RunSummaryView: View {
                     systemImage: summary.failures.isEmpty ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                 )
                 .foregroundStyle(summary.failures.isEmpty ? Color.green : Color.orange)
-                .font(.headline)
+                .font(.pretendard(.headline))
                 Spacer()
                 Text(summary.finishedAt, style: .relative)
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
             }
             Text(summary.workflowName)
             ForEach(summary.failures) { failure in
                 Text("\(failure.actionTitle) — \(failure.message)")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
             }
         }
@@ -541,13 +547,15 @@ private struct TemplateLibraryView: View {
         return templates.filter {
             $0.name.localizedCaseInsensitiveContains(query)
                 || $0.plainText.localizedCaseInsensitiveContains(query)
+                || ($0.keywords ?? []).contains { $0.localizedCaseInsensitiveContains(query) }
+                || $0.shortcut?.displayName.localizedCaseInsensitiveContains(query) == true
         }
     }
 
     var body: some View {
         LibraryLandingView(
             title: "템플릿",
-            subtitle: "자주 쓰는 문장을 저장하고 워크플로에서 바로 사용합니다.",
+            subtitle: "자주 쓰는 문장과 이미지를 단축키나 검색 단축어로 불러옵니다.",
             addTitle: "템플릿 추가",
             searchText: $searchText,
             isEmpty: templates.isEmpty,
@@ -679,14 +687,14 @@ private struct LibraryItemButton: View {
                 )
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
-                        .font(.body)
+                        .font(.pretendard(.body))
                     Text(subtitle)
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                     if let warning {
                         Label(warning, systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(.orange)
                             .lineLimit(2)
                     }

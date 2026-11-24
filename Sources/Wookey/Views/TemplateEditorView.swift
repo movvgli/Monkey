@@ -19,11 +19,11 @@ struct NewTemplateView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 9) {
                 WookeyActionIcon(symbol: wookeyTemplateSymbol, tint: .amber, size: 26)
-                Text("새 템플릿").font(.title2.weight(.semibold))
+                Text("새 템플릿").font(.pretendard(.title2, weight: .semibold))
             }
 
             VStack(alignment: .leading, spacing: 5) {
-                Text("이름").font(.subheadline.weight(.semibold))
+                Text("이름").font(.pretendard(.subheadline, weight: .semibold))
                 TextField("비워두면 내용의 첫 줄을 사용합니다", text: $name)
                     .textFieldStyle(.roundedBorder)
                     .controlSize(.large)
@@ -34,7 +34,7 @@ struct NewTemplateView: View {
 
             if let saveError {
                 Label(saveError, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.orange)
             }
 
@@ -84,14 +84,21 @@ struct TemplateEditorView: View {
     @Binding var template: RichTemplate
     var onBack: () -> Void
     var onDelete: () -> Void
+    var onCreateWorkflow: () -> Void
     @State private var editor = RichTextEditorController()
     @State private var didCopy = false
     @State private var showsDeleteConfirmation = false
     @State private var copyError: String?
+    @State private var showsShortcuts = false
+    @State private var shortcutAssignmentError: String?
+    @State private var keywordDraft = ""
 
     var body: some View {
         VStack(spacing: 0) {
             WookeyEditorHeader(title: $template.name, subtitle: "내용을 수정하면 자동으로 저장됩니다.", onBack: onBack) {
+                Button("단축키·단축어", wookeyIcon: "keyboard") { showsShortcuts.toggle() }
+                    .popover(isPresented: $showsShortcuts) { shortcutSettings }
+                Button("워크플로로 만들기", wookeyIcon: "bolt", action: onCreateWorkflow)
                 WookeyDeleteButton(title: "템플릿 삭제") { showsDeleteConfirmation = true }
             }
 
@@ -108,7 +115,7 @@ struct TemplateEditorView: View {
                 WookeySaveStatus()
                 if let copyError {
                     Label(copyError, systemImage: "exclamationmark.triangle")
-                        .font(.caption)
+                        .font(.pretendard(.caption))
                         .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                 }
                 Spacer()
@@ -122,6 +129,11 @@ struct TemplateEditorView: View {
             .background(theme.panel)
         }
         .navigationTitle(template.name)
+        .onChange(of: template.keywords, initial: true) { _, saved in
+            if WorkflowKeyword.parseList(keywordDraft) != (saved ?? []) {
+                keywordDraft = (saved ?? []).joined(separator: ", ")
+            }
+        }
         .task(id: template.id) {
             let id = template.id
             let store = runtime.store
@@ -141,6 +153,66 @@ struct TemplateEditorView: View {
         } message: {
             Text("‘\(template.name)’과 이 템플릿을 사용하는 워크플로 동작이 함께 삭제됩니다. 이 작업은 되돌릴 수 없습니다.")
         }
+    }
+
+    private var shortcutSettings: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("단축키").font(.pretendard(.headline))
+            ShortcutRecorderView(
+                shortcut: Binding(get: { template.shortcut ?? ShortcutGesture() }, set: setShortcut)
+            )
+            if let error = shortcutAssignmentError ?? runtime.hotkeys.templateRegistrationErrors[template.id] {
+                Label(error, systemImage: "exclamationmark.triangle")
+                    .font(.pretendard(.caption))
+                    .foregroundStyle(.orange)
+            }
+            Divider()
+            WorkflowKeywordField(text: $keywordDraft, templateID: template.id)
+                .onChange(of: keywordDraft) { _, value in
+                    guard let keywords = WorkflowKeyword.parseList(value), keywords != (template.keywords ?? []),
+                          WorkflowKeywordField.error(for: value, templateID: template.id, store: runtime.store) == nil
+                    else { return }
+                    template.keywords = keywords.isEmpty ? nil : keywords
+                }
+            Picker("실행 방식", selection: Binding(
+                get: { template.deliveryMode ?? .copyOnly },
+                set: { template.deliveryMode = $0 == .copyOnly ? nil : $0 }
+            )) {
+                ForEach(TemplateDeliveryMode.allCases, id: \.self) { mode in Text(mode.title).tag(mode) }
+            }
+            WookeySaveStatus()
+        }
+        .padding(20)
+        .frame(width: 400)
+    }
+
+    private func setShortcut(_ shortcut: ShortcutGesture) {
+        shortcutAssignmentError = nil
+        guard !shortcut.steps.isEmpty else {
+            template.shortcut = nil
+            return
+        }
+        if let validationMessage = shortcut.validationMessage {
+            shortcutAssignmentError = validationMessage
+            return
+        }
+        let store = runtime.store
+        let search = store.searchShortcut
+        if search.steps.count == 1, search.steps.first == shortcut.steps.first {
+            shortcutAssignmentError = "검색창 단축키와 겹칩니다."
+            return
+        }
+        var updated = template
+        updated.shortcut = shortcut
+        let conflicts = ShortcutConflictDetector.conflicts(
+            workflows: store.workflows, applicationShortcuts: store.applicationShortcuts, layouts: store.layouts,
+            templates: store.templates.map { $0.id == updated.id ? updated : $0 }
+        )
+        if let error = conflicts.templates[updated.id] {
+            shortcutAssignmentError = error
+            return
+        }
+        template = updated
     }
 
     private func copyTemplate() {
@@ -165,7 +237,7 @@ private struct TemplateContentField: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
-                Text("내용").font(.subheadline.weight(.semibold))
+                Text("내용").font(.pretendard(.subheadline, weight: .semibold))
                 Spacer()
                 Button("서식", wookeyIcon: "slider.horizontal.3") { showsFormatting.toggle() }
                     .buttonStyle(WookeyGlossyButtonStyle())
@@ -201,7 +273,7 @@ private struct TemplateContentField: View {
                 RichTextEditor(controller: editor, focusesOnAppear: focusesOnAppear)
                 if isEmpty {
                     Text("자주 쓰는 내용을 입력하거나 붙여넣으세요.")
-                        .font(.system(size: 15))
+                        .font(.pretendard(size: 15))
                         .foregroundStyle(.secondary)
                         .padding(.leading, 27)
                         .padding(.top, 20)

@@ -56,7 +56,7 @@ struct QuickWorkflowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             Text(kind?.rawValue ?? "무엇을 자동화할까요?")
-                .font(.title2.weight(.semibold))
+                .font(.pretendard(.title2, weight: .semibold))
                 .accessibilityAddTraits(.isHeader)
 
             if let kind {
@@ -70,7 +70,7 @@ struct QuickWorkflowView: View {
                             HStack(spacing: 9) {
                                 WookeyActionIcon(symbol: option.symbol, tint: option.tint)
                                 Text(option.rawValue)
-                                    .font(.system(.body, design: .rounded))
+                                    .font(.pretendard(.body))
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .frame(minHeight: 46)
@@ -119,13 +119,13 @@ struct QuickWorkflowView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 Text("단축키 (선택)")
-                    .font(.headline)
+                    .font(.pretendard(.headline))
                 CompactShortcutRecorderView(shortcut: $shortcut)
                 if let error = shortcut.validationMessage, !shortcut.steps.isEmpty {
-                    Text(error).font(.caption).foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
+                    Text(error).font(.pretendard(.caption)).foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                 }
                 Text("macOS 단축어 앱에서 ‘Wookey 워크플로 실행’을 추가해 이 자동화를 선택할 수도 있습니다.")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -149,7 +149,7 @@ struct QuickWorkflowView: View {
                 }
                 if templateMode == .copyAndPaste {
                     Text("자동으로 붙여넣으려면 손쉬운 사용 권한과 대상 앱의 입력란이 필요합니다.")
-                        .font(.caption)
+                        .font(.pretendard(.caption))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -215,7 +215,7 @@ struct QuickWorkflowView: View {
     }
 
     private var keywordError: String? {
-        WorkflowKeyword.validationMessage(for: keywordInput, in: runtime.store.workflows)
+        WorkflowKeyword.validationMessage(for: keywordInput, in: runtime.store.workflows, templates: runtime.store.templates)
     }
 }
 
@@ -224,16 +224,23 @@ struct WorkflowKeywordField: View {
     @Environment(\.colorScheme) private var colorScheme
     @Binding var text: String
     var workflowID: UUID? = nil
+    var templateID: UUID? = nil
+
+    static func error(for text: String, workflowID: UUID? = nil, templateID: UUID? = nil, store: WookeyStore) -> String? {
+        WorkflowKeyword.validationMessage(
+            for: text, excluding: workflowID, in: store.workflows, templates: store.templates, excludingTemplate: templateID
+        )
+    }
 
     var body: some View {
-        let error = WorkflowKeyword.validationMessage(for: text, excluding: workflowID, in: runtime.store.workflows)
+        let error = Self.error(for: text, workflowID: workflowID, templateID: templateID, store: runtime.store)
         VStack(alignment: .leading, spacing: 5) {
-            Text("검색 키워드 (선택)").font(.headline)
-            TextField("검색 키워드", text: $text, prompt: Text("예: gcal, 구글캘, ㅎㅊ미"))
+            Text(templateID == nil ? "검색 키워드 (선택)" : "검색 단축어").font(.pretendard(.headline))
+            TextField("검색 키워드", text: $text, prompt: Text(templateID == nil ? "예: gcal, 구글캘, ㅎㅊ미" : "예: 인사말, hello"))
                 .textFieldStyle(.roundedBorder)
                 .accessibilityLabel("검색 키워드")
             Text(error ?? "여러 키워드는 쉼표로 구분하세요. 검색창에서 어느 키워드로든 실행할 수 있습니다.")
-                .font(.caption)
+                .font(.pretendard(.caption))
                 .foregroundStyle(error == nil ? Color.secondary : WookeyActionTint.rose.ink(in: colorScheme))
         }
     }

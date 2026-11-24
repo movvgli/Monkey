@@ -55,6 +55,9 @@ public final class WookeyRuntime {
         hotkeys.onWorkflow = { [weak runner = self.runner] id in
             Task { @MainActor in runner?.submit(workflowID: id) }
         }
+        hotkeys.onTemplate = { [weak self] id in
+            Task { @MainActor in self?.run(templateID: id) }
+        }
         hotkeys.onApplication = { [weak self] id in
             Task { @MainActor in
                 self?.launchApplicationShortcut(id: id)
@@ -104,12 +107,18 @@ public final class WookeyRuntime {
             workflows: store.workflows,
             applicationShortcuts: store.applicationShortcuts,
             layouts: store.layouts,
+            templates: store.templates,
             searchShortcut: store.searchShortcut
         )
     }
 
     public func run(workflowID: UUID) {
         runner.submit(workflowID: workflowID)
+    }
+
+    public func run(templateID: UUID) {
+        guard let template = store.templates.first(where: { $0.id == templateID }) else { return }
+        runner.submit(workflow: Workflow(id: template.id, name: template.name, actions: [template.deliveryAction]))
     }
 
     public func run(layoutID: UUID) {

@@ -75,6 +75,26 @@ struct WorkflowKeywordTests {
         #expect(reloaded.workflows.first?.keywords == ["gcal", "구글캘", "ㅎㅊ미"])
         #expect(reloaded.searchShortcut?.steps == [])
     }
+
+    @Test func templateAliasesRankWithWorkflowAliasesAndRejectSharedCommands() throws {
+        let workflow = Workflow(name: "답변 워크플로", actions: [.wait(seconds: 0)], keyword: "reply2")
+        var template = RichTemplate(name: "인사말")
+        template.keywords = ["reply", "인사"]
+
+        let matches = WorkflowKeyword.matches(" Reply ", in: [workflow], templates: [template])
+        #expect(matches.map(\.keyword) == ["reply", "reply2"])
+        if case .template(let target) = try #require(matches.first).target {
+            #expect(target.id == template.id)
+        } else {
+            Issue.record("The exact alias should resolve to the template")
+        }
+        #expect(WorkflowKeyword.validationMessage(for: "인사", in: [workflow], templates: [template]) != nil)
+        #expect(WorkflowKeyword.validationMessage(for: "인사", in: [workflow], templates: [template], excludingTemplate: template.id) == nil)
+
+        template.keywords = ["reply2", "인사"]
+        #expect(WorkflowKeyword.matches("reply2", in: [workflow], templates: [template]).isEmpty)
+        #expect(WorkflowKeyword.matches("인사", in: [workflow], templates: [template]).count == 1)
+    }
 }
 
 struct WorkflowDependencyGraphTests {

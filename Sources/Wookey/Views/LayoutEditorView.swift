@@ -126,9 +126,9 @@ struct LayoutEditorView: View {
                 PlainPanel {
                     VStack(alignment: .leading, spacing: 10) {
                         WookeyActionIcon(symbol: "app", tint: .teal, size: 30)
-                        Text("앱을 골라 시작하세요").font(.headline)
+                        Text("앱을 골라 시작하세요").font(.pretendard(.headline))
                         Text("여러 앱을 한 번에 추가할 수 있어요.")
-                            .font(.subheadline)
+                            .font(.pretendard(.subheadline))
                             .foregroundStyle(.secondary)
                         addApplicationButton
                     }
@@ -163,9 +163,9 @@ struct LayoutEditorView: View {
                         size: 25
                     )
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(placement.appName).font(.subheadline.weight(.semibold))
+                        Text(placement.appName).font(.pretendard(.subheadline, weight: .semibold))
                         Text(display == nil ? "모니터 연결 안 됨" : placement.zone.title)
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(.secondary)
                     }
                     .lineLimit(1)
@@ -190,13 +190,13 @@ struct LayoutEditorView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     if let placement = selectedPlacement {
                         HStack(spacing: 8) {
-                            Text(placement.appName).font(.headline).lineLimit(1)
+                            Text(placement.appName).font(.pretendard(.headline)).lineLimit(1)
                             Spacer(minLength: 0)
                             monitorControl(for: placement)
                         }
                     } else if let previewDisplay {
                         Text(previewDisplay.target.name)
-                            .font(.subheadline.weight(.medium))
+                            .font(.pretendard(.subheadline, weight: .medium))
                             .foregroundStyle(.secondary)
                     }
 
@@ -212,7 +212,7 @@ struct LayoutEditorView: View {
                             displays.isEmpty ? "연결된 모니터가 없습니다" : "위에서 연결된 모니터를 선택하세요",
                             systemImage: "display"
                         )
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, minHeight: 100)
                     }
@@ -220,7 +220,7 @@ struct LayoutEditorView: View {
                     if let placement = selectedPlacement, previewDisplay != nil {
                         Divider()
                         HStack {
-                            Text("배치 위치").font(.subheadline.weight(.semibold))
+                            Text("배치 위치").font(.pretendard(.subheadline, weight: .semibold))
                             Spacer()
                             if let zones = Self.arrangedZones(for: visiblePlacements.count),
                                visiblePlacements.map(\.zone) != zones {
@@ -234,7 +234,7 @@ struct LayoutEditorView: View {
                             $0.id != placement.id && !$0.zone.normalizedRect.intersection(placement.zone.normalizedRect).isEmpty
                         }) {
                             Label("선택한 영역이 다른 앱과 겹칩니다.", systemImage: "square.on.square")
-                                .font(.caption)
+                                .font(.pretendard(.caption))
                                 .foregroundStyle(.secondary)
                         }
                         DisclosureGroup("더 많은 배치", isExpanded: $showsMoreZones) {
@@ -244,7 +244,7 @@ struct LayoutEditorView: View {
                             }
                             .padding(.top, 8)
                         }
-                        .font(.subheadline)
+                        .font(.pretendard(.subheadline))
                     }
                 }
             }
@@ -275,7 +275,7 @@ struct LayoutEditorView: View {
             .disabled(displays.isEmpty)
         } else if let previewDisplay {
             Text(previewDisplay.target.name)
-                .font(.caption)
+                .font(.pretendard(.caption))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
         }
@@ -298,7 +298,7 @@ struct LayoutEditorView: View {
                         LayoutZoneGlyph(zone: zone)
                             .frame(width: 29, height: 20)
                         Text(zone.title)
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .lineLimit(1)
                     }
                     .padding(.vertical, 6)
@@ -318,10 +318,10 @@ struct LayoutEditorView: View {
                 ShortcutRecorderView(shortcut: $layout.shortcut)
                     .padding(.top, 10)
             }
-            .font(.subheadline.weight(.semibold))
+            .font(.pretendard(.subheadline, weight: .semibold))
             if let error = runtime.hotkeys.layoutRegistrationErrors[layout.id] {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.orange)
                     .padding(.top, 6)
             }
@@ -351,7 +351,7 @@ struct LayoutEditorView: View {
                 Spacer(minLength: 0)
                 if !layout.placements.isEmpty, !runtime.permissions.accessibilityGranted {
                     Text("적용하려면 손쉬운 사용 권한이 필요합니다.")
-                        .font(.caption)
+                        .font(.pretendard(.caption))
                         .foregroundStyle(.secondary)
                     Button("권한 설정", action: runtime.permissions.requestAccessibility)
                 } else {
@@ -473,7 +473,7 @@ private struct DisplayPreview: View {
 
                 if placements.isEmpty {
                     Text("앱을 추가하면 배치가 여기에 표시됩니다.")
-                        .font(.caption)
+                        .font(.pretendard(.caption))
                         .foregroundStyle(.secondary)
                 }
 
@@ -491,7 +491,7 @@ private struct DisplayPreview: View {
                             }
                             .overlay {
                                 Text(placement.appName)
-                                    .font(.caption.weight(isSelected ? .semibold : .medium))
+                                    .font(.pretendard(.caption, weight: isSelected ? .semibold : .medium))
                                     .foregroundStyle(isSelected ? theme.selectionInk : .primary)
                                     .lineLimit(1)
                                     .padding(5)
@@ -557,7 +557,7 @@ private struct LayoutApplicationPicker: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("배치할 앱 선택").font(.title2.weight(.semibold))
+            Text("배치할 앱 선택").font(.pretendard(.title2, weight: .semibold))
 
             WookeySearchField(prompt: "앱 이름 검색", text: $query)
                 .focused($searchFocused)
@@ -566,7 +566,7 @@ private struct LayoutApplicationPicker: View {
 
             if let importError {
                 Label(importError, systemImage: "exclamationmark.triangle")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.orange)
             }
 

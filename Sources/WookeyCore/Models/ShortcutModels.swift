@@ -93,6 +93,7 @@ public struct ShortcutGesture: Codable, Hashable, Sendable {
 
 private enum ShortcutConflictTarget {
     case workflow(UUID)
+    case template(UUID)
     case application(UUID)
     case layout(UUID)
 }
@@ -104,6 +105,7 @@ public enum ShortcutConflictDetector {
 
     public struct Result: Sendable {
         public var workflows: [UUID: String]
+        public var templates: [UUID: String] = [:]
         public var applications: [UUID: String]
         public var layouts: [UUID: String]
 
@@ -117,7 +119,8 @@ public enum ShortcutConflictDetector {
     public static func conflicts(
         workflows: [Workflow],
         applicationShortcuts: [ApplicationShortcut],
-        layouts: [WindowLayout] = []
+        layouts: [WindowLayout] = [],
+        templates: [RichTemplate] = []
     ) -> Result {
         struct Candidate {
             var target: ShortcutConflictTarget
@@ -128,6 +131,9 @@ public enum ShortcutConflictDetector {
         let candidates = workflows.compactMap { workflow -> Candidate? in
             guard workflow.isEnabled, workflow.shortcut.validationMessage == nil else { return nil }
             return Candidate(target: .workflow(workflow.id), name: workflow.name, shortcut: workflow.shortcut)
+        } + templates.compactMap { template -> Candidate? in
+            guard let shortcut = template.shortcut, shortcut.validationMessage == nil else { return nil }
+            return Candidate(target: .template(template.id), name: template.name, shortcut: shortcut)
         } + applicationShortcuts.compactMap { application -> Candidate? in
             guard application.shortcut.validationMessage == nil else { return nil }
             return Candidate(
@@ -174,6 +180,7 @@ public enum ShortcutConflictDetector {
     ) {
         switch target {
         case .workflow(let id): result.workflows[id] = message
+        case .template(let id): result.templates[id] = message
         case .application(let id): result.applications[id] = message
         case .layout(let id): result.layouts[id] = message
         }

@@ -126,7 +126,7 @@ struct ApplicationsView: View {
             WookeySearchField(prompt: "앱 이름·단축키 검색", text: $searchText)
             HStack {
                 Text("설치된 앱 \(applications.count)개 · 단축키 \(runtime.store.applicationShortcuts.count)개")
-                    .font(.subheadline)
+                    .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                 Spacer()
                 WookeyFilterPicker(title: "앱 필터", selection: $showsAssignedOnly, options: [false, true]) {
@@ -146,7 +146,7 @@ struct ApplicationsView: View {
                 Text("실행")
                     .frame(width: 32)
             }
-            .font(.subheadline.weight(.medium))
+            .font(.pretendard(.subheadline, weight: .medium))
             .foregroundStyle(.secondary)
             .padding(.horizontal, 18)
             .frame(height: 44)
@@ -243,11 +243,11 @@ private struct ApplicationShortcutRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(application.displayName)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.pretendard(size: 15, weight: .medium))
                         .lineLimit(1)
                     if conflictMessage != nil {
                         Text("단축키 확인 필요")
-                            .font(.caption)
+                            .font(.pretendard(.caption))
                             .foregroundStyle(.orange)
                     }
                 }
@@ -274,14 +274,14 @@ private struct ApplicationShortcutRow: View {
             }
             if let launchError {
                 Label(launchError, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(WookeyActionTint.rose.ink(in: colorScheme))
                     .padding(.leading, 48)
             }
 
             if let conflictMessage {
                 Label(conflictMessage, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
+                    .font(.pretendard(.caption))
                     .foregroundStyle(.orange)
                     .padding(.leading, 48)
             }
