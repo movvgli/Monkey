@@ -4,7 +4,7 @@ Wookey supports macOS 14 or later on Apple silicon and Intel Macs. Download the 
 
 ## First steps
 
-- Press **Option–Space** to find apps, files, folders, templates, and workflows. Press **Return** to open the selected result or **Command–Return** to search Google in your browser. You can change the search shortcut in **Settings → General**.
+- Press **Option–Space** to find apps, files, folders, templates, and workflows. Press **Return** to open the selected result or **Command–Return** to search the web in your default browser. In **Settings → General**, you can change the search shortcut and select Google, Naver, Daum, or Nate. The default search engine is Google.
 - Save frequently used text and images in **Templates**. Create a workflow to open apps, paste templates, wait, or arrange windows in sequence.
 - Shake a file or link twice while dragging it from Finder or a browser to open the drawer. Drag the mascot to move the drawer. Adjust shake sensitivity in **Settings → General** and storage duration in **Settings → Retention**.
 - Choose whether Wookey opens at login and appears in the Dock or menu bar in **Settings → General**. Choose colors, characters, and icon style separately in **Settings → Theme**.

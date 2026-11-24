@@ -11,7 +11,7 @@ Wookey is a Mac launcher for **finding apps and files, retrieving clipboard item
 ## Start with quick search
 
 - Use **Option–Space** to search for files and folders by name across the Mac’s Spotlight index. Enter a full path to open an item directly.
-- Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press **Return** to open the selection or **Command–Return** to search Google in your default browser. You can also open a web address, run a calculation, or convert currencies.
+- Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press **Return** to open the selection or **Command–Return** to search the web in your default browser. Choose Google, Naver, Daum, or Nate in **Settings → General**. You can also open a web address, run a calculation, or convert currencies.
 - Search for **Open Clipboard** or **Open Folder** to jump to your history. Recent clipboard and drawer items are also available in search.
 - Give links and workflows search aliases, or assign a global shortcut to an app or link.
 

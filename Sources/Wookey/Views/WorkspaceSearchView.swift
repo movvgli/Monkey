@@ -4,6 +4,8 @@ import WookeyCore
 
 struct WorkspaceSearchView: View {
     @Environment(\.wookeyTheme) private var theme
+    @AppStorage(SearchWebAddress.Engine.storageKey) private var webSearchEngine = SearchWebAddress.Engine.google
+
     enum Mode {
         case library(open: (SidebarSelection) -> Void)
         case launcher(close: () -> Void)
@@ -427,7 +429,7 @@ struct WorkspaceSearchView: View {
 
     private func searchWeb() {
         guard (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() != true,
-              let url = SearchWebAddress.searchURL(for: query) else { return }
+              let url = SearchWebAddress.searchURL(for: query, engine: webSearchEngine) else { return }
         openInBrowser(url)
     }
 
