@@ -12,6 +12,7 @@ struct WookeySettingsView: View {
     @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @AppStorage(WookeyTheme.storageKey) private var selectedTheme = WookeyTheme.defaultTheme
     @AppStorage(ShelfAfterDrop.storageKey) private var shelfAfterDrop = ShelfAfterDrop.defaultValue
+    @AppStorage(ShelfShakeSensitivity.storageKey) private var shelfShakeSensitivity = ShelfShakeSensitivity.defaultValue
 
     private enum Page: String, CaseIterable {
         case general = "일반"
@@ -176,9 +177,22 @@ struct WookeySettingsView: View {
                 }
 
                 PlainPanel {
-                    GeneralSettingRow(symbol: wookeyDrawerSymbol, title: "파일을 담은 뒤 우키 서랍") {
-                        WookeyFilterPicker(title: "파일을 담은 뒤 우키 서랍", selection: $shelfAfterDrop, options: ShelfAfterDrop.allCases) {
-                            $0.title
+                    VStack(alignment: .leading, spacing: 0) {
+                        GeneralSettingRow(
+                            symbol: wookeyDrawerSymbol,
+                            title: "서랍 열기 감도",
+                            detail: "감도가 높을수록 파일을 작게 흔들어도 서랍이 열립니다."
+                        ) {
+                            WookeyFilterPicker(
+                                title: "서랍 열기 감도", selection: $shelfShakeSensitivity,
+                                options: ShelfShakeSensitivity.allCases
+                            ) { $0.title }
+                        }
+                        generalDivider
+                        GeneralSettingRow(symbol: wookeyDrawerSymbol, title: "파일을 담은 뒤 우키 서랍") {
+                            WookeyFilterPicker(title: "파일을 담은 뒤 우키 서랍", selection: $shelfAfterDrop, options: ShelfAfterDrop.allCases) {
+                                $0.title
+                            }
                         }
                     }
                 }

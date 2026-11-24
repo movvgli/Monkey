@@ -12,6 +12,29 @@ enum ShelfAfterDrop: String, CaseIterable {
     var title: String { self == .hide ? "즉시 숨기기" : "유지하기" }
 }
 
+enum ShelfShakeSensitivity: String, CaseIterable {
+    case low, normal, high
+
+    static let storageKey = "shelfShakeSensitivity"
+    static let defaultValue = Self.normal
+
+    var title: String {
+        switch self {
+        case .low: "낮음"
+        case .normal: "보통"
+        case .high: "높음"
+        }
+    }
+
+    var minimumTravel: CGFloat {
+        switch self {
+        case .low: 40
+        case .normal: 26
+        case .high: 18
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class FloatingShelfSession {
@@ -122,6 +145,7 @@ final class FileDropView: NSView {
     private var pendingPromises = 0
     private var promiseDeadline: TimeInterval = 0
     var isImporting: Bool { activeImports > 0 || pendingPromises > 0 }
+    private static let filePathTypes: [NSPasteboard.PasteboardType] = [.fileURL, .init("NSFilenamesPboardType")]
     private static let imageTypes: [NSPasteboard.PasteboardType] = [.png, .tiff, .init(UTType.jpeg.identifier)]
     private static let promiseTypes = NSFilePromiseReceiver.readableDraggedTypes.map { NSPasteboard.PasteboardType($0) }
     private static let shelfTypes: [NSPasteboard.PasteboardType] = [.fileURL, .URL] + imageTypes + promiseTypes
@@ -172,8 +196,10 @@ final class FileDropView: NSView {
 
     required init?(coder: NSCoder) { nil }
 
-    static func canShowShelf(for pasteboard: NSPasteboard) -> Bool {
-        pasteboard.availableType(from: shelfTypes) != nil || !webLinks(on: pasteboard).isEmpty
+    static func hasFileDrag(on pasteboard: NSPasteboard) -> Bool {
+        if pasteboard.availableType(from: promiseTypes) != nil { return true }
+        guard pasteboard.availableType(from: filePathTypes) != nil else { return false }
+        return !fileURLs(on: pasteboard).isEmpty
     }
 
     static func dropOperation(for pasteboard: NSPasteboard, allowed: NSDragOperation) -> NSDragOperation {
@@ -345,6 +371,7 @@ final class FileDropShelf {
     private var panel: NSPanel?
     private var session: FloatingShelfSession?
     private var dragChangeCount = 0
+    private var fileDragChangeCount: Int?
     private var shake = DragShake()
     private var tracking = false
     private var lastRelease: TimeInterval?
@@ -376,6 +403,7 @@ final class FileDropShelf {
                 tracking = false
                 lastRelease = now
                 dragChangeCount = pasteboard.changeCount
+                fileDragChangeCount = nil
             }
             let dropView = panel?.contentView as? FileDropView
             guard dropView?.isImporting != true else { return }
@@ -387,15 +415,21 @@ final class FileDropShelf {
             return
         }
 
+        tracking = true
+        guard !history.isDraggingFromShelf, panel == nil else { return }
+        let change = pasteboard.changeCount
+        // The drag pasteboard can still contain the previous drag after mouse-up.
+        guard change != dragChangeCount else { return }
         let point = NSEvent.mouseLocation
-        if !tracking {
-            tracking = true
-            shake = DragShake(anchor: point)
+        if fileDragChangeCount != change {
+            guard FileDropView.hasFileDrag(on: pasteboard) else { return }
+            fileDragChangeCount = change
+            let stored = UserDefaults.standard.string(forKey: ShelfShakeSensitivity.storageKey)
+            let sensitivity = stored.flatMap(ShelfShakeSensitivity.init(rawValue:)) ?? .defaultValue
+            shake = DragShake(anchor: point, sensitivity: sensitivity)
+            return
         }
-        guard !history.isDraggingFromShelf, panel == nil, shake.sample(point, now: now) else { return }
-        // Some sources only expose the drag data to the destination window.
-        let dragTypesReadable = pasteboard.changeCount != dragChangeCount && pasteboard.types?.isEmpty == false
-        guard !dragTypesReadable || FileDropView.canShowShelf(for: pasteboard) else { return }
+        guard shake.sample(point, now: now) else { return }
         show(near: point)
     }
 
@@ -530,6 +564,7 @@ final class FileDropShelf {
 }
 
 struct DragShake {
+    private let minimumTravel: CGFloat
     private var anchor: NSPoint
     private var extremum: CGFloat = 0
     private var legStarted: TimeInterval?
@@ -537,7 +572,10 @@ struct DragShake {
     private var direction: CGFloat = 1
     private var previousShake: TimeInterval?
 
-    init(anchor: NSPoint = .zero) { self.anchor = anchor }
+    init(anchor: NSPoint = .zero, sensitivity: ShelfShakeSensitivity = .defaultValue) {
+        self.anchor = anchor
+        minimumTravel = sensitivity.minimumTravel
+    }
 
     mutating func sample(_ point: NSPoint, now: TimeInterval) -> Bool {
         if let legStarted {
@@ -548,7 +586,7 @@ struct DragShake {
             }
             let distance = (horizontal ? point.x - anchor.x : point.y - anchor.y) * direction
             extremum = max(extremum, distance)
-            if extremum - distance >= 26 {
+            if extremum - distance >= minimumTravel {
                 anchor = point
                 self.legStarted = nil
                 if let previousShake, now - previousShake <= 1 {
@@ -564,7 +602,7 @@ struct DragShake {
         let dy = point.y - anchor.y
         horizontal = abs(dx) >= abs(dy)
         let distance = horizontal ? dx : dy
-        guard abs(distance) >= 26 else { return false }
+        guard abs(distance) >= minimumTravel else { return false }
         direction = distance > 0 ? 1 : -1
         extremum = abs(distance)
         legStarted = now

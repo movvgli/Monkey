@@ -636,7 +636,7 @@ struct FileDropSurface: View {
             character
             if !floating {
                 message
-                Text("파일이나 링크를 끌다가 두 번 흔들면 우키 서랍이 열려요.")
+                Text("파일을 끌다가 두 번 흔들면 우키 서랍이 열려요.")
                     .font(.pretendard(.subheadline))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

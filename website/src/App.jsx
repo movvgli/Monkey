@@ -101,7 +101,7 @@ function Features() {
             <div><FileText size={18} /> 회의 자료.pdf</div>
             <div><LinkSimple size={18} /> 참고 링크</div>
           </div>
-          <p>이전에 복사한 내용을 다시 꺼내 쓰세요. 파일이나 링크를 끌다가 두 번 흔들면 서랍이 열립니다.</p>
+          <p>이전에 복사한 내용을 다시 꺼내 쓰세요. 파일을 끌다가 두 번 흔들면 서랍이 열립니다.</p>
         </article>
         <article className="feature-card feature-flow">
           <h3>워크플로와 창 배치</h3>

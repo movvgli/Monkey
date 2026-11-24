@@ -14,7 +14,7 @@
 | --- | --- |
 | Quick search | Press **Option–Space** to find installed apps, saved links, templates, and workflows. Press Return to open or run the selection, or **Command–Return** to search Google in your default browser. You can also enter web addresses, calculate, and convert currencies. |
 | Apps and links | Assign shortcuts to your favorite apps and links. Give links and workflows multiple comma-separated search keywords. |
-| Clipboard and drawer | Copy an earlier item from clipboard history. While dragging a file, image, or web link, shake the pointer twice to open the drawer. Open saved items later or drag them into another app. |
+| Clipboard and drawer | Copy an earlier item from clipboard history. Shake the pointer twice while dragging a file to open the drawer. Open saved items later or drag them into another app. |
 | Templates | Save phrases with formatting, links, lists, and inline images. Copy them from search or paste them as part of a workflow. |
 | Workflows | Combine apps, links, files, template pastes, Return keystrokes, delays, and window layouts in a sequence. Run workflows with a global shortcut, from the menu bar, or from Apple Shortcuts. |
 | Window layouts | Save the monitor and screen region for each app window. Restore layouts directly with a shortcut or include them in a workflow. |
