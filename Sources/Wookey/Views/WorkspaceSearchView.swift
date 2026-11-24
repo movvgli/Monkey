@@ -124,7 +124,7 @@ struct WorkspaceSearchView: View {
                    symbol: match.isFolder ? "folder" : "doc")
         }
         return (Array(fileEntries.prefix(exactFileCount)) + webResults + keywordResults + matchingEntries
-                + applications + fileEntries.dropFirst(exactFileCount), nil)
+                + applications + Array(fileEntries.dropFirst(exactFileCount)), nil)
     }
 
     private func fileSearchText(for query: String) -> String? {
