@@ -132,8 +132,8 @@ struct WorkspaceSearchView: View {
                 symbol: HistoryKind.clipboard.symbol, searchAliases: ["복사 기록", "open clipboard"]
             ),
             Result(
-                id: .library(.files), name: "파일함 열기", detail: "Wookey",
-                symbol: HistoryKind.files.symbol, searchAliases: ["파일 보관함", "서랍", "open files", "drawer"]
+                id: .library(.files), name: "우키 폴더 열기", detail: "Wookey",
+                symbol: HistoryKind.files.symbol, searchAliases: ["파일함 열기", "파일 보관함", "서랍", "open files", "open folder", "drawer"]
             )
         ]
         let templates = runtime.store.templates.map {
@@ -174,7 +174,7 @@ struct WorkspaceSearchView: View {
                    detail: $0.shortcut.steps.isEmpty ? "레이아웃" : "레이아웃 · \($0.shortcut.displayName)",
                    symbol: "rectangle.3.group")
         }
-        let clipboard = Result(id: .library(.clipboard), name: "클립보드", detail: "파일 보관함", symbol: HistoryKind.clipboard.symbol)
+        let clipboard = Result(id: .library(.clipboard), name: "클립보드", detail: "우키 폴더", symbol: HistoryKind.clipboard.symbol)
         return sections + [clipboard] + workflows + apps + templates + layouts
     }
 

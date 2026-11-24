@@ -14,7 +14,7 @@ struct LocalHistoryView: View {
             VStack(alignment: .leading, spacing: 12) {
                 header
                 WookeyFilterPicker(
-                    title: "파일 보관함", selection: $kind, options: [.files, .clipboard], icon: { $0.symbol }
+                    title: "우키 폴더", selection: $kind, options: [.files, .clipboard], icon: { $0.symbol }
                 ) { $0 == .files ? "서랍" : "클립보드" }
             }
             .padding(WookeyPageMetrics.padding)
@@ -23,7 +23,7 @@ struct LocalHistoryView: View {
             Divider()
             historyList.id(kind)
         }
-        .navigationTitle("파일")
+        .navigationTitle(HistoryKind.files.title)
         .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
             switch result {
             case .success(let urls):
@@ -98,7 +98,7 @@ struct LocalHistoryView: View {
         let subtitle = kind == .clipboard
             ? "최근 복사한 내용을 찾아 다시 복사합니다."
             : "우키 서랍에 담은 파일과 웹 링크를 열 수 있습니다."
-        return WookeyPageHeader(title: "파일", subtitle: subtitle) {
+        return WookeyPageHeader(title: HistoryKind.files.title, subtitle: subtitle) {
             if kind == .files {
                 Button(isImporting ? "가져오는 중…" : "파일 추가", wookeyIcon: "plus") { showsImporter = true }
                     .buttonStyle(WookeyGlossyButtonStyle())
