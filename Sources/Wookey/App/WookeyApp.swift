@@ -16,11 +16,11 @@ struct WookeyApp: App {
     @AppStorage(WookeyCharacter.storageKey) private var character = WookeyCharacter.wookey
     @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @State private var runtime = WookeyAppRuntime.shared
-    @State private var updates = UpdateController()
+    @State private var updates = WookeyAppRuntime.updates
 
     var body: some Scene {
         Window("Wookey", id: "main") {
-            ContentView()
+            ContentView(showSettings: appDelegate.showSettings)
                 .environment(runtime)
                 .environment(WookeyAppRuntime.history)
                 .environment(updates)
@@ -37,6 +37,11 @@ struct WookeyApp: App {
                 .disabled(!updates.canCheckForUpdates)
             }
 
+            CommandGroup(replacing: .appSettings) {
+                Button("설정…", action: appDelegate.showSettings)
+                    .keyboardShortcut(",", modifiers: .command)
+            }
+
             WorkspaceCommands()
 
             CommandMenu("워크플로") {
@@ -49,7 +54,7 @@ struct WookeyApp: App {
         }
 
         MenuBarExtra(isInserted: $showsMenuBarIcon) {
-            MenuBarContentView(showSearch: appDelegate.toggleSearch)
+            MenuBarContentView(showSearch: appDelegate.toggleSearch, showSettings: appDelegate.showSettings)
                 .environment(runtime)
                 .environment(updates)
                 .modifier(WookeyThemeScope())
@@ -66,14 +71,6 @@ struct WookeyApp: App {
             }
         }
         .menuBarExtraStyle(.window)
-
-        Settings {
-            WookeySettingsView()
-                .environment(runtime)
-                .environment(WookeyAppRuntime.history)
-                .environment(updates)
-                .modifier(WookeyThemeScope())
-        }
     }
 
     private var menuBarActivity: WookeyMenuBarIcon.Activity? {
@@ -94,6 +91,7 @@ enum WookeyAppRuntime {
         return WookeyRuntime()
     }()
     static let history = LocalHistoryStore(root: shared.store.storageURL)
+    static let updates = UpdateController()
 
     static func start() -> WookeyRuntime {
         shared.start()
@@ -137,6 +135,7 @@ private struct WorkspaceCommands: Commands {
 @MainActor
 final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
     private lazy var searchPanel = WorkspaceSearchPanel(runtime: WookeyAppRuntime.shared)
+    private var settingsWindow: NSPanel?
     private lazy var fileDropShelf = FileDropShelf(history: WookeyAppRuntime.history)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -164,7 +163,39 @@ final class WookeyAppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func toggleSearch() {
-        searchPanel.toggle()
+        searchPanel.toggle { [weak self] in self?.showSettings() }
+    }
+
+    func showSettings() {
+        let window: NSPanel
+        if let settingsWindow {
+            window = settingsWindow
+        } else {
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: 620, height: 490),
+                styleMask: [.titled, .closable],
+                backing: .buffered,
+                defer: false
+            )
+            panel.title = "Wookey 설정"
+            panel.isReleasedWhenClosed = false
+            panel.hidesOnDeactivate = false
+            panel.contentView = NSHostingView(rootView:
+                WookeySettingsView()
+                    .environment(WookeyAppRuntime.shared)
+                    .environment(WookeyAppRuntime.history)
+                    .environment(WookeyAppRuntime.updates)
+                    .modifier(WookeyThemeScope())
+            )
+            if !panel.setFrameUsingName("WookeySettings") { panel.center() }
+            panel.setFrameAutosaveName("WookeySettings")
+            settingsWindow = panel
+            window = panel
+        }
+
+        NSApp.unhide(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
