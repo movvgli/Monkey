@@ -123,6 +123,7 @@ private struct WookeySidebar: View {
 }
 
 struct ContentView: View {
+    var showSettings: () -> Void
     @Environment(\.wookeyTheme) private var theme
     private enum QuickCreate: Identifiable {
         case workflow, link
@@ -205,9 +206,7 @@ struct ContentView: View {
                 .help("새로 만들기")
             }
             ToolbarItem(placement: .primaryAction) {
-                SettingsLink {
-                    WookeyControlLabel(title: "설정", symbol: "gearshape")
-                }
+                Button("설정", wookeyIcon: "gearshape", action: showSettings)
                 .labelStyle(.iconOnly)
                 .help("설정 (⌘,)")
             }

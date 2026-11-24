@@ -523,7 +523,7 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
         self.history = history
     }
 
-    func toggle() {
+    func toggle(showSettings: @escaping () -> Void) {
         if window != nil {
             close()
             return
@@ -558,11 +558,9 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
                 .environment(history)
                 .modifier(WookeyThemeScope())
         )
-        panel.openSettings = { [weak self] event in
-            NSApp.activate(ignoringOtherApps: true)
-            guard NSApp.mainMenu?.performKeyEquivalent(with: event) == true else { return false }
+        panel.openSettings = { [weak self] in
             self?.close()
-            return true
+            showSettings()
         }
         panel.delegate = self
         if let screen = NSScreen.screens.first(where: { $0.frame.contains(NSEvent.mouseLocation) }) ?? NSScreen.main {
@@ -594,14 +592,15 @@ final class WorkspaceSearchPanel: NSObject, NSWindowDelegate {
     }
 
     private final class SearchWindow: NSPanel {
-        var openSettings: ((NSEvent) -> Bool)?
+        var openSettings: (() -> Void)?
 
         override var canBecomeKey: Bool { true }
 
         override func performKeyEquivalent(with event: NSEvent) -> Bool {
             let modifiers = event.modifierFlags.intersection([.command, .option, .control, .shift])
             if modifiers == .command, event.charactersIgnoringModifiers == ",",
-               openSettings?(event) == true {
+               let openSettings {
+                openSettings()
                 return true
             }
             return super.performKeyEquivalent(with: event)

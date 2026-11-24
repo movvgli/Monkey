@@ -9,6 +9,7 @@ struct MenuBarContentView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismiss) private var dismiss
     var showSearch: () -> Void
+    var showSettings: () -> Void
 
     var body: some View {
         let workflows = runtime.store.workflows.filter { $0.isEnabled && !$0.actions.isEmpty }
@@ -87,10 +88,10 @@ struct MenuBarContentView: View {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             }
-            SettingsLink {
-                rowLabel("설정…", symbol: "gearshape")
+            menuButton("설정…", symbol: "gearshape") {
+                dismiss()
+                Task { @MainActor in showSettings() }
             }
-            .buttonStyle(WookeyHoverButtonStyle())
             menuButton("업데이트 확인…", symbol: "arrow.clockwise") {
                 dismiss()
                 updates.checkForUpdates()
