@@ -8,7 +8,7 @@ import { searchResults } from "./examples.js";
 const github = "https://github.com/movvgli/Wookey";
 const releases = github + "/releases";
 const stable = releases + "/latest";
-const version = "1.2.58";
+const version = "1.2.59";
 const releaseTag = "v" + version;
 const dmg = releases + "/download/" + releaseTag + "/Wookey-" + version + ".dmg";
 const docs = github + "/blob/" + releaseTag + "/docs/";
