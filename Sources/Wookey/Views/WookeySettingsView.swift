@@ -178,6 +178,34 @@ struct WookeySettingsView: View {
                     }
                 }
             }
+
+            PlainPanel {
+                VStack(alignment: .leading, spacing: 0) {
+                    GeneralSettingRow(symbol: "dock.rectangle", title: L10n.text("Dock에 Wookey 표시")) {
+                        generalSwitch(
+                            L10n.text("Dock에 Wookey 표시"),
+                            isOn: Binding(
+                                get: { runtime.dockIcon.isVisible },
+                                set: { runtime.setDockIconVisible($0) }
+                            )
+                        )
+                    }
+                    generalDivider
+                    GeneralSettingRow(symbol: "menubar.rectangle", title: L10n.text("메뉴 막대에 Wookey 표시")) {
+                        HStack(spacing: 12) {
+                            menuBarIconPicker
+                            generalSwitch(L10n.text("메뉴 막대에 Wookey 표시"), isOn: $showsMenuBarIcon)
+                        }
+                    }
+                    if !showsMenuBarIcon && !runtime.dockIcon.isVisible {
+                        Text(L10n.text("Finder의 응용 프로그램에서 Wookey를 다시 열 수 있습니다."))
+                            .font(.pretendard(.caption))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, GeneralSettingsLayout.titleInset)
+                            .padding(.bottom, 6)
+                    }
+                }
+            }
         }
     }
 
@@ -201,34 +229,6 @@ struct WookeySettingsView: View {
                             WookeyFilterPicker(title: L10n.text("파일을 담은 뒤 우키 서랍"), selection: $shelfAfterDrop, options: ShelfAfterDrop.allCases) {
                                 $0.title
                             }
-                        }
-                    }
-                }
-
-                PlainPanel {
-                    VStack(alignment: .leading, spacing: 0) {
-                        GeneralSettingRow(symbol: "dock.rectangle", title: L10n.text("Dock에 Wookey 표시")) {
-                            generalSwitch(
-                                L10n.text("Dock에 Wookey 표시"),
-                                isOn: Binding(
-                                    get: { runtime.dockIcon.isVisible },
-                                    set: { runtime.setDockIconVisible($0) }
-                                )
-                            )
-                        }
-                        generalDivider
-                        GeneralSettingRow(symbol: "menubar.rectangle", title: L10n.text("메뉴 막대에 Wookey 표시")) {
-                            HStack(spacing: 12) {
-                                menuBarIconPicker
-                                generalSwitch(L10n.text("메뉴 막대에 Wookey 표시"), isOn: $showsMenuBarIcon)
-                            }
-                        }
-                        if !showsMenuBarIcon && !runtime.dockIcon.isVisible {
-                            Text(L10n.text("Finder의 응용 프로그램에서 Wookey를 다시 열 수 있습니다."))
-                                .font(.pretendard(.caption))
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, GeneralSettingsLayout.titleInset)
-                                .padding(.bottom, 6)
                         }
                     }
                 }
@@ -364,7 +364,7 @@ struct WookeySettingsView: View {
     private var hyperKeySetting: some View {
         VStack(alignment: .leading, spacing: 0) {
             GeneralSettingRow(
-                symbol: "keyboard",
+                symbol: "return",
                 title: L10n.text("Hyper 키"),
                 detail: L10n.text("누르는 동안 왼쪽 ⌃⌥⇧를 함께 누릅니다.")
             ) {
