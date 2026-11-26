@@ -135,6 +135,7 @@ struct ContentView: View {
     @Environment(WookeyRuntime.self) private var runtime
     @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
+    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
     @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
     @State private var quickCreate: QuickCreate?
@@ -142,8 +143,12 @@ struct ContentView: View {
     @State private var showsSearch = false
     @State private var editingSession = UUID()
 
+    private var sidebarActionTitle: String {
+        columnVisibility == .detailOnly ? L10n.text("사이드바 보기") : L10n.text("사이드바 가리기")
+    }
+
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             WookeySidebar(selected: selection.section) { selection = $0 }
                 .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
         } detail: {
@@ -182,8 +187,20 @@ struct ContentView: View {
             }
             .background(theme.canvas)
         }
+        .toolbar(removing: .sidebarToggle)
         .toolbarBackground(theme.panel, for: .windowToolbar)
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                Button {
+                    withAnimation {
+                        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                    }
+                } label: {
+                    WookeyActionIcon(symbol: "sidebar.left", tint: .accent, size: 19)
+                }
+                .accessibilityLabel(sidebarActionTitle)
+                .help(sidebarActionTitle)
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button(L10n.text("Wookey 검색"), wookeyIcon: "magnifyingglass") { showsSearch = true }
                     .labelStyle(.iconOnly)

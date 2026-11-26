@@ -272,6 +272,8 @@
 "브라운" = "Brown";
 "비워두면 내용의 첫 줄을 사용합니다" = "Leave blank to use the first line";
 "사이드바" = "Sidebar";
+"사이드바 가리기" = "Hide Sidebar";
+"사이드바 보기" = "Show Sidebar";
 "삭제" = "Delete";
 "산호" = "Coral";
 "새 레이아웃" = "New Layout";

@@ -594,6 +594,7 @@ struct WookeyActionIcon: View {
         case "plus", "plus.circle": "WookeyCommandAdd"
         case "play.fill": "WookeyCommandPlay"
         case "gearshape", "slider.horizontal.3": "WookeyCommandSettings"
+        case "sidebar.left": "WookeyCommandSidebar"
         case "magnifyingglass": "WookeyCommandSearch"
         case "globe": "WookeySettingsWebSearch"
         case "pencil": "WookeyCommandEdit"
