@@ -473,16 +473,24 @@ struct StatusPill: View {
 
 struct PlainPanel<Content: View>: View {
     @Environment(\.wookeyTheme) private var theme
+    @Environment(\.colorScheme) private var colorScheme
+    var isSelected = false
+    var contentPadding: CGFloat = 18
     @ViewBuilder var content: Content
 
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: 14, style: .continuous)
         content
-            .padding(18)
+            .padding(contentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(theme.panel, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background {
+                shape.fill(theme.panel)
+                if isSelected {
+                    shape.fill(theme.selectionTint.opacity(colorScheme == .dark ? 0.20 : 0.36))
+                }
+            }
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color(nsColor: .separatorColor).opacity(0.3), lineWidth: 1)
+                shape.stroke(isSelected ? theme.accent.opacity(0.60) : Color(nsColor: .separatorColor).opacity(0.3))
             }
             .shadow(color: .black.opacity(0.04), radius: 10, y: 3)
     }
@@ -689,6 +697,7 @@ struct WookeyHoverButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     var selected = false
     var focused = false
+    var cornerRadius: CGFloat = 9
 
     func makeBody(configuration: Configuration) -> some View {
         WookeyHoverSurface(
@@ -696,7 +705,7 @@ struct WookeyHoverButtonStyle: ButtonStyle {
             ink: theme.accent,
             selected: selected,
             filled: false,
-            cornerRadius: 9,
+            cornerRadius: cornerRadius,
             isPressed: configuration.isPressed,
             isEnabled: isEnabled,
             focused: focused

@@ -164,18 +164,18 @@ final class FileDropView: NSView {
         self.history = history
         self.onSaved = onSaved
         super.init(frame: .zero)
+        registerForDraggedTypes(Self.shelfTypes + [.string])
+        guard let shelf else {
+            setAccessibilityElement(true)
+            setAccessibilityRole(.group)
+            setAccessibilityLabel(L10n.text("우키에게 파일이나 링크를 놓는 드롭 영역"))
+            return
+        }
         let artwork = NSHostingView(rootView:
-            Group {
-                if let shelf {
-                    FloatingShelfView(
-                        history: history, session: shelf, feedback: feedback,
-                        onToggle: onToggle, onClose: onClose, onMove: onMove
-                    )
-                } else {
-                    FileDropSurface(feedback: feedback, floating: false)
-                        .allowsHitTesting(false)
-                }
-            }
+            FloatingShelfView(
+                history: history, session: shelf, feedback: feedback,
+                onToggle: onToggle, onClose: onClose, onMove: onMove
+            )
             .modifier(WookeyThemeScope())
         )
         artwork.sizingOptions = []
@@ -187,12 +187,6 @@ final class FileDropView: NSView {
             artwork.leadingAnchor.constraint(equalTo: leadingAnchor),
             artwork.trailingAnchor.constraint(equalTo: trailingAnchor)
         ])
-        if shelf == nil {
-            setAccessibilityElement(true)
-            setAccessibilityRole(.group)
-            setAccessibilityLabel(L10n.text("우키에게 파일이나 링크를 놓는 드롭 영역"))
-        }
-        registerForDraggedTypes(Self.shelfTypes + [.string])
     }
 
     required init?(coder: NSCoder) { nil }

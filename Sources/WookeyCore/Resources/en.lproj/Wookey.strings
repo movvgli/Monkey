@@ -25,6 +25,7 @@
 "%@개 앱 추가" = "Add Selected Apps (%@)";
 "%@개 앱의 창을 한 번에 배치합니다." = "App windows in this layout: %@";
 "%@개 항목" = "Items: %@";
+"%@개 항목을 삭제하지 못했습니다. %@" = "Couldn’t delete all requested items (%1$@ remaining). %2$@";
 "%@번째 동작" = "Action %@";
 "%@초 후 다음 동작을 실행합니다." = "Run the next action after %@ s.";
 "0으로 나눌 수 없습니다." = "You can’t divide by zero.";
@@ -77,7 +78,6 @@
 "↑ ↓ 이동" = "↑ ↓ Navigate";
 "가운데 1/3" = "Middle Third";
 "가져오는 중" = "Importing";
-"가져오는 중…" = "Importing…";
 "각 Mac에서 iCloud Drive의 같은 개인 폴더를 한 번 연결하세요. 앱이 실행 중일 때 자동으로 확인합니다." = "Connect the same private iCloud Drive folder on each Mac. Wookey checks the folder while running.";
 "감도가 높을수록 파일을 작게 흔들어도 서랍이 열립니다." = "Higher sensitivity opens the drawer with less movement.";
 "같은 Apple 계정을 사용하는 Mac에서 설정을 이어서 사용합니다." = "Use the same settings on Macs signed in to the same Apple Account.";
@@ -105,6 +105,8 @@
 "글자 서식" = "Text Formatting";
 "기간" = "Duration";
 "기간 단위" = "Time Unit";
+"기록 %@개를 모두 삭제할까요?" = "Delete all records (%@)?";
+"기록 관리" = "Manage History";
 "기록은 이 Mac에만 저장되며, 보관 기간이 지나면 자동으로 삭제됩니다." = "History is stored on this Mac and is deleted automatically when the retention period ends.";
 "기록을 삭제하지 못했습니다" = "Couldn’t delete history";
 "기록을 저장하지 못했습니다" = "Couldn’t save history";
@@ -289,12 +291,13 @@
 "서랍 목록 열기" = "Expand Drawer List";
 "서랍 목록 접기" = "Collapse Drawer List";
 "서랍 열기 감도" = "Drawer Shake Sensitivity";
-"서랍에 담았어요" = "Saved to drawer";
 "서랍에 담은 항목" = "In the Drawer";
+"서랍에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다." = "This deletes copies saved in the drawer. This action can’t be undone.";
 "서로 다른 설정이 있습니다. 사용할 버전을 선택해 주세요." = "Settings differ across versions. Choose which version to use.";
 "서로 반복 실행되는 연결입니다. 다른 워크플로를 선택하세요." = "This link would create a loop. Choose another workflow.";
 "서식" = "Formatting";
 "서식 템플릿을 RTFD로 변환할 수 없습니다." = "Couldn’t convert the rich text template to RTFD.";
+"선택 삭제…" = "Delete Selected…";
 "선택" = "Select";
 "선택 안 됨" = "Not Selected";
 "선택됨" = "Selected";
@@ -305,6 +308,7 @@
 "선택한 위치에서 앱을 열 수 없습니다." = "Couldn’t open an app at the selected location.";
 "선택한 텍스트에 연결할 주소를 입력하세요." = "Enter the URL to link to the selected text.";
 "선택한 통화의 기준환율이 없습니다" = "No reference rate for the selected currency";
+"선택한 항목 %@개를 삭제할까요?" = "Delete the selected items (%@)?";
 "설정" = "Settings";
 "설정 (⌘,)" = "Settings (⌘,)";
 "설정 충돌 · 두 버전 모두 보관 중" = "Settings conflict · Both versions kept";
@@ -375,7 +379,6 @@
 "업데이트" = "Updates";
 "업데이트 자동 다운로드" = "Download Updates Automatically";
 "업데이트 확인…" = "Check for Updates…";
-"여기에 놓으세요" = "Drop here";
 "여러 동작 연결…" = "Combine Multiple Actions…";
 "여러 앱을 한 번에 추가할 수 있어요." = "You can add several apps at once.";
 "여러 작업을 하나의 워크플로로" = "One workflow for several tasks";
@@ -415,7 +418,6 @@
 "우키 폴더" = "Wookey Folder";
 "우키 폴더 검색" = "Search Wookey Folder";
 "우키 폴더 열기" = "Open Wookey Folder";
-"우키 폴더에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다." = "This deletes the copy saved in Wookey Folder. This can’t be undone.";
 "우키 폴더에 항목이 없습니다" = "Wookey Folder is empty";
 "우키에게 파일이나 링크를 놓는 드롭 영역" = "Drop area for files and links";
 "워크플로" = "Workflow";
@@ -443,6 +445,7 @@
 "유로" = "Euro";
 "유지하기" = "Keep Open";
 "유효한 HTTP/HTTPS 주소가 아닙니다: %@" = "Invalid HTTP or HTTPS URL: %@";
+"이 Mac에 보관된 클립보드 기록을 삭제합니다. 삭제한 기록은 되돌릴 수 없습니다." = "This deletes clipboard history saved on this Mac. This action can’t be undone.";
 "이 Mac에 복원용 백업을 저장했습니다." = "Saved a recovery backup on this Mac.";
 "이 Mac에 없는 앱: " = "Apps missing from this Mac: ";
 "이 Mac에만 저장 중" = "Stored on this Mac only";
@@ -500,6 +503,7 @@
 "저장한 항목이 없습니다" = "No saved items";
 "적용" = "Apply";
 "적용하려면 손쉬운 사용 권한이 필요합니다." = "Accessibility access is required to apply this layout.";
+"전체 삭제…" = "Delete All…";
 "전체" = "All";
 "전체 앱" = "All Apps";
 "전체 웹사이트 주소를 입력하세요. 예: https://example.com" = "Enter a full website URL, such as https://example.com.";
@@ -583,13 +587,10 @@
 "파일 열기" = "Open File";
 "파일 찾는 중…" = "Finding files…";
 "파일 첨부나 화면 전환이 끝날 시간을 확보합니다. 0.1초부터 30초까지 설정할 수 있습니다." = "Allow time for attachments or screen transitions. You can wait from 0.1 to 30 seconds.";
-"파일 추가" = "Add Files";
 "파일을 가져오지 못했습니다" = "Couldn’t import the file";
-"파일을 끌다가 두 번 흔들면 우키 서랍이 열려요." = "Shake a file twice while dragging to open Wookey Drawer.";
 "파일을 담은 뒤 우키 서랍" = "Drawer After Saving a File";
 "파일을 찾을 수 없습니다: %@" = "Couldn’t find the file: %@";
 "파일이나 링크를 놓으세요" = "Drop files or links";
-"파일이나 링크를 위에 놓거나 ‘파일 추가’를 사용하세요." = "Drop files or links above, or use Add Files.";
 "펼쳐짐" = "Expanded";
 "평생" = "Forever";
 "폴더" = "Folder";
@@ -606,6 +607,8 @@
 "한국 원" = "South Korean Won";
 "함께 사용하는 앱을 추가하고 창을 배치할 위치를 정하세요." = "Add the apps you use together and choose where to place their windows.";
 "함께 사용할 앱을 고르고 화면에 배치하세요." = "Choose apps to use together and arrange them on screen.";
+"항목 선택" = "Select Items";
+"항목을 선택하세요" = "Select items to delete";
 "허용됨" = "Allowed";
 "현재 버전 %@" = "Current Version %@";
 "현재 설정을 먼저 백업합니다. 동기화가 켜져 있으면 선택한 설정이 다른 Mac에도 전달됩니다. 현재 편집 내용을 마친 후 적용해 주세요." = "Wookey first backs up your current settings. If sync is on, the selected settings also go to your other Macs. Finish editing before you apply them.";

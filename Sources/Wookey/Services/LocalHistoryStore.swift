@@ -232,21 +232,38 @@ final class LocalHistoryStore {
     }
 
     func remove(_ entry: Entry, kind: HistoryKind) {
-        if kind == .files {
-            guard entries(.files).contains(where: { $0.id == entry.id }) else { return }
-            if outgoingFileDrags.contains(entry.id) {
-                errors[.files] = L10n.text("이동 중인 항목은 이동을 마친 뒤에 삭제할 수 있습니다.")
-                return
+        remove([entry.id], kind: kind)
+    }
+
+    func remove(_ ids: Set<UUID>, kind: HistoryKind) {
+        let requested = entries(kind).filter { ids.contains($0.id) }
+        guard !requested.isEmpty else { return }
+
+        var removed = Set<UUID>()
+        var failure: String?
+        for entry in requested {
+            if kind == .files, outgoingFileDrags.contains(entry.id) {
+                failure = L10n.text("이동 중인 항목은 이동을 마친 뒤에 삭제할 수 있습니다.")
+                continue
+            }
+
+            let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
+            do {
+                try files.removeItem(at: folder)
+                removed.insert(entry.id)
+            } catch let error as CocoaError where error.code == .fileNoSuchFile {
+                removed.insert(entry.id)
+            } catch {
+                failure = error.localizedDescription
             }
         }
-        do {
-            let folder = fileURL(for: entry, kind: kind).deletingLastPathComponent()
-            if files.fileExists(atPath: folder.path) { try files.removeItem(at: folder) }
-            history[kind]?.removeAll { $0.id == entry.id }
-            if kind == .files { onFilesTakenFromShelf?([entry.id]) }
-            errors[kind] = nil
-        } catch {
-            report(error, kind: kind, message: L10n.text("기록을 삭제하지 못했습니다"))
+
+        if !removed.isEmpty {
+            history[kind]?.removeAll { removed.contains($0.id) }
+            if kind == .files { onFilesTakenFromShelf?(removed) }
+        }
+        errors[kind] = failure.map {
+            L10n.text("\(requested.count - removed.count)개 항목을 삭제하지 못했습니다. \($0)")
         }
     }
 
@@ -362,9 +379,8 @@ final class LocalHistoryStore {
         for kind in HistoryKind.allCases {
             guard let seconds = retention(kind).seconds else { continue }
             let cutoff = now.addingTimeInterval(-seconds)
-            for entry in entries(kind).reversed() where entry.date <= cutoff && !outgoingFileDrags.contains(entry.id) {
-                remove(entry, kind: kind)
-            }
+            let expired = entries(kind).filter { $0.date <= cutoff && !outgoingFileDrags.contains($0.id) }
+            remove(Set(expired.map(\.id)), kind: kind)
         }
     }
 

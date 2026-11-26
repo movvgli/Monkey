@@ -1,21 +1,29 @@
 import AppKit
 import ImageIO
 import SwiftUI
-import UniformTypeIdentifiers
 import WookeyCore
 
 struct LocalHistoryView: View {
     @Environment(LocalHistoryStore.self) private var history
-    @State private var showsImporter = false
-    @State private var isImporting = false
-    @State private var fileToDelete: LocalHistoryStore.Entry?
+    @Environment(\.wookeyTheme) private var theme
+    @State private var selection: ShelfSelection?
+    @State private var deletion: Deletion?
     @Binding var kind: HistoryKind
 
-    private var confirmsFileDeletion: Binding<Bool> {
+    private struct Deletion {
+        let title: String
+        let kind: HistoryKind
+        let ids: Set<UUID>
+    }
+
+    private var entries: [LocalHistoryStore.Entry] { history.entries(kind) }
+    private var entryIDs: [UUID] { entries.map(\.id) }
+
+    private var confirmsDeletion: Binding<Bool> {
         Binding {
-            fileToDelete != nil
+            deletion != nil
         } set: { isPresented in
-            if !isPresented { fileToDelete = nil }
+            if !isPresented { deletion = nil }
         }
     }
 
@@ -23,10 +31,14 @@ struct LocalHistoryView: View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
                 header
-                WookeyFilterPicker(
-                    title: L10n.text("우키 폴더"), selection: $kind, options: [.files, .clipboard],
-                    icon: { $0 == .files ? wookeyDrawerSymbol : $0.symbol }
-                ) { $0 == .files ? L10n.text("서랍") : L10n.text("클립보드") }
+                HStack(spacing: 12) {
+                    WookeyFilterPicker(
+                        title: L10n.text("우키 폴더"), selection: $kind, options: [.files, .clipboard],
+                        icon: { $0 == .files ? wookeyDrawerSymbol : $0.symbol }
+                    ) { $0 == .files ? L10n.text("서랍") : L10n.text("클립보드") }
+                    Spacer(minLength: 0)
+                    historyActions
+                }
             }
             .padding(WookeyPageMetrics.padding)
             .frame(maxWidth: WookeyPageMetrics.maximumWidth, alignment: .leading)
@@ -35,44 +47,74 @@ struct LocalHistoryView: View {
             historyList.id(kind)
         }
         .navigationTitle(HistoryKind.files.title)
-        .alert(L10n.text("‘\(fileToDelete?.name ?? "")’을 삭제할까요?"), isPresented: confirmsFileDeletion, presenting: fileToDelete) { entry in
+        .onChange(of: kind) {
+            selection = nil
+            deletion = nil
+        }
+        .onChange(of: entryIDs) { _, ids in
+            if ids.isEmpty { selection = nil }
+            else { selection?.retain(ids) }
+        }
+        .alert(deletion?.title ?? "", isPresented: confirmsDeletion, presenting: deletion) { request in
             Button(L10n.text("취소"), role: .cancel) {}
             Button(L10n.text("삭제"), role: .destructive) {
-                history.remove(entry, kind: .files)
-            }
-        } message: { _ in
-            Text(L10n.text("우키 폴더에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다."))
-        }
-        .fileImporter(isPresented: $showsImporter, allowedContentTypes: [.data], allowsMultipleSelection: true) { result in
-            switch result {
-            case .success(let urls):
-                isImporting = true
-                Task {
-                    var failed = false
-                    for url in urls {
-                        if await history.importFile(at: url) == nil { failed = true }
-                    }
-                    if failed { history.showFileImportError() }
-                    isImporting = false
+                history.remove(request.ids, kind: request.kind)
+                if selection?.ids.isDisjoint(with: history.entries(request.kind).map(\.id)) == true {
+                    selection = nil
                 }
-            case .failure:
-                history.showFileImportError()
             }
+        } message: { request in
+            Text(request.kind == .files
+                 ? L10n.text("서랍에 보관된 사본을 삭제합니다. 삭제한 항목은 되돌릴 수 없습니다.")
+                 : L10n.text("이 Mac에 보관된 클립보드 기록을 삭제합니다. 삭제한 기록은 되돌릴 수 없습니다."))
+        }
+    }
+
+    @ViewBuilder
+    private var historyActions: some View {
+        if let selection {
+            let ids = selection.ids
+            Text(ids.isEmpty ? L10n.text("항목을 선택하세요") : L10n.text("\(ids.count)개 선택"))
+                .font(.pretendard(.caption))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Button(L10n.text("선택 삭제…"), wookeyIcon: "trash") {
+                deletion = Deletion(title: L10n.text("선택한 항목 \(ids.count)개를 삭제할까요?"), kind: kind, ids: ids)
+            }
+            .buttonStyle(WookeyGlossyButtonStyle(tint: .rose))
+            .controlSize(.small)
+            .disabled(ids.isEmpty)
+            Button(L10n.text("완료")) { self.selection = nil }
+                .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral))
+                .controlSize(.small)
+        } else if !entries.isEmpty {
+            Menu {
+                Button(L10n.text("항목 선택")) { selection = ShelfSelection() }
+                Divider()
+                Button(L10n.text("전체 삭제…"), role: .destructive) {
+                    let ids = Set(entryIDs)
+                    deletion = Deletion(title: L10n.text("기록 \(ids.count)개를 모두 삭제할까요?"), kind: kind, ids: ids)
+                }
+            } label: {
+                Label(L10n.text("기록 관리"), systemImage: "ellipsis.circle")
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 18, weight: .medium))
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help(L10n.text("기록 관리"))
+            .accessibilityLabel(L10n.text("기록 관리"))
         }
     }
 
     private var historyList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
-                if kind == .files {
-                    FileDropTarget(history: history)
-                        .frame(height: 146)
-                }
                 if let error = history.errors[kind] {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
                 }
-                let entries = history.entries(kind)
                 if entries.isEmpty {
                     ContentUnavailableView {
                         WookeyEmptyStateLabel(
@@ -80,17 +122,18 @@ struct LocalHistoryView: View {
                             symbol: kind.symbol
                         )
                     } description: {
-                        Text(emptyDescription)
+                        if kind == .clipboard { Text(clipboardEmptyDescription) }
                     }
                     .frame(maxWidth: .infinity, minHeight: 175)
                 } else if kind == .clipboard {
-                    PlainPanel {
+                    PlainPanel(contentPadding: selection == nil ? 18 : 0) {
                         LazyVStack(spacing: 0) {
                             ForEach(entries) { entry in
                                 if entry.id != entries.first?.id { Divider() }
                                 clipboardRow(entry)
                             }
                         }
+                        .clipShape(.rect(cornerRadius: 14))
                     }
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 12)], spacing: 12) {
@@ -104,11 +147,15 @@ struct LocalHistoryView: View {
             .frame(maxWidth: WookeyPageMetrics.maximumWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .background {
+            if kind == .files {
+                FileDropTarget(history: history)
+            }
+        }
     }
 
-    private var emptyDescription: String {
-        if kind == .files { return L10n.text("파일이나 링크를 위에 놓거나 ‘파일 추가’를 사용하세요.") }
-        return history.recordsClipboard
+    private var clipboardEmptyDescription: String {
+        history.recordsClipboard
             ? L10n.text("텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다.")
             : L10n.text("설정의 보관 기간 탭에서 클립보드 기록을 켤 수 있습니다.")
     }
@@ -117,17 +164,38 @@ struct LocalHistoryView: View {
         let subtitle = kind == .clipboard
             ? L10n.text("최근 복사한 내용을 찾아 다시 복사합니다.")
             : L10n.text("우키 서랍에 담은 파일과 웹 링크를 열 수 있습니다.")
-        return WookeyPageHeader(title: HistoryKind.files.title, subtitle: subtitle) {
-            if kind == .files {
-                Button(isImporting ? L10n.text("가져오는 중…") : L10n.text("파일 추가"), wookeyIcon: "plus") { showsImporter = true }
-                    .buttonStyle(WookeyGlossyButtonStyle())
-                    .controlSize(.large)
-                    .disabled(isImporting)
+        return WookeyPageHeader(title: HistoryKind.files.title, subtitle: subtitle) {}
+    }
+
+    @ViewBuilder
+    private func clipboardRow(_ entry: LocalHistoryStore.Entry) -> some View {
+        if let selection {
+            let isSelected = selection.ids.contains(entry.id)
+            Button { select(entry) } label: {
+                HStack(spacing: 10) {
+                    selectionIndicator(isSelected)
+                    clipboardPreview(entry)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .contentShape(.rect)
             }
+            .buttonStyle(WookeyHoverButtonStyle(selected: isSelected, cornerRadius: 0))
+            .accessibilityLabel(entry.name)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
+        } else {
+            HStack(spacing: 10) {
+                clipboardPreview(entry)
+                Spacer()
+                Button(L10n.text("다시 복사"), wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
+                removeButton(entry) { history.remove(entry, kind: .clipboard) }
+            }
+            .padding(.vertical, 8)
         }
     }
 
-    private func clipboardRow(_ entry: LocalHistoryStore.Entry) -> some View {
+    private func clipboardPreview(_ entry: LocalHistoryStore.Entry) -> some View {
         let symbol = entry.symbol == "text.alignleft" ? HistoryKind.clipboard.symbol : entry.symbol
         return HStack(spacing: 10) {
             WookeyActionIcon(symbol: symbol, tint: WookeyActionTint(symbol: symbol), size: 20)
@@ -137,45 +205,93 @@ struct LocalHistoryView: View {
                     .font(.pretendard(.caption))
                     .foregroundStyle(.secondary)
             }
-            Spacer()
-            Button(L10n.text("다시 복사"), wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
-            removeButton(entry) { history.remove(entry, kind: .clipboard) }
         }
-        .padding(.vertical, 8)
     }
 
+    @ViewBuilder
     private func fileCard(_ entry: LocalHistoryStore.Entry) -> some View {
-        PlainPanel {
-            VStack(alignment: .leading, spacing: 8) {
-                Button {
-                    history.openFile(entry)
-                } label: {
-                    filePreview(entry)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 100)
-                        .background(.quaternary.opacity(0.3), in: RoundedRectangle(cornerRadius: 6))
+        if let selection {
+            let isSelected = selection.ids.contains(entry.id)
+            Button { select(entry) } label: {
+                PlainPanel(isSelected: isSelected) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        fileCardPreview(entry, showsBackground: !isSelected)
+                        HStack(spacing: 5) {
+                            selectionIndicator(isSelected)
+                            fileName(entry)
+                        }
+                        fileDate(entry)
+                    }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(L10n.text("\(entry.name) 열기"))
-                .overlay {
-                    let file = history.fileURL(for: entry, kind: .files)
-                    ShelfDragSource(entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path))
-                        .accessibilityHidden(true)
+                .contentShape(.rect(cornerRadius: 14))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(entry.name)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
+        } else {
+            PlainPanel {
+                VStack(alignment: .leading, spacing: 8) {
+                    Button {
+                        history.openFile(entry)
+                    } label: {
+                        fileCardPreview(entry)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text("\(entry.name) 열기"))
+                    .overlay {
+                        let file = history.fileURL(for: entry, kind: .files)
+                        ShelfDragSource(entry: entry, file: file, history: history, icon: NSWorkspace.shared.icon(forFile: file.path))
+                            .accessibilityHidden(true)
+                    }
+                    .help(L10n.text("클릭해서 열거나 다른 앱으로 드래그"))
+                    HStack(spacing: 5) {
+                        fileName(entry)
+                        Spacer(minLength: 0)
+                        removeButton(entry) {
+                            deletion = Deletion(title: L10n.text("‘\(entry.name)’을 삭제할까요?"), kind: .files, ids: [entry.id])
+                        }
+                    }
+                    fileDate(entry)
                 }
-                .help(L10n.text("클릭해서 열거나 다른 앱으로 드래그"))
-                HStack(spacing: 5) {
-                    Text(entry.name)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .help(entry.name)
-                    Spacer(minLength: 0)
-                    removeButton(entry) { fileToDelete = entry }
-                }
-                Text(entry.date, format: .dateTime.month().day().hour().minute())
-                    .font(.pretendard(.caption))
-                    .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func select(_ entry: LocalHistoryStore.Entry) {
+        let modifiers = NSApp.currentEvent?.modifierFlags ?? []
+        let extendsRange = modifiers.contains(.shift)
+        selection?.click(entry.id, in: entryIDs, extending: extendsRange, toggling: !extendsRange || modifiers.contains(.command))
+    }
+
+    private func selectionIndicator(_ isSelected: Bool) -> some View {
+        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundStyle(isSelected ? theme.accent : Color.secondary)
+            .accessibilityHidden(true)
+    }
+
+    private func fileCardPreview(_ entry: LocalHistoryStore.Entry, showsBackground: Bool = true) -> some View {
+        filePreview(entry)
+            .frame(maxWidth: .infinity)
+            .frame(height: 100)
+            .background {
+                if showsBackground {
+                    RoundedRectangle(cornerRadius: 6).fill(.quaternary.opacity(0.3))
+                }
+            }
+    }
+
+    private func fileName(_ entry: LocalHistoryStore.Entry) -> some View {
+        Text(entry.name)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .help(entry.name)
+    }
+
+    private func fileDate(_ entry: LocalHistoryStore.Entry) -> some View {
+        Text(entry.date, format: .dateTime.month().day().hour().minute())
+            .font(.pretendard(.caption))
+            .foregroundStyle(.secondary)
     }
 
     @ViewBuilder
@@ -381,7 +497,7 @@ struct FloatingShelfView: View {
     }
 
     private var mascot: some View {
-        FileDropSurface(feedback: feedback, floating: true)
+        FileDropSurface(feedback: feedback)
             .frame(width: FloatingShelfSession.mascotSize.width, height: FloatingShelfSession.mascotSize.height)
             .contentShape(Rectangle())
     }
@@ -615,11 +731,10 @@ struct FileDropSurface: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var biteStage: BiteStage = .idle
     let feedback: FileDropFeedback
-    let floating: Bool
 
     private enum BiteStage { case idle, offered, swallowed, saved }
 
-    private var characterSize: CGFloat { floating ? 118 : 100 }
+    private let characterSize: CGFloat = 118
     private var mouthOffset: CGSize {
         switch selectedCharacter {
         case .wookey where iconTheme == .fluffy:
@@ -633,38 +748,19 @@ struct FileDropSurface: View {
     private var isSaved: Bool { biteStage == .saved }
 
     var body: some View {
-        VStack(spacing: 4) {
-            character
-            if !floating {
-                message
-                Text(L10n.text("파일을 끌다가 두 번 흔들면 우키 서랍이 열려요."))
-                    .font(.pretendard(.subheadline))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+        character
+            .padding(.horizontal, 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: feedback.isTargeted)
+            .task(id: feedback.receipt?.id) {
+                guard feedback.receipt != nil else { return }
+                await playBite()
             }
-        }
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            if !floating { WookeyGlossyPanel(radius: 18) }
-        }
-        .overlay {
-            if !floating {
-                RoundedRectangle(cornerRadius: 18)
-                    .strokeBorder(feedback.isTargeted ? theme.selectionTint : .clear, lineWidth: 2)
-                    .allowsHitTesting(false)
-            }
-        }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.16), value: feedback.isTargeted)
-        .task(id: feedback.receipt?.id) {
-            guard feedback.receipt != nil else { return }
-            await playBite()
-        }
     }
 
     private var character: some View {
         ZStack {
-            if !floating || feedback.isTargeted {
+            if feedback.isTargeted {
                 Circle()
                     .fill(theme.selectionTint.opacity(feedback.isTargeted ? 0.5 : 0.22))
                     .frame(width: 72, height: 72)
@@ -702,20 +798,6 @@ struct FileDropSurface: View {
         if biteStage == .swallowed { return 0.91 }
         if mouthIsOpen || isSaved { return 1.06 }
         return 1
-    }
-
-    private var message: some View {
-        let title = if isSaved { L10n.text("서랍에 담았어요") }
-        else if feedback.isReceiving { L10n.text("가져오는 중…") }
-        else if feedback.isTargeted { L10n.text("여기에 놓으세요") }
-        else { L10n.text("파일이나 링크를 놓으세요") }
-        return HStack(spacing: 5) {
-            if isSaved { Image(systemName: "checkmark.circle.fill").accessibilityHidden(true) }
-            Text(title)
-        }
-        .font(.pretendard(size: 15, weight: .semibold))
-        .foregroundStyle(theme.accent)
-        .lineLimit(1)
     }
 
     private func receiptCard(_ receipt: FileDropFeedback.Receipt) -> some View {
