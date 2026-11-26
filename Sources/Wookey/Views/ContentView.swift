@@ -151,6 +151,7 @@ struct ContentView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             WookeySidebar(selected: selection.section) { selection = $0 }
                 .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
+                .toolbar(removing: .sidebarToggle)
         } detail: {
             VStack(spacing: 0) {
                 if let error = runtime.store.lastPersistenceError {
@@ -187,7 +188,6 @@ struct ContentView: View {
             }
             .background(theme.canvas)
         }
-        .toolbar(removing: .sidebarToggle)
         .toolbarBackground(theme.panel, for: .windowToolbar)
         .toolbar {
             ToolbarItem(placement: .navigation) {
