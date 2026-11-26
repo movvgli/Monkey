@@ -122,6 +122,88 @@ private struct WookeySidebar: View {
     }
 }
 
+private struct SidebarToolbarArtwork: NSViewRepresentable {
+    let theme: WookeyIconTheme
+
+    func makeNSView(context: Context) -> ArtworkView { ArtworkView() }
+
+    func updateNSView(_ view: ArtworkView, context: Context) {
+        view.setTheme(theme)
+    }
+
+    final class ArtworkView: NSView {
+        private var theme: WookeyIconTheme?
+        private var image: NSImage?
+        private lazy var button: SidebarButton = {
+            let button = SidebarButton()
+            button.target = self
+            button.action = #selector(toggleSidebar(_:))
+            button.bezelStyle = .texturedRounded
+            button.imagePosition = .imageOnly
+            return button
+        }()
+
+        func setTheme(_ theme: WookeyIconTheme) {
+            if self.theme != theme {
+                self.theme = theme
+                let name = NSImage.Name(theme.asset("WookeyCommandSidebar"))
+                image = wookeyAssetBundle.image(forResource: name).map { artwork in
+                    NSImage(size: NSSize(width: 18, height: 18), flipped: false) { bounds in
+                        artwork.draw(in: bounds)
+                        return true
+                    }
+                }
+            }
+            applyArtwork()
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            // SwiftUI can attach the toolbar after installing the window's content.
+            Task { @MainActor [weak self] in self?.applyArtwork() }
+        }
+
+        override func layout() {
+            super.layout()
+            applyArtwork()
+        }
+
+        private func applyArtwork() {
+            guard let image,
+                  let item = window?.toolbar?.items.first(where: {
+                      $0.itemIdentifier == .toggleSidebar
+                          || $0.itemIdentifier.rawValue == "com.apple.SwiftUI.navigationSplitView.toggleSidebar"
+                  }) else { return }
+
+            if button.image !== image { button.image = image }
+            if button.toolTip != item.label {
+                button.toolTip = item.label
+                button.setAccessibilityLabel(item.label)
+            }
+            if item.view !== button {
+                // Keep the existing slot and size so the button tracks the sidebar divider.
+                button.preferredWidth = item.view?.fittingSize.width
+                button.invalidateIntrinsicContentSize()
+                item.view = button
+            }
+        }
+
+        @objc private func toggleSidebar(_ sender: NSButton) {
+            NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: sender)
+        }
+    }
+
+    private final class SidebarButton: NSButton {
+        var preferredWidth: CGFloat?
+
+        override var intrinsicContentSize: NSSize {
+            var size = super.intrinsicContentSize
+            if let preferredWidth, preferredWidth > 0 { size.width = preferredWidth }
+            return size
+        }
+    }
+}
+
 struct ContentView: View {
     var showSettings: () -> Void
     @Environment(\.wookeyTheme) private var theme
@@ -135,7 +217,6 @@ struct ContentView: View {
     @Environment(WookeyRuntime.self) private var runtime
     @AppStorage(WookeyIconTheme.storageKey) private var iconTheme = WookeyIconTheme.threeDimensional
     @AppStorage("didCompleteOnboarding") private var didCompleteOnboarding = false
-    @State private var columnVisibility: NavigationSplitViewVisibility = .automatic
     @State private var selection: SidebarSelection = .workflowCollection
     @State private var showOnboarding = false
     @State private var quickCreate: QuickCreate?
@@ -143,15 +224,10 @@ struct ContentView: View {
     @State private var showsSearch = false
     @State private var editingSession = UUID()
 
-    private var sidebarActionTitle: String {
-        columnVisibility == .detailOnly ? L10n.text("사이드바 보기") : L10n.text("사이드바 가리기")
-    }
-
     var body: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
+        NavigationSplitView {
             WookeySidebar(selected: selection.section) { selection = $0 }
                 .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 240)
-                .toolbar(removing: .sidebarToggle)
         } detail: {
             VStack(spacing: 0) {
                 if let error = runtime.store.lastPersistenceError {
@@ -188,19 +264,13 @@ struct ContentView: View {
             }
             .background(theme.canvas)
         }
+        .background {
+            SidebarToolbarArtwork(theme: iconTheme)
+                .frame(width: 0, height: 0)
+                .accessibilityHidden(true)
+        }
         .toolbarBackground(theme.panel, for: .windowToolbar)
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button {
-                    withAnimation {
-                        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                    }
-                } label: {
-                    WookeyActionIcon(symbol: "sidebar.left", tint: .accent, size: 19)
-                }
-                .accessibilityLabel(sidebarActionTitle)
-                .help(sidebarActionTitle)
-            }
             ToolbarItem(placement: .primaryAction) {
                 Button(L10n.text("Wookey 검색"), wookeyIcon: "magnifyingglass") { showsSearch = true }
                     .labelStyle(.iconOnly)
