@@ -63,7 +63,14 @@ gh workflow run publish-appcast.yml \
   -f version=1.2.30
 ```
 
-[Publish signed update feed](../.github/workflows/publish-appcast.yml)는 공개 릴리스의 DMG를 내려받아 기존 Sparkle 키로 서명한 appcast를 만듭니다. 피드 생성 도구를 준비하기 위한 CI 빌드는 로컬에서 공증한 공개 DMG를 대체하지 않습니다. 또한 이 워크플로가 공증을 수행하는 것은 아닙니다.
+[Publish signed update feed](../.github/workflows/publish-appcast.yml)는 `main`에서만, 보호된 `sparkle-release` environment 안에서 실행됩니다. 서명 전에 다음을 확인하고 하나라도 실패하면 중단합니다.
+
+- 릴리스가 초안이나 시험(prerelease) 릴리스가 아닌지
+- 내려받은 DMG가 릴리스에 첨부된 `.sha256`과 일치하는지
+- DMG의 `stapler validate`와 Gatekeeper 평가가 통과하는지
+- DMG와 안에 든 `Wookey.app`의 서명 팀이 `WOOKEY_TEAM_ID`와 같은지, 앱 버전이 입력한 버전과 같은지
+
+확인을 마친 DMG를 기존 Sparkle 키로 서명한 appcast를 만듭니다. 피드 생성 도구를 준비하기 위한 CI 빌드는 로컬에서 공증한 공개 DMG를 대체하지 않습니다. 또한 이 워크플로가 공증을 수행하는 것은 아닙니다.
 
 워크플로는 `appcast.xml`을 릴리스에 첨부하고, `update-feed` 브랜치에 피드와 릴리스 노트를 게시합니다. 앱은 [공개 피드](https://raw.githubusercontent.com/movvgli/Wookey/update-feed/appcast.xml)를 읽고 EdDSA 서명을 검증한 뒤 DMG를 업데이트로 받아들입니다.
 
@@ -79,13 +86,21 @@ gh workflow run publish-appcast.yml \
 
 인증서·공증 환경 변수를 생략한 `package_release.sh` 실행은 로컬용 ad-hoc DMG를 만듭니다. 이를 정식 배포 파일로 게시하지 않습니다.
 
-[Preview release](../.github/workflows/release.yml)는 `preview-v*.*.*` 태그에만 반응하며, Apple 공증 없이 시험 릴리스를 만듭니다. 시험 릴리스는 최신 정식 버전으로 지정하지 않고 정식 `update-feed` 브랜치에도 게시하지 않습니다. 정식 업데이트 피드는 검증된 공개 릴리스에 대해 `publish-appcast.yml`로만 게시합니다.
+[Preview release](../.github/workflows/release.yml)는 `preview-v*.*.*` 태그에만 반응하며, Apple 공증 없이 시험 릴리스를 만듭니다. 시험 릴리스는 최신 정식 버전으로 지정하지 않고 정식 `update-feed` 브랜치에도 게시하지 않습니다. 또한 **Sparkle 키로 서명하지 않습니다**. 운영 키의 서명은 모든 설치본이 신뢰하는 업데이트 승인이므로, 공증되지 않은 빌드에 붙지 않아야 합니다. 정식 업데이트 피드는 검증된 공개 릴리스에 대해 `publish-appcast.yml`로만 게시합니다.
 
 ## Sparkle 업데이트 서명
 
 Sparkle의 `generate_keys`로 만든 개인 키는 로컬 키체인에 보관합니다. 공개 키만 `SUPublicEDKey`로 앱에 포함하며, 개인 키는 코드나 릴리스 파일에 넣지 않습니다.
 
-피드 게시에는 저장소의 Actions secret `SPARKLE_ED_PRIVATE_KEY`를 사용합니다. 워크플로는 이 비밀값으로 appcast 서명을 만들며 로그나 공개 브랜치에는 개인 키를 기록하지 않습니다. 기존 앱의 `SUPublicEDKey`와 맞는 키를 유지합니다.
+피드 게시에는 `sparkle-release` environment의 secret `SPARKLE_ED_PRIVATE_KEY`를 사용합니다. 처음 한 번 다음과 같이 설정합니다.
+
+1. **Settings → Environments → New environment**에서 `sparkle-release`를 만듭니다.
+2. **Required reviewers**에 배포 승인자를 지정하고, **Deployment branches and tags**를 `main`으로 제한합니다.
+3. 이 environment에 secret `SPARKLE_ED_PRIVATE_KEY`를 추가하고, variable `WOOKEY_TEAM_ID`에 Developer ID 팀 ID(10자리)를 넣습니다.
+4. 저장소 수준(**Settings → Secrets and variables → Actions → Repository secrets**)의 `SPARKLE_ED_PRIVATE_KEY`는 삭제합니다. 남겨 두면 다른 워크플로도 읽을 수 있습니다.
+5. **Settings → Rules**에서 `update-feed` 브랜치와 `v*`·`preview-v*` 태그를 보호하는 것을 권장합니다.
+
+기존 시험 릴리스에 운영 키로 서명된 `appcast.xml`이 첨부돼 있다면 삭제하는 것을 권장합니다. 워크플로는 이 비밀값으로 appcast 서명을 만들며 로그나 공개 브랜치에는 개인 키를 기록하지 않습니다. 기존 앱의 `SUPublicEDKey`와 맞는 키를 유지합니다.
 
 키를 잃으면 기존 설치본이 새 키로 서명한 업데이트를 신뢰할 수 없습니다. 키체인 외에 암호화된 별도 백업을 보관하세요. 인증서, `.p12` 파일, 앱 전용 암호와 공증 자격 증명은 저장소에 커밋하지 않습니다.
 
@@ -96,7 +111,7 @@ Sparkle의 `generate_keys`로 만든 개인 키는 로컬 키체인에 보관합
 - 앱, 헬퍼와 내장 라이브러리 서명 확인
 - DMG `hdiutil verify` 통과
 - appcast 버전, 다운로드 URL과 EdDSA 서명 확인
-- GitHub Actions secret `SPARKLE_ED_PRIVATE_KEY` 설정 확인
+- `sparkle-release` environment의 secret `SPARKLE_ED_PRIVATE_KEY`, variable `WOOKEY_TEAM_ID`, 승인자 설정 확인
 - 정식 DMG의 Apple 공증 승인, `stapler validate`와 Gatekeeper 평가 통과
 - 다운로드한 공개 DMG의 체크섬 일치
 - 새 사용자 계정에서 설치와 권한 흐름 확인

@@ -96,19 +96,30 @@ public final class ApplicationController {
         return try await open(url, fallbackName: url.lastPathComponent)
     }
 
-    // Only types Launch Services actually *runs* when opened. Plain scripts such as
-    // .sh or .py open in their default editor, so they stay allowed.
-    private static let executableExtensions: Set<String> = ["command", "tool", "terminal"]
+    // Types Launch Services *runs* when opened, plus pointer documents that make it
+    // open another file or an arbitrary URL (which would bypass openURL's http/https
+    // allowlist). Plain scripts such as .sh or .py open in their default editor, so
+    // they stay allowed.
+    private static let executableExtensions: Set<String> = [
+        "command", "tool", "terminal", "jar", "inetloc", "fileloc", "webloc", "afploc", "ftploc",
+    ]
     private static let executableTypes: [UTType] = [
-        .unixExecutable, UTType("com.apple.terminal.shell-script"),
+        .unixExecutable, UTType("com.apple.terminal.shell-script"), UTType("com.sun.java-archive"),
+        UTType("com.apple.web-internet-location"), UTType("com.apple.internet-location"),
+        UTType("com.apple.file-location"),
     ].compactMap { $0 }
 
     static func isExecutableDocument(_ url: URL) -> Bool {
-        if executableExtensions.contains(url.pathExtension.lowercased()) { return true }
-        let contentType = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType
-            ?? UTType(filenameExtension: url.pathExtension)
-        guard let contentType else { return false }
-        return executableTypes.contains { contentType.conforms(to: $0) }
+        // Judge what will actually be opened: a symlink's own content type is
+        // public.symlink, which would hide the target's executable type.
+        let candidates = [url, url.resolvingSymlinksInPath()]
+        return candidates.contains { candidate in
+            if executableExtensions.contains(candidate.pathExtension.lowercased()) { return true }
+            let contentType = (try? candidate.resourceValues(forKeys: [.contentTypeKey]))?.contentType
+                ?? UTType(filenameExtension: candidate.pathExtension)
+            guard let contentType else { return false }
+            return executableTypes.contains { contentType.conforms(to: $0) }
+        }
     }
 
     private func open(_ url: URL, fallbackName: String) async throws -> NSRunningApplication {

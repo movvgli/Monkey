@@ -128,6 +128,7 @@ final class LocalHistoryStore {
 
     func start() {
         guard timer == nil else { return }
+        try? protectRoot()
         if files.fileExists(atPath: settingsURL.path) {
             do {
                 settings = try PropertyListDecoder().decode(Settings.self, from: Data(contentsOf: settingsURL))
@@ -337,10 +338,16 @@ final class LocalHistoryStore {
         try files.createDirectory(at: directory.deletingLastPathComponent(),
                                   withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         let folder = directory.appendingPathComponent(entry.id.uuidString, isDirectory: true)
-        try files.createDirectory(at: folder, withIntermediateDirectories: true)
+        try files.createDirectory(at: folder, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
         do {
-            try content(folder.appendingPathComponent(entry.fileName))
-            try PropertyListEncoder().encode(entry).write(to: folder.appendingPathComponent("record.plist"), options: .atomic)
+            let payload = folder.appendingPathComponent(entry.fileName)
+            let record = folder.appendingPathComponent("record.plist")
+            try content(payload)
+            try PropertyListEncoder().encode(entry).write(to: record, options: .atomic)
+            // History can hold copied secrets; keep it owner-only regardless of the umask.
+            for url in [payload, record] {
+                try? files.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
+            }
         } catch {
             try? files.removeItem(at: folder)
             throw error
@@ -371,6 +378,18 @@ final class LocalHistoryStore {
 
     private func createRoot() throws {
         try files.createDirectory(at: root, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try protectRoot()
+    }
+
+    /// Re-applies owner-only permissions (an existing folder keeps whatever mode it had)
+    /// and keeps clipboard history out of Time Machine so it does not outlive its retention.
+    private func protectRoot() throws {
+        guard files.fileExists(atPath: root.path) else { return }
+        try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var url = root
+        try url.setResourceValues(values)
     }
 
     private func tick() {
