@@ -23,6 +23,8 @@ actor ScreenshotFolderMonitor {
 
     private static let maximumImageBytes = 32 * 1024 * 1024
     private static let screenshotAttribute = "com.apple.metadata:kMDItemIsScreenCapture"
+    private static let screenshotNamePattern =
+        #"\A(?:스크린샷 \d{4}-\d{2}-\d{2} (?:오전 |오후 )?\d{1,2}\.\d{2}\.\d{2}|Screenshot \d{4}-\d{2}-\d{2} at \d{1,2}\.\d{2}\.\d{2}(?: [AP]M)?)(?: \(\d+\))?\z"#
     private static let fileKeys: Set<URLResourceKey> = [
         .creationDateKey, .fileResourceIdentifierKey, .isRegularFileKey, .isSymbolicLinkKey,
     ]
@@ -33,6 +35,7 @@ actor ScreenshotFolderMonitor {
     private var earliestCapture = Date.distantFuture
     private var lastDirectoryChange: Date?
     private var handled = Set<FileID>()
+    private var recordedNames = Set<String>()
     private var pending: [FileID: PendingFile] = [:]
 
     static func configuredDirectory() -> URL? {
@@ -56,6 +59,7 @@ actor ScreenshotFolderMonitor {
             self.recordingSince = recordingSince
             lastDirectoryChange = nil
             handled.removeAll()
+            recordedNames.removeAll()
             pending.removeAll()
         }
         lastScan = now
@@ -72,12 +76,18 @@ actor ScreenshotFolderMonitor {
         var captures: [Capture] = []
         var remainingBytes = Self.maximumImageBytes
         for (id, file) in pending {
-            if let capture = readCapture(file.url, date: id.createdAt) {
-                guard capture.data.count <= remainingBytes else { break }
-                captures.append(capture)
-                remainingBytes -= capture.data.count
-            } else if now < file.checkUntil {
-                continue
+            let name = Self.timestampedScreenshotName(file.url)
+            // An image converter can leave both the original and the WebP in the folder.
+            let alreadyRecorded = name.map(recordedNames.contains) ?? false
+            if !alreadyRecorded {
+                if let capture = readCapture(file.url, date: id.createdAt, hasScreenshotName: name != nil) {
+                    guard capture.data.count <= remainingBytes else { break }
+                    captures.append(capture)
+                    remainingBytes -= capture.data.count
+                    if let name { recordedNames.insert(name) }
+                } else if now < file.checkUntil {
+                    continue
+                }
             }
             handled.insert(id)
             pending.removeValue(forKey: id)
@@ -105,8 +115,11 @@ actor ScreenshotFolderMonitor {
         }
     }
 
-    private func readCapture(_ url: URL, date: Date) -> Capture? {
-        guard Self.isScreenshot(url),
+    private func readCapture(_ url: URL, date: Date, hasScreenshotName: Bool) -> Capture? {
+        let isMarked = Self.isScreenshot(url)
+        // WebP conversion may strip the macOS screenshot attribute while preserving the filename.
+        let isConverted = hasScreenshotName && url.pathExtension.lowercased() == "webp"
+        guard isMarked || isConverted,
               let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
               let size = attributes[.size] as? Int,
               size > 0, size <= Self.maximumImageBytes,
@@ -120,8 +133,14 @@ actor ScreenshotFolderMonitor {
                   CGImageSourceGetStatusAtIndex(source, 0) == .statusComplete,
                   let imageType = CGImageSourceGetType(source) else { return nil }
             type = imageType as String
+            guard isMarked || type == UTType.webP.identifier else { return nil }
         }
         return Capture(name: url.lastPathComponent, date: date, type: type, data: data)
+    }
+
+    private static func timestampedScreenshotName(_ url: URL) -> String? {
+        let name = url.deletingPathExtension().lastPathComponent.precomposedStringWithCanonicalMapping
+        return name.range(of: screenshotNamePattern, options: .regularExpression) == nil ? nil : name
     }
 
     private static func isScreenshot(_ url: URL) -> Bool {
