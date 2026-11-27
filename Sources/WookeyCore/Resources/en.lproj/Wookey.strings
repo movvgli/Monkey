@@ -560,6 +560,8 @@
 "키워드마다 공백 없이 문자·숫자·하이픈·밑줄을 32자까지 입력하세요." = "Use up to 32 letters, numbers, hyphens, or underscores per keyword, with no spaces.";
 "테마" = "Theme";
 "찍은 스크린샷과 복사한 내용이 여기에 표시됩니다." = "New screenshots and copied items appear here.";
+"이미지 미리보기" = "Preview Image";
+"이미지를 미리 볼 수 없습니다." = "This image can’t be previewed.";
 "템플릿" = "Templates";
 "템플릿 내용을 클립보드에 복사" = "Copy template content to the clipboard";
 "템플릿 보관함에서 먼저 만들어 주세요" = "Create a template in the library first";

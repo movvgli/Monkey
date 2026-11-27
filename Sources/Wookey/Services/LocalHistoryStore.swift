@@ -51,6 +51,8 @@ final class LocalHistoryStore {
         let symbol: String
         let fileName: String
         var webURL: URL? = nil
+
+        var canPreviewClipboardImage: Bool { symbol == "photo" }
     }
 
     private struct Settings: Codable {
@@ -168,8 +170,7 @@ final class LocalHistoryStore {
 
     func restoreClipboard(_ entry: Entry) {
         do {
-            let data = try Data(contentsOf: fileURL(for: entry, kind: .clipboard))
-            let payload = try PropertyListDecoder().decode(ClipboardPayload.self, from: data)
+            let payload = try Self.readClipboardPayload(from: fileURL(for: entry, kind: .clipboard))
             let items = payload.items.map { representations in
                 let item = NSPasteboardItem()
                 for (type, data) in representations {
@@ -185,6 +186,28 @@ final class LocalHistoryStore {
         } catch {
             report(error, kind: .clipboard, message: L10n.text("클립보드에 다시 복사하지 못했습니다"))
         }
+    }
+
+    func clipboardImage(for entry: Entry) async -> NSImage? {
+        let url = fileURL(for: entry, kind: .clipboard)
+        return await Task.detached(priority: .userInitiated) {
+            guard let payload = try? Self.readClipboardPayload(from: url) else { return nil }
+            for item in payload.items {
+                for type in item.keys.sorted() {
+                    guard let contentType = UTType(type),
+                          contentType.conforms(to: .image) || contentType == .pdf,
+                          let data = item[type],
+                          let image = NSImage(data: data), image.isValid else { continue }
+                    return image
+                }
+            }
+            return nil
+        }.value
+    }
+
+    private nonisolated static func readClipboardPayload(from url: URL) throws -> ClipboardPayload {
+        let data = try Data(contentsOf: url)
+        return try PropertyListDecoder().decode(ClipboardPayload.self, from: data)
     }
 
     func importFile(at url: URL) async -> Entry? {

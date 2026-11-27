@@ -8,6 +8,7 @@ struct LocalHistoryView: View {
     @Environment(\.wookeyTheme) private var theme
     @State private var selection: ShelfSelection?
     @State private var deletion: Deletion?
+    @State private var imagePreview: LocalHistoryStore.Entry?
     @Binding var kind: HistoryKind
 
     private struct Deletion {
@@ -54,6 +55,11 @@ struct LocalHistoryView: View {
         .onChange(of: entryIDs) { _, ids in
             if ids.isEmpty { selection = nil }
             else { selection?.retain(ids) }
+        }
+        .sheet(item: $imagePreview) { entry in
+            ClipboardImagePreview(entry: entry, onClose: { imagePreview = nil })
+                .frame(minWidth: 420, idealWidth: 720, maxWidth: 900,
+                       minHeight: 300, idealHeight: 520, maxHeight: 680)
         }
         .alert(deletion?.title ?? "", isPresented: confirmsDeletion, presenting: deletion) { request in
             Button(L10n.text("취소"), role: .cancel) {}
@@ -186,12 +192,31 @@ struct LocalHistoryView: View {
             .accessibilityAddTraits(isSelected ? .isSelected : [])
         } else {
             HStack(spacing: 10) {
-                clipboardPreview(entry)
-                Spacer()
+                if entry.canPreviewClipboardImage {
+                    Button { imagePreview = entry } label: {
+                        HStack(spacing: 10) {
+                            clipboardPreview(entry)
+                            Spacer(minLength: 0)
+                            Image(systemName: "eye")
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 8)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(WookeyHoverButtonStyle())
+                    .help(L10n.text("이미지 미리보기"))
+                    .accessibilityLabel(entry.name)
+                    .accessibilityHint(L10n.text("이미지 미리보기"))
+                } else {
+                    clipboardPreview(entry)
+                        .padding(.leading, 8)
+                        .padding(.vertical, 8)
+                    Spacer(minLength: 0)
+                }
                 Button(L10n.text("다시 복사"), wookeyIcon: "doc.on.doc") { history.restoreClipboard(entry) }
                 removeButton(entry) { history.remove(entry, kind: .clipboard) }
             }
-            .padding(.vertical, 8)
         }
     }
 
@@ -322,6 +347,72 @@ struct LocalHistoryView: View {
             .buttonStyle(WookeyGlossyButtonStyle(tint: .neutral, iconOnly: true))
             .controlSize(.small)
             .accessibilityLabel(L10n.text("\(entry.name) 삭제"))
+    }
+}
+
+struct ClipboardImagePreview: View {
+    @Environment(LocalHistoryStore.self) private var history
+    @State private var image: NSImage?
+    @State private var isLoading = true
+    @State private var copied = false
+    @State private var copyError: String?
+
+    let entry: LocalHistoryStore.Entry
+    let onClose: () -> Void
+    var onCopy: (() -> Void)? = nil
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                Text(entry.name)
+                    .font(.pretendard(.headline))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Button(copied ? L10n.text("복사됨") : L10n.text("다시 복사"), wookeyIcon: copied ? "checkmark" : "doc.on.doc") {
+                    history.restoreClipboard(entry)
+                    copyError = history.errors[.clipboard]
+                    copied = copyError == nil
+                    if copied { onCopy?() }
+                }
+                .buttonStyle(WookeyGlossyButtonStyle())
+                .keyboardShortcut(.return, modifiers: .command)
+                Button(L10n.text("닫기"), wookeyIcon: "xmark", action: onClose)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(WookeyGlossyButtonStyle(iconOnly: true))
+                    .keyboardShortcut(.cancelAction)
+                    .accessibilityLabel(L10n.text("닫기"))
+            }
+            .padding(16)
+            Divider()
+            if let copyError {
+                Label(copyError, systemImage: "exclamationmark.triangle")
+                    .font(.pretendard(.caption))
+                    .foregroundStyle(.secondary)
+                    .padding(10)
+            }
+            Group {
+                if let image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .accessibilityLabel(L10n.text("이미지 미리보기"))
+                } else if isLoading {
+                    ProgressView()
+                        .accessibilityLabel(L10n.text("이미지 미리보기"))
+                } else {
+                    ContentUnavailableView(L10n.text("이미지를 미리 볼 수 없습니다."), systemImage: "photo")
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(16)
+        }
+        .task(id: entry.id) {
+            let preview = await history.clipboardImage(for: entry)
+            guard !Task.isCancelled else { return }
+            image = preview
+            isLoading = false
+        }
     }
 }
 

@@ -19,6 +19,7 @@ struct WorkspaceSearchView: View {
         case copyValue(String)
         case history(HistoryKind)
         case historyEntry(HistoryKind, UUID)
+        case previewClipboardImage(UUID)
         case openApplication(InstalledApplication)
         case openFile(URL)
         case openWebAddress(URL)
@@ -32,6 +33,7 @@ struct WorkspaceSearchView: View {
             case .copy, .copyValue: L10n.text("복사")
             case .history: L10n.text("보기")
             case .historyEntry(let kind, _): kind == .clipboard ? L10n.text("다시 복사") : L10n.text("열기")
+            case .previewClipboardImage: L10n.text("이미지 미리보기")
             }
         }
     }
@@ -63,6 +65,7 @@ struct WorkspaceSearchView: View {
     @State private var selected: Destination?
     @State private var actionError: String?
     @State private var historyKind: HistoryKind?
+    @State private var imagePreview: LocalHistoryStore.Entry?
     @State private var previousQuery = ""
     @State private var installedApplications: [InstalledApplication] = []
     @State private var fileResults: (query: String, matches: [LocalFileSearch.Match])?
@@ -80,8 +83,11 @@ struct WorkspaceSearchView: View {
         if let historyKind {
             let entries = history.entries(historyKind).sorted { $0.date > $1.date }.compactMap { entry -> Result? in
                 guard terms.allSatisfy({ entry.name.localizedCaseInsensitiveContains($0) }) else { return nil }
+                let destination: Destination = historyKind == .clipboard && entry.canPreviewClipboardImage
+                    ? .previewClipboardImage(entry.id)
+                    : .historyEntry(historyKind, entry.id)
                 return Result(
-                    id: .historyEntry(historyKind, entry.id), name: entry.name,
+                    id: destination, name: entry.name,
                     detail: entry.date.formatted(date: .abbreviated, time: .shortened), symbol: entry.symbol
                 )
             }
@@ -247,10 +253,24 @@ struct WorkspaceSearchView: View {
     }
 
     var body: some View {
+        Group {
+            if let entry = imagePreview {
+                ClipboardImagePreview(entry: entry, onClose: { imagePreview = nil }, onCopy: close)
+            } else {
+                searchContent
+            }
+        }
+        .frame(width: isLauncher ? 600 : 560, height: 390)
+        .background {
+            if isLauncher { Color.clear.wookeyLauncherGlass(theme: theme).allowsHitTesting(false) }
+        }
+    }
+
+    private var searchContent: some View {
         let (entries, utility) = matches(for: query)
         let fileText = utility == nil ? fileSearchText(for: query) : nil
         let actionTitle = selected?.actionTitle ?? L10n.text("열기")
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             HStack(spacing: 12) {
                 if historyKind != nil {
                     Button(L10n.text("뒤로"), wookeyIcon: "chevron.left", action: backOrClose)
@@ -327,10 +347,6 @@ struct WorkspaceSearchView: View {
             .font(.pretendard(.caption))
             .padding(.horizontal, 18)
             .padding(.vertical, 10)
-        }
-        .frame(width: isLauncher ? 600 : 560, height: 390)
-        .background {
-            if isLauncher { Color.clear.wookeyLauncherGlass(theme: theme).allowsHitTesting(false) }
         }
         .onChange(of: entries.map(\.id), initial: true) { previous, ids in
             if selected == previous.first || selected.map(ids.contains) != true { selected = ids.first }
@@ -522,6 +538,8 @@ struct WorkspaceSearchView: View {
             else { history.openFile(entry) }
             if let failure = history.errors[kind] { actionError = failure }
             else { close() }
+        case .previewClipboardImage(let id):
+            imagePreview = history.entries(.clipboard).first { $0.id == id }
         case .openApplication(let application):
             if NSWorkspace.shared.open(URL(fileURLWithPath: application.path)) {
                 close()
