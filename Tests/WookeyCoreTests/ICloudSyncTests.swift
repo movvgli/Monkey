@@ -314,7 +314,7 @@ import Testing
         let templates = try FileManager.default.contentsOfDirectory(atPath: root.appendingPathComponent("Templates").path)
         #expect(templates.filter(WookeyStore.isSyncTemplateName).count == 1)
         #expect(FileManager.default.fileExists(atPath: unrelated.path))
-        #expect(store.templateDocument(id: templateID).string == "새 템플릿")
+        #expect(store.templateDocument(id: templateID).string == L10n.text("새 템플릿"))
         guard case .openFile(let path) = store.workflows[0].actions[0] else { Issue.record("Missing action"); return }
         #expect(try Data(contentsOf: URL(fileURLWithPath: path)) == Data("a".utf8))
     }
@@ -390,7 +390,7 @@ import Testing
         let store = WookeyStore(rootURL: root.appendingPathComponent("A")); store.load(); _ = store.addWorkflow()
         let sync = ICloudSyncService(store: store)
         await sync.connect(to: folder, requireICloud: false)
-        #expect(sync.status.contains("기다리는"))
+        #expect(sync.status == L10n.text("이전 버전의 다운로드를 기다리는 중입니다."))
         sync.missingParentGracePeriod = 0
         await sync.synchronize()
         #expect(!sync.status.contains("기다리는"))

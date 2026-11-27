@@ -13,12 +13,18 @@ permissions:
 
 jobs:
   publish:
+    # The production Sparkle key authorizes updates for every installed app.
+    # Only sign from main, and only inside the protected environment that holds
+    # SPARKLE_ED_PRIVATE_KEY (configure required reviewers on it; see
+    # docs/DISTRIBUTION.md).
+    if: github.ref == 'refs/heads/main'
+    environment: sparkle-release
     runs-on: macos-15
     timeout-minutes: 30
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           fetch-depth: 0
 
@@ -26,12 +32,22 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
+          EXPECTED_TEAM_ID: ${{ vars.WOOKEY_TEAM_ID }}
         run: |
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "Invalid version: $VERSION" >&2
             exit 1
           fi
-          gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null
+          release_state="$(gh release view "v$VERSION" --repo "$GITHUB_REPOSITORY" \
+            --json isDraft,isPrerelease --jq '"\(.isDraft) \(.isPrerelease)"')"
+          if [[ "$release_state" != "false false" ]]; then
+            echo "v$VERSION must be a published, non-prerelease release (draft prerelease: $release_state)." >&2
+            exit 1
+          fi
+          if [[ ! "$EXPECTED_TEAM_ID" =~ ^[A-Z0-9]{10}$ ]]; then
+            echo "Set the WOOKEY_TEAM_ID variable on the sparkle-release environment to the Developer ID team ID." >&2
+            exit 1
+          fi
 
       - name: Resolve Sparkle tools
         env:
@@ -51,10 +67,20 @@ jobs:
             exit 1
           fi
           printf '%s\n' "RELEASE_STEM=$release_stem" >> "$GITHUB_ENV"
+          if ! grep -Fxq "$release_stem.dmg.sha256" <<< "$release_assets"; then
+            echo "No checksum file was found for v$VERSION." >&2
+            exit 1
+          fi
+          checksum_dir="$(mktemp -d)"
+          printf '%s\n' "CHECKSUM_DIR=$checksum_dir" >> "$GITHUB_ENV"
           gh release download "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --pattern "$release_stem.dmg" \
             --dir feed
+          gh release download "v$VERSION" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$release_stem.dmg.sha256" \
+            --dir "$checksum_dir"
           gh release view "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" \
             --json body \
@@ -64,6 +90,46 @@ jobs:
             git show origin/update-feed:appcast.xml > feed/appcast.xml
           fi
 
+      - name: Verify notarized Developer ID release
+        env:
+          VERSION: ${{ inputs.version }}
+          EXPECTED_TEAM_ID: ${{ vars.WOOKEY_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          dmg="feed/$RELEASE_STEM.dmg"
+          expected_sum="$(awk '{print $1; exit}' "$CHECKSUM_DIR/$RELEASE_STEM.dmg.sha256")"
+          actual_sum="$(shasum -a 256 "$dmg" | awk '{print $1}')"
+          if [[ -z "$expected_sum" || "$expected_sum" != "$actual_sum" ]]; then
+            echo "The downloaded DMG does not match the published checksum." >&2
+            exit 1
+          fi
+          printf '%s\n' "DMG_SHA256=$actual_sum" >> "$GITHUB_ENV"
+
+          xcrun stapler validate "$dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
+          dmg_team="$(codesign -dv --verbose=2 "$dmg" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
+          if [[ "$dmg_team" != "$EXPECTED_TEAM_ID" ]]; then
+            echo "DMG is signed by team '$dmg_team', expected '$EXPECTED_TEAM_ID'." >&2
+            exit 1
+          fi
+
+          mount_point="$(mktemp -d)"
+          hdiutil attach -readonly -nobrowse -noautoopen -mountpoint "$mount_point" "$dmg" >/dev/null
+          trap 'hdiutil detach "$mount_point" -quiet || true' EXIT
+          app="$mount_point/Wookey.app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+          spctl --assess --type execute --verbose=2 "$app"
+          app_team="$(codesign -dv --verbose=2 "$app" 2>&1 | sed -n 's/^TeamIdentifier=//p')"
+          if [[ "$app_team" != "$EXPECTED_TEAM_ID" ]]; then
+            echo "Wookey.app is signed by team '$app_team', expected '$EXPECTED_TEAM_ID'." >&2
+            exit 1
+          fi
+          app_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")"
+          if [[ "$app_version" != "$VERSION" ]]; then
+            echo "Wookey.app reports version $app_version, expected $VERSION." >&2
+            exit 1
+          fi
+
       - name: Generate signed appcast
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
@@ -71,6 +137,11 @@ jobs:
         run: |
           if [[ -z "$SPARKLE_ED_PRIVATE_KEY" ]]; then
             echo "SPARKLE_ED_PRIVATE_KEY is not configured." >&2
+            exit 1
+          fi
+          # Sign exactly the bytes verified above.
+          if [[ "$(shasum -a 256 "feed/$RELEASE_STEM.dmg" | awk '{print $1}')" != "$DMG_SHA256" ]]; then
+            echo "The DMG changed after verification." >&2
             exit 1
           fi
           appcast_tool="$(find .build-bundle/DerivedData/SourcePackages/artifacts -type f -name generate_appcast -print -quit)"
@@ -120,5 +191,5 @@ jobs:
           git -C "$feed_worktree" \
             -c user.name='github-actions[bot]' \
             -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
-            commit -m "Update appcast for v${{ inputs.version }}"
+            commit -m "Update appcast for v$VERSION"
           git -C "$feed_worktree" push origin update-feed

@@ -154,7 +154,8 @@ struct WookeyStoreTests {
         let store = WookeyStore(rootURL: root)
         store.load()
         #expect(store.needsRecovery)
-        #expect(store.lastPersistenceError?.contains("백업") == true)
+        // The message names config.json in every localization.
+        #expect(store.lastPersistenceError?.contains("config.json") == true)
         try files.setAttributes([.posixPermissions: 0o700], ofItemAtPath: root.path)
         // Even once writable, saving must not replace the unpreserved original.
         store.workflows = [Workflow(name: "New")]

@@ -113,8 +113,11 @@ public final class ICloudSyncService {
         guard !isBusy else { return }
         let accessed = selected.startAccessingSecurityScopedResource()
         do {
-            let values = try selected.resourceValues(forKeys: [.isUbiquitousItemKey, .isDirectoryKey])
+            let values = try selected.resourceValues(forKeys: [.isUbiquitousItemKey, .isDirectoryKey, .ubiquitousItemIsSharedKey])
             guard (!requireICloud || values.isUbiquitousItem == true), values.isDirectory == true else { throw SyncError.notCloudFolder }
+            // Workflows from this folder are applied automatically, so it must be private:
+            // in a folder shared with other iCloud users, any participant could push automation onto this Mac.
+            guard values.ubiquitousItemIsShared != true else { throw SyncError.notCloudFolder }
             let bookmark = try selected.bookmarkData(options: [.withSecurityScope], includingResourceValuesForKeys: nil, relativeTo: nil)
             var next = Metadata()
             next.bookmark = bookmark; next.enabled = true; next.device = metadata.device

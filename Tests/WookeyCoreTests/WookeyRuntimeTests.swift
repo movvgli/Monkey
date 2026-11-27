@@ -52,6 +52,17 @@ struct ApplicationControllerOpenFileTests {
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: binary.path)
         #expect(ApplicationController.isExecutableDocument(binary))
 
+        // Pointer documents and Java archives make Launch Services open or run something else.
+        for name in ["run.jar", "site.webloc", "site.inetloc", "file.fileloc"] {
+            let url = directory.appendingPathComponent(name)
+            try Data("hi".utf8).write(to: url)
+            #expect(ApplicationController.isExecutableDocument(url), "\(name)")
+        }
+        // A symlink is judged by the file it points to.
+        let link = directory.appendingPathComponent("innocent.txt")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: directory.appendingPathComponent("run.command"))
+        #expect(ApplicationController.isExecutableDocument(link))
+
         // Plain scripts and documents open in their editor, so they stay allowed.
         for name in ["note.txt", "script.sh", "script.py"] {
             let url = directory.appendingPathComponent(name)
