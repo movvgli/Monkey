@@ -2,7 +2,7 @@
 
 Wookey works without a Wookey account and includes no analytics or advertising SDK. Workflows, templates, window layouts, clipboard history, and drawer files and links are stored on your Mac by default.
 
-- Clipboard history is on by default. It keeps up to 500 entries and 1 GB, removing the oldest entries first. The drawer copies files up to 2 GB each and saves web links with their titles. You can set retention periods and turn off clipboard history in Settings. Wookey never syncs either history through iCloud.
+- Clipboard history is on by default. It includes copies of new macOS screenshots saved to the configured screenshot folder while Wookey is running. It keeps up to 500 entries and 1 GB, removing the oldest entries first. The drawer copies files up to 2 GB each and saves web links with their titles. You can set retention periods and turn off clipboard history in Settings. Wookey never syncs either history through iCloud.
 - Wookey uses Accessibility for actions you initiate, including pasting and placing windows. Input Monitoring supports keyboard shortcuts that need to read a second keystroke or the Hyper key. Wookey does not transmit recorded keystrokes or clipboard history.
 - Update checks contact the public GitHub update feed without sending your workflows, templates, or clipboard. Web search sends your query to the selected search engine through your default browser. Currency conversion downloads public European Central Bank rates and calculates the result on your Mac.
 

@@ -43,6 +43,7 @@
 		9321B69E644F99C715153975 /* InstalledApplicationCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9A9022F68765B1273395BCD /* InstalledApplicationCatalog.swift */; };
 		132AC6809C524620F64C2A02 /* FileDropShelf.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132AC6809C524620F64C1A02 /* FileDropShelf.swift */; };
 		132AC6809C524620F64C2A01 /* LocalHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132AC6809C524620F64C1A01 /* LocalHistoryStore.swift */; };
+		132AC6809C524620F64C2A04 /* ScreenshotFolderMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 132AC6809C524620F64C1A04 /* ScreenshotFolderMonitor.swift */; };
 		9326BA0B076DD5284458D227 /* WookeyRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51FDEC8A0E2FCB4DFE3AF16D /* WookeyRuntimeTests.swift */; };
 		A29D31B4C0383875CBDE463E /* ApplicationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C8650191882F2C13EE06D44 /* ApplicationsView.swift */; };
 		A2A5F289B4A7E910E11B6BA3 /* DockIconService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8311B814F3B168ADCFCB038 /* DockIconService.swift */; };
@@ -186,6 +187,7 @@
 		B9A9022F68765B1273395BCD /* InstalledApplicationCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledApplicationCatalog.swift; sourceTree = "<group>"; };
 		132AC6809C524620F64C1A02 /* FileDropShelf.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileDropShelf.swift; sourceTree = "<group>"; };
 		132AC6809C524620F64C1A01 /* LocalHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalHistoryStore.swift; sourceTree = "<group>"; };
+		132AC6809C524620F64C1A04 /* ScreenshotFolderMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotFolderMonitor.swift; sourceTree = "<group>"; };
 		C4F766E91A1B80A9C12FBAEC /* WookeySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WookeySettingsView.swift; sourceTree = "<group>"; };
 		C5C17D07296F5224CC879898 /* WindowLayoutController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowLayoutController.swift; sourceTree = "<group>"; };
 		C5D474D7A2FE6E9C6853A5B0 /* TemplateEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateEditorView.swift; sourceTree = "<group>"; };
@@ -272,6 +274,7 @@
 				B9A9022F68765B1273395BCD /* InstalledApplicationCatalog.swift */,
 				132AC6809C524620F64C1A02 /* FileDropShelf.swift */,
 				132AC6809C524620F64C1A01 /* LocalHistoryStore.swift */,
+				132AC6809C524620F64C1A04 /* ScreenshotFolderMonitor.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -646,6 +649,7 @@
 				9321B69E644F99C715153975 /* InstalledApplicationCatalog.swift in Sources */,
 				132AC6809C524620F64C2A02 /* FileDropShelf.swift in Sources */,
 				132AC6809C524620F64C2A01 /* LocalHistoryStore.swift in Sources */,
+				132AC6809C524620F64C2A04 /* ScreenshotFolderMonitor.swift in Sources */,
 				764F388AE8FB73D0D099FA32 /* LayoutEditorView.swift in Sources */,
 				590245A0CFE67869BF4CF7D9 /* MenuBarContentView.swift in Sources */,
 				DB1EFA8AD70B6C1297ACA30F /* WookeyMenuBarIcon.swift in Sources */,
@@ -813,7 +817,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002066;
+				CURRENT_PROJECT_VERSION = 1002067;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -833,7 +837,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.66;
+				MARKETING_VERSION = 1.2.67;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -880,7 +884,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1002066;
+				CURRENT_PROJECT_VERSION = 1002067;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -894,7 +898,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.2.66;
+				MARKETING_VERSION = 1.2.67;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -70,19 +70,30 @@ final class LocalHistoryStore {
 
     private let root: URL
     private let clipboard: NSPasteboard
+    private let screenshotDirectory: () -> URL?
     private let files = FileManager.default
+    private let screenshotMonitor = ScreenshotFolderMonitor()
     private var settings = Settings()
     private var history: [HistoryKind: [Entry]] = [:]
     private(set) var errors: [HistoryKind: String] = [:]
+    private(set) var screenshotRecordingError: String?
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var pasteboardChangeCount = 0
     @ObservationIgnored private var nextPrune = Date.distantPast
+    @ObservationIgnored private var clipboardRecordingSince = Date()
+    @ObservationIgnored private var nextScreenshotScan = Date.distantPast
+    @ObservationIgnored private var screenshotScan: Task<Void, Never>?
     @ObservationIgnored private var outgoingFileDrags = Set<UUID>()
     @ObservationIgnored var onFilesTakenFromShelf: ((Set<UUID>) -> Void)?
 
-    init(root: URL, clipboard: NSPasteboard = .general) {
+    init(
+        root: URL,
+        clipboard: NSPasteboard = .general,
+        screenshotDirectory: @escaping () -> URL? = ScreenshotFolderMonitor.configuredDirectory
+    ) {
         self.root = root.appendingPathComponent("LocalHistory", isDirectory: true)
         self.clipboard = clipboard
+        self.screenshotDirectory = screenshotDirectory
     }
 
     var recordsClipboard: Bool { settings.recordsClipboard }
@@ -102,6 +113,7 @@ final class LocalHistoryStore {
 
     func start() {
         guard timer == nil else { return }
+        clipboardRecordingSince = Date()
         if files.fileExists(atPath: settingsURL.path) {
             do {
                 settings = try PropertyListDecoder().decode(Settings.self, from: Data(contentsOf: settingsURL))
@@ -144,6 +156,8 @@ final class LocalHistoryStore {
         updated.recordsClipboard = enabled
         if save(updated, kind: .clipboard) {
             pasteboardChangeCount = clipboard.changeCount
+            clipboardRecordingSince = Date()
+            screenshotRecordingError = nil
         }
     }
 
@@ -292,9 +306,9 @@ final class LocalHistoryStore {
 
     private func insert(
         kind: HistoryKind, name: String, symbol: String, fileName: String,
-        webURL: URL? = nil, write: (URL) throws -> Void
+        webURL: URL? = nil, date: Date = Date(), write: (URL) throws -> Void
     ) -> Entry? {
-        let entry = Entry(id: UUID(), date: Date(), name: name, symbol: symbol, fileName: fileName, webURL: webURL)
+        let entry = Entry(id: UUID(), date: date, name: name, symbol: symbol, fileName: fileName, webURL: webURL)
         do {
             try Self.write(entry, in: directory(kind), content: write)
             record(entry, kind: kind)
@@ -321,7 +335,9 @@ final class LocalHistoryStore {
     }
 
     private func record(_ entry: Entry, kind: HistoryKind) {
-        history[kind, default: []].insert(entry, at: 0)
+        let current = entries(kind)
+        let index = current.firstIndex { $0.date <= entry.date } ?? current.endIndex
+        history[kind, default: []].insert(entry, at: index)
         errors[kind] = nil
     }
 
@@ -334,7 +350,9 @@ final class LocalHistoryStore {
     }
 
     private func tick() {
-        if Date() >= nextPrune { pruneExpired() }
+        let now = Date()
+        if now >= nextPrune { pruneExpired(now: now) }
+        collectScreenshots(now: now)
 
         let change = clipboard.changeCount
         guard change != pasteboardChangeCount else { return }
@@ -369,8 +387,45 @@ final class LocalHistoryStore {
             hasImage ? L10n.text("복사한 이미지") : L10n.text("복사한 내용")
         }
         let symbol = !files.isEmpty ? "doc" : hasImage ? "photo" : "text.alignleft"
-        _ = insert(kind: .clipboard, name: String(name.prefix(250)), symbol: symbol, fileName: "contents.plist") {
-            try PropertyListEncoder().encode(ClipboardPayload(items: payload)).write(to: $0)
+        saveClipboardRecord(contents: payload, name: String(name.prefix(250)), symbol: symbol)
+    }
+
+    private func saveClipboardRecord(
+        contents: [[String: Data]], name: String, symbol: String, date: Date = Date()
+    ) {
+        _ = insert(kind: .clipboard, name: name, symbol: symbol, fileName: "contents.plist", date: date) {
+            try PropertyListEncoder().encode(ClipboardPayload(items: contents)).write(to: $0)
+        }
+    }
+
+    private func collectScreenshots(now: Date) {
+        guard recordsClipboard, screenshotScan == nil, now >= nextScreenshotScan else { return }
+        nextScreenshotScan = now.addingTimeInterval(1)
+        let directory = screenshotDirectory()
+        let recordingSince = clipboardRecordingSince
+        screenshotScan = Task { [weak self, screenshotMonitor] in
+            let result: Result<[ScreenshotFolderMonitor.Capture], Error>
+            do {
+                result = .success(try await screenshotMonitor.scan(directory: directory, recordingSince: recordingSince, now: now))
+            } catch {
+                result = .failure(error)
+            }
+            guard let self else { return }
+            self.screenshotScan = nil
+            guard self.recordsClipboard, self.clipboardRecordingSince == recordingSince else { return }
+
+            switch result {
+            case .success(let captures):
+                if self.screenshotRecordingError != nil { self.screenshotRecordingError = nil }
+                for capture in captures {
+                    self.saveClipboardRecord(
+                        contents: [[capture.type: capture.data]], name: capture.name, symbol: "photo", date: capture.date
+                    )
+                }
+            case .failure:
+                let message = L10n.text("스크린샷 저장 폴더를 읽을 수 없습니다. 시스템 설정에서 해당 폴더 접근을 확인하세요.")
+                if self.screenshotRecordingError != message { self.screenshotRecordingError = message }
+            }
         }
     }
 

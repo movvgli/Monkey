@@ -111,7 +111,7 @@ struct LocalHistoryView: View {
     private var historyList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: WookeyPageMetrics.headerSpacing) {
-                if let error = history.errors[kind] {
+                if let error = history.errors[kind] ?? (kind == .clipboard ? history.screenshotRecordingError : nil) {
                     Label(error, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(.orange)
                 }
@@ -156,7 +156,7 @@ struct LocalHistoryView: View {
 
     private var clipboardEmptyDescription: String {
         history.recordsClipboard
-            ? L10n.text("텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다.")
+            ? L10n.text("찍은 스크린샷과 복사한 내용이 여기에 표시됩니다.")
             : L10n.text("설정의 보관 기간 탭에서 클립보드 기록을 켤 수 있습니다.")
     }
 
@@ -853,7 +853,7 @@ struct HistorySettingsView: View {
                             historyHeader(for: kind)
                             Divider()
                             HistoryRetentionControls(kind: kind)
-                            if let error = history.errors[kind] {
+                            if let error = history.errors[kind] ?? (kind == .clipboard ? history.screenshotRecordingError : nil) {
                                 WookeyControlLabel(title: error, symbol: "exclamationmark.triangle")
                                     .font(.pretendard(.caption))
                                     .foregroundStyle(.orange)
@@ -893,8 +893,8 @@ struct HistorySettingsView: View {
         switch kind {
         case .clipboard:
             history.recordsClipboard
-                ? L10n.text("복사한 텍스트, 이미지, 파일을 기록합니다.")
-                : L10n.text("새로 복사한 내용은 기록하지 않습니다.")
+                ? L10n.text("찍은 스크린샷과 복사한 텍스트, 이미지, 파일을 기록합니다.")
+                : L10n.text("클립보드 및 스크린샷 자동 기록이 꺼져 있습니다.")
         case .files:
             L10n.text("우키 서랍에 추가한 파일과 웹 링크를 저장합니다.")
         }

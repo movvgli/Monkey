@@ -10,8 +10,8 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     MACOSX_DEPLOYMENT_TARGET: "14.0"
-    MARKETING_VERSION: "1.2.66"
-    CURRENT_PROJECT_VERSION: "1002066"
+    MARKETING_VERSION: "1.2.67"
+    CURRENT_PROJECT_VERSION: "1002067"
     CODE_SIGN_STYLE: Automatic
     DEVELOPMENT_TEAM: ""
 
@@ -69,6 +69,9 @@ targets:
         LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: "14.0"
         LSUIElement: true
+        NSDesktopFolderUsageDescription: Wookey reads new screenshots saved to your Desktop to add them to clipboard history.
+        NSDocumentsFolderUsageDescription: Wookey reads new screenshots saved to Documents to add them to clipboard history.
+        NSDownloadsFolderUsageDescription: Wookey reads new screenshots saved to Downloads to add them to clipboard history.
         SUEnableAutomaticChecks: true
         SUAutomaticallyUpdate: false
         SUFeedURL: https://raw.githubusercontent.com/movvgli/Wookey/update-feed/appcast.xml

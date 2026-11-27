@@ -31,6 +31,12 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>Wookey reads new screenshots saved to your Desktop to add them to clipboard history.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>Wookey reads new screenshots saved to Documents to add them to clipboard history.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>Wookey reads new screenshots saved to Downloads to add them to clipboard history.</string>
 	<key>SUAutomaticallyUpdate</key>
 	<false/>
 	<key>SUEnableAutomaticChecks</key>
